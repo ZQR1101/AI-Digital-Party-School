@@ -1,0 +1,136 @@
+:root {
+  --bg: #f7f4ef;
+  --bg-paper: #fcf9f8;
+  --surface: #ffffff;
+  --surface-low: #f6f3f2;
+  --surface-high: #eae7e7;
+  --surface-highest: #e5e2e1;
+  --ink: #1c1b1b;
+  --muted: #5a403f;
+  --outline: #8e706e;
+  --line: #e2bebc;
+  --primary: #910018;
+  --primary-container: #b4232c;
+  --on-primary: #ffffff;
+  --primary-soft: #ffdad7;
+  --primary-dim: #ffb3af;
+  --secondary: #ae2f33;
+  --tertiary: #5d4100;
+  --tertiary-container: #7b5700;
+  --gold-soft: #ffdea8;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --whisper: 0 4px 20px rgba(23, 23, 23, 0.04);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --pad: 20px;
+  --nav-h: 76px;
+  --app-width: 430px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.whisper {
+  box-shadow: var(--whisper);
+}
+
+.hide-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+}
+
+.page-shell > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-shell.no-tab {
+  padding-bottom: 24px;
+}
+
+.stat-num {
+  font-family: "JetBrains Mono", "Source Sans 3", ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+.state-box {
+  padding: 44px 20px;
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  color: var(--muted);
+  box-shadow: var(--whisper);
+}
+
+.state-box i {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 12px;
+  border: 3px solid var(--primary-soft);
+  border-top-color: var(--primary-container);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.state-box strong {
+  display: block;
+  color: var(--ink);
+}
+
+.state-box p {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.state-box button {
+  margin-top: 14px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--primary-container);
+  color: #fff;
+}
+
+.app-toast {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: calc(var(--nav-h) + 16px);
+  transform: translateX(-50%);
+  max-width: calc(100% - 40px);
+  padding: 9px 15px;
+  border-radius: 6px;
+  background: rgba(28, 27, 27, 0.92);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
