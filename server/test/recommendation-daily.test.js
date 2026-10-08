@@ -61,7 +61,9 @@ test('首页推荐区域支持横向拖动滑动', () => {
   assert.match(taskPage, /已学/, '学习页未展示已学时长');
   assert.match(taskPage, /loadedSeconds\.value \+ sessionSeconds\.value/, '中途退出后未累计已学时长');
   assert.match(listPage, /applyTaskProgress/, '任务列表未同步学习页进度');
-  assert.doesNotMatch(taskPage, /Math\.max\(5,/, '学习页仍使用 5% 保底进度');
+  assert.match(taskPage, /if \(seconds <= 0 \|\| need <= 0\) return 0/, '学习页进度未从零起算');
+  // 只匹配进度百分比的保底形状；requiredSeconds 的「最短应学 5 秒」用的是 Math.round，不应被误伤
+  assert.doesNotMatch(taskPage, /Math\.max\(5,\s*Math\.min/, '学习页仍使用 5% 保底进度');
   assert.doesNotMatch(taskPage, /if \(!completed\.value\) await persist\(false\)/, '进入任务页仍立即写入进度');
 });
 
