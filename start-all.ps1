@@ -54,6 +54,25 @@ function Wait-Port([int]$Port, [int]$Seconds = 25) {
   return $false
 }
 
+function Get-DockerNetworkJson([string]$Name) {
+  return (docker inspect $Name --format '{{json .NetworkSettings.Networks}}' 2>$null | Out-String).Trim()
+}
+
+function Repair-DockerNetwork([string]$Name) {
+  # After a Docker Desktop restart a container can be Up yet attached to no network:
+  # no IP, -p mappings inactive, host cannot reach 3306. docker restart does not fix
+  # this; the container has to be connected back to bridge explicitly.
+  if ((Get-DockerNetworkJson $Name) -ne '{}') { return $false }
+  Write-Warn ("Container {0} is up but attached to no network; connecting to bridge ..." -f $Name)
+  docker network connect bridge $Name 2>$null | Out-Null
+  if ((Get-DockerNetworkJson $Name) -eq '{}') {
+    Write-Warn ("Cannot attach {0} to the bridge network. Check Docker Desktop." -f $Name)
+    return $false
+  }
+  Write-Ok ("Container {0} attached to bridge network" -f $Name)
+  return $true
+}
+
 function Start-MysqlIfNeeded {
   if (Test-PortOpen 3306) {
     Write-Ok 'MySQL is already listening on 3306'
@@ -81,6 +100,7 @@ function Start-MysqlIfNeeded {
       $name = ($row -split '\s+')[0]
       Write-Info ("Starting Docker container {0} ..." -f $name)
       docker start $name | Out-Null
+      if (-not (Wait-Port 3306 8)) { [void](Repair-DockerNetwork $name) }
     }
   }
 
