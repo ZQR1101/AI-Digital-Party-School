@@ -10,6 +10,7 @@ import CatalogPage from '../Catalog-index.vue'
 import TaskListPage from '../TaskList-index.vue'
 import MinePage from '../Mine-index.vue'
 import AchievePage from '../Achieve-index.vue'
+import AiAssistantPage from '../AiAssistant-index.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -26,6 +27,7 @@ const router = createRouter({
     { path: '/mine', name: 'mine', component: MinePage },
     { path: '/record', name: 'record', component: RecordPage },
     { path: '/achievements', name: 'achievements', component: AchievePage },
+    { path: '/ai-assistant', name: 'ai-assistant', component: AiAssistantPage },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
   ],
 })

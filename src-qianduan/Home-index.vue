@@ -15,6 +15,15 @@
     </section>
 
     <main class="canvas">
+      <button class="ai-entry" type="button" @click="router.push('/ai-assistant')">
+        <span class="ai-entry-icon"><Icon name="smart_toy" /></span>
+        <span class="ai-entry-text">
+          <strong>有疑问？问问 AI 助教</strong>
+          <em>知识问答 · 学习诊断 · 附资料来源</em>
+        </span>
+        <Icon name="arrow_forward" />
+      </button>
+
       <section class="hero-card">
         <div class="hero-head">
           <div>
@@ -297,6 +306,15 @@ function onRecommendDrag(active) {
   gap: 32px;
 }
 .canvas > * { min-width: 0; max-width: 100%; }
+.ai-entry {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 18px;
+  background: linear-gradient(120deg, var(--primary), #a3122a); color: #fff;
+  border-radius: var(--radius-xl); text-align: left; box-shadow: var(--whisper);
+}
+.ai-entry-icon { width: 42px; height: 42px; flex: none; border-radius: 13px; display: grid; place-items: center; background: rgba(255,255,255,.18); font-size: 24px; }
+.ai-entry-text { flex: 1; display: grid; gap: 3px; }
+.ai-entry-text strong { font-size: 16px; }
+.ai-entry-text em { font-size: 12px; opacity: .85; font-style: normal; }
 .hero-card {
   background: var(--surface); border-radius: var(--radius-xl); padding: 24px;
   box-shadow: var(--whisper); border: 1px solid rgba(226, 190, 188, 0.2); position: relative; overflow: hidden;
