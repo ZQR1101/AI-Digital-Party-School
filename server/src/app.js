@@ -22,7 +22,8 @@ const adminAssessmentRoutes = require('./routes/admin/assessments');
 const adminStatisticsRoutes = require('./routes/admin/statistics');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// 后端统一端口：与前端 Vite 代理、README 保持一致（默认 3001）
+const PORT = process.env.PORT || 3001;
 
 // 中间件
 app.use(cors());

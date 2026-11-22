@@ -10,12 +10,12 @@ module.exports = {
       // 环境变量
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3001
       },
       // 开发环境
       env_development: {
         NODE_ENV: 'development',
-        PORT: 3000
+        PORT: 3001
       },
       // 日志配置
       error_file: './logs/err.log',

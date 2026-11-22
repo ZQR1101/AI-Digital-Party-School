@@ -2,7 +2,7 @@
 require('dotenv').config();
 const axios = require('axios');
 
-const BASE = `http://localhost:${process.env.PORT || 3000}`;
+const BASE = `http://localhost:${process.env.PORT || 3001}`;
 
 async function debug() {
   console.log('=== 后端地址:', BASE);

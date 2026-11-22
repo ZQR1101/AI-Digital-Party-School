@@ -154,24 +154,24 @@ if (-not (Test-Path (Join-Path $ServerDir 'src\app.js'))) {
 
 Start-MysqlIfNeeded
 
-Write-Info 'Stopping old processes on 3000 / 5173 / 5174 ...'
-Stop-ListenPort 3000
+Write-Info 'Stopping old processes on 3001 / 5173 / 5174 ...'
+Stop-ListenPort 3001
 Stop-ListenPort 5173
 Stop-ListenPort 5174
 Start-Sleep -Seconds 1
 
 Write-Info 'Starting backend, admin, mobile (one window each) ...'
-Start-ServiceWindow 'PartySchool API :3000' $ServerDir 'node src/app.js'
+Start-ServiceWindow 'PartySchool API :3001' $ServerDir 'node src/app.js'
 Start-ServiceWindow 'PartySchool Admin :5173' $AdminDir 'npm.cmd run dev -- --host 0.0.0.0 --port 5173 --strictPort'
 Start-ServiceWindow 'PartySchool Mobile :5174' $Root 'npm.cmd run dev -- --host 0.0.0.0 --port 5174 --strictPort'
 
-$backendOk = Wait-Port 3000 20
+$backendOk = Wait-Port 3001 20
 $adminOk = Wait-Port 5173 30
 $mobileOk = Wait-Port 5174 30
 
 Write-Host ''
 Write-Host '-------- URLs --------' -ForegroundColor Magenta
-if ($backendOk) { Write-Ok  'API      http://127.0.0.1:3000/api' } else { Write-Warn 'API is not ready on port 3000. Check the API window.' }
+if ($backendOk) { Write-Ok  'API      http://127.0.0.1:3001/api' } else { Write-Warn 'API is not ready on port 3001. Check the API window.' }
 if ($adminOk)   { Write-Ok  'Admin    http://localhost:5173/' } else { Write-Warn 'Admin is not ready on port 5173. Check the Admin window.' }
 if ($mobileOk)  { Write-Ok  'Mobile   http://localhost:5174/' } else { Write-Warn 'Mobile is not ready on port 5174. Check the Mobile window.' }
 Write-Host 'LAN admin   http://<your-ip>:5173/'
