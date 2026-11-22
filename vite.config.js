@@ -9,8 +9,8 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     proxy: {
-      '/api': 'http://127.0.0.1:3000',
-      '/uploads': 'http://127.0.0.1:3000',
+      '/api': 'http://127.0.0.1:3001',
+      '/uploads': 'http://127.0.0.1:3001',
     },
   },
 })
