@@ -7,17 +7,59 @@ class AIClient {
     return Boolean(process.env.AI_API_KEY && process.env.AI_API_URL);
   }
 
+  static toolMode() {
+    // function = 原生 Function Calling；prompt = 旧版提示词 JSON 输出（兼容回退）
+    return (process.env.AI_TOOL_MODE || 'function').toLowerCase();
+  }
+
+  /**
+   * 意图解析：默认使用模型原生 Function Calling（tools/tool_choice）。
+   * 若模型不支持或调用失败，自动回退到提示词 JSON 模式，保证可用性。
+   */
   static async identifyQueryIntent(message, trace = {}) {
     if (!this.isConfigured()) {
       trace.fallbackReason = 'not_configured';
       return null;
     }
+
+    const base = {
+      model: process.env.AI_MODEL || 'deepseek-chat',
+      temperature: 0.1,
+      max_tokens: 600
+    };
+    const userMessages = [
+      {
+        role: 'system',
+        content: '你是党校数据统计意图解析专家。根据用户问题选择最合适的数据统计工具并填写参数。组织未指定或为全校时 organizationName 传 null；询问趋势/哪几个月较低时 groupBy 传 "month"。'
+      },
+      { role: 'user', content: `用户输入：${String(message || '').trim()}` }
+    ];
+    const parse = (content, msg) => queryTools.extractToolCall(content, msg);
+
+    // 1) 原生 Function Calling（优先）
+    if (this.toolMode() === 'function') {
+      trace.toolMode = 'function';
+      const result = await requestModel({
+        budgetMs: modelBudget(12000, 25000),
+        payload: {
+          ...base,
+          tools: queryTools.TOOL_DEFINITIONS,
+          tool_choice: 'auto',
+          messages: userMessages
+        },
+        parse
+      }, trace);
+      if (result) return result;
+      // 原生调用未产出结果，记录后回退到提示词模式
+      trace.functionCallingFallback = trace.errorType || 'no_tool_call';
+    }
+
+    // 2) 提示词 JSON 模式（回退，兼容不支持 tools 的模型/网关）
+    trace.toolMode = 'prompt';
     return requestModel({
       budgetMs: modelBudget(12000, 25000),
       payload: {
-        model: process.env.AI_MODEL || 'deepseek-chat',
-        temperature: 0.1,
-        max_tokens: 600,
+        ...base,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -48,13 +90,10 @@ class AIClient {
 
 规则注意：当用户问及“学习情况”、“完成率怎么样”、“哪几个月完成率较低”时，应选择 query_learning_statistics 工具，metric 为 learning_completion_rate，groupBy 为 "month"。`
           },
-          {
-            role: 'user',
-            content: `用户输入：${String(message || '').trim()}`
-          }
+          { role: 'user', content: `用户输入：${String(message || '').trim()}` }
         ]
       },
-      parse: (content, msg) => queryTools.extractToolCall(content, msg)
+      parse
     }, trace);
   }
 
