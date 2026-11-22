@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const OrganizationService = require('./organizationService');
+const { requireStatisticsRole, resolveOrganizationScope } = require('./organizationAccess');
 const { parseOrganizationQuery, toUtcSqlDate } = require('../ai/queryParser');
 const RagService = require('./ragService');
 const { queryAssessmentStats } = require('./assessmentStatistics');
@@ -22,9 +22,9 @@ function chartMonths(timeRange) {
 
 class OrganizationQueryService {
   static async query(message, actor) {
+    requireStatisticsRole(actor);
     const parsed = parseOrganizationQuery(message);
-    const organization = await this.resolveOrganization(parsed.organizationName, actor);
-    const orgIds = organization ? await OrganizationService.getDescendantIds(organization.id) : null;
+    const { organization, orgIds } = await resolveOrganizationScope(actor, { name: parsed.organizationName });
     const result = await this.executeMetric(parsed.metric, orgIds, parsed.timeRange, parsed.groupBy);
     const knowledge = await RagService.search(`${parsed.metricDefinition.name} 统计口径`, 2);
     const scopeName = organization ? organization.name : '全部组织';
@@ -70,33 +70,6 @@ class OrganizationQueryService {
         excerpt: item.content
       }))]
     };
-  }
-
-  static async resolveOrganization(name, actor) {
-    let home = null;
-    let allowedIds = null;
-    if (actor.role === 'secretary') {
-      home = actor.organizationId ? await OrganizationService.getById(Number(actor.organizationId)) : null;
-      if (!home) throw Object.assign(new Error('当前账号未分配有效的查询组织'), { statusCode: 403 });
-      allowedIds = await OrganizationService.getDescendantIds(home.id);
-    }
-    if (!name) return home;
-
-    const allowed = allowedIds ? `AND id IN (${placeholders(allowedIds)})` : '';
-    const [rows] = await db.query(
-      `SELECT id, name, (name = ?) AS exactMatch FROM organizations
-       WHERE LOCATE(?, name) > 0 ${allowed}
-       ORDER BY exactMatch DESC, name ASC, id ASC LIMIT 2`,
-      [name, name, ...(allowedIds || [])]
-    );
-    if (!rows.length) {
-      const message = allowedIds ? '未找到可查询的组织，请提供权限范围内的完整组织名称' : `未找到组织「${name}」，请核对统计周期和组织名称`;
-      throw Object.assign(new Error(message), { statusCode: allowedIds ? 403 : 400 });
-    }
-    if (rows.length > 1 && Number(rows[0].exactMatch) === Number(rows[1].exactMatch)) {
-      throw Object.assign(new Error('匹配到多个组织，请提供能区分它们的完整组织名称'), { statusCode: 400 });
-    }
-    return rows[0];
   }
 
   static buildScope(orgIds, alias = 'u') {

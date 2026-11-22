@@ -55,7 +55,7 @@ test('综合评分由固定权重确定', () => {
 
 test('AI JSON提取与额外数字检测', () => {
   assert.deepEqual(extractJson('```json\n{"summary":"良好"}\n```'), { summary: '良好' });
-  assert.deepEqual(extractJson('{"summary":"良好"'), { summary: '良好' });
+  assert.throws(() => extractJson('{"summary":"良好"'), /不是完整的JSON/);
   assert.equal(containsUnexpectedNumber({ summary: '综合得分86分' }, new Set(['86'])), false);
   assert.equal(containsUnexpectedNumber({ summary: '排名第3' }, new Set(['86'])), true);
 });

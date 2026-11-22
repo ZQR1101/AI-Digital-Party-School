@@ -56,7 +56,7 @@ function applyDailyOrder(ranked = [], savedIds = [], limit = 5) {
 }
 
 class RecommendationService {
-  static async getForUser(userId, limit = 5) {
+  static async getForUser(userId, limit = 5, trace = {}) {
     const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
     const dayKey = beijingDayKey();
     const [snapshot, assessmentRevision] = await Promise.all([
@@ -68,6 +68,7 @@ class RecommendationService {
     if (sameRevision && snapshot.items.length) {
       const kept = await this.withCurrentContentUrls(userId, snapshot.items);
       if (kept.length && (kept.length >= safeLimit || kept.length === snapshot.items.length)) {
+        trace.resultMode = 'cache';
         return this.present(kept.slice(0, safeLimit), { recommendationMode: 'daily_cache', cached: true });
       }
     }
@@ -79,26 +80,15 @@ class RecommendationService {
     const historySignals = this.buildHistorySignals(profile.learningHistory);
     const ruleRanked = this.rankCandidates(live, profile.weakCategories, historySignals);
     const candidatePool = ruleRanked.slice(0, 20);
-    let recommendations = candidatePool;
-    let recommendationMode = 'rules_fallback';
-    let aiError = null;
-    try {
-      const aiRanking = await AIClient.rankLearningContents(profile, candidatePool);
-      if (aiRanking?.length) {
-        recommendations = this.mergeAIRanking(candidatePool, aiRanking);
-        recommendationMode = 'ai_hybrid';
-      }
-    } catch (error) {
-      aiError = error.message;
-      console.warn('[AI recommendation fallback]', error.message);
-    }
-
-    recommendations = applyDailyOrder(recommendations, sameRevision ? snapshot.ids : [], 20).map(toPublicItem);
+    const aiRanking = await AIClient.rankLearningContents(profile, candidatePool, trace);
+    trace.resultMode = aiRanking?.length ? 'model' : 'rules';
+    const ranked = aiRanking?.length ? this.mergeAIRanking(candidatePool, aiRanking) : candidatePool;
+    const recommendations = applyDailyOrder(ranked, sameRevision ? snapshot.ids : [], 20).map(toPublicItem);
     await this.saveDailySnapshot(userId, dayKey, recommendations, revision);
     const current = await this.withCurrentContentUrls(userId, recommendations);
     return this.present(current.slice(0, safeLimit), {
-      recommendationMode,
-      aiError,
+      recommendationMode: trace.resultMode === 'model' ? 'ai_hybrid' : 'rules_fallback',
+      aiError: trace.errorType,
       profile,
       historySignals,
     });
@@ -281,7 +271,7 @@ class RecommendationService {
       `SELECT id FROM contents WHERE id = ? AND isPublic = 1 AND status = 'published'`,
       [contentId]
     );
-    if (!rows.length) throw new Error('公共学习内容不存在或已下架');
+    if (!rows.length) throw Object.assign(new Error('公共学习内容不存在或已下架'), { statusCode: 404 });
     await db.query(
       `INSERT INTO recommendation_feedback (userId, contentId, action)
        VALUES (?, ?, ?)`,

@@ -37,18 +37,13 @@ function offsetRangeStart(start, end) {
 }
 
 class StatisticsService {
-  static async getOrgIds(organizationId) {
-    if (!organizationId) return null;
-    return OrganizationService.getDescendantIds(Number(organizationId));
-  }
-
   static buildUserScope(orgIds) {
-    if (!orgIds || !orgIds.length) return { sql: '', params: [] };
+    if (!orgIds) return { sql: '', params: [] };
+    if (!orgIds.length) return { sql: ' AND 1 = 0', params: [] };
     return { sql: ` AND u.organizationId IN (${placeholders(orgIds)})`, params: orgIds };
   }
 
-  static async getDashboard({ organizationId, range = '6m' } = {}) {
-    const orgIds = await this.getOrgIds(organizationId);
+  static async getDashboard({ orgIds, range = '6m' }) {
     const bounds = getRangeBounds(range);
     const completionRange = resolveTimeRange(dashboardTimeRange(range));
     const [overview, activityTrend, passRateTrend, ranking] = await Promise.all([
@@ -71,15 +66,22 @@ class StatisticsService {
 
   static async getOverview(orgIds, completionRange) {
     const scope = this.buildUserScope(orgIds);
+    const taskScope = orgIds == null ? '' : orgIds.length ? ' AND organizationId IN (?)' : ' AND 1 = 0';
+    const taskParams = orgIds?.length ? [orgIds] : [];
     const [[userCount]] = await db.query(
       `SELECT COUNT(*) AS total FROM users u WHERE u.status = 1 AND u.role = 'member'${scope.sql}`,
       scope.params
     );
     const [[taskCount]] = await db.query(
-      `SELECT COUNT(*) AS total FROM learning_tasks WHERE status = 'published'`
+      `SELECT COUNT(*) AS total FROM learning_tasks WHERE status = 'published'${taskScope}`,
+      taskParams
     );
+    const contentScope = orgIds == null ? '' : `AND (c.isPublic = 1 OR EXISTS (
+      SELECT 1 FROM learning_tasks WHERE contentId = c.id AND status = 'published'${taskScope}
+    ))`;
     const [[contentCount]] = await db.query(
-      `SELECT COUNT(*) AS total FROM contents WHERE status = 'published'`
+      `SELECT COUNT(*) AS total FROM contents c WHERE c.status = 'published' ${contentScope}`,
+      taskParams
     );
     const [[totalStudy]] = await db.query(
       `SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds
@@ -96,8 +98,9 @@ class StatisticsService {
       scope.params
     );
     const [[newContents]] = await db.query(
-      `SELECT COUNT(*) AS total FROM contents
-       WHERE status = 'published' AND createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)`
+      `SELECT COUNT(*) AS total FROM contents c
+       WHERE c.status = 'published' AND c.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) ${contentScope}`,
+      taskParams
     );
 
     const totalMembers = Number(userCount.total || 0);
@@ -180,15 +183,18 @@ class StatisticsService {
   static async getBranchRanking(orgIds, completionRange) {
     let sql = `SELECT id, name FROM organizations WHERE type = 'branch'`;
     const params = [];
-    if (orgIds && orgIds.length) {
+    if (orgIds && !orgIds.length) return [];
+    if (orgIds) {
       sql += ` AND id IN (${placeholders(orgIds)})`;
       params.push(...orgIds);
     }
     sql += ' ORDER BY id';
     const [orgs] = await db.query(sql, params);
+    const allowed = orgIds ? new Set(orgIds) : null;
     const ranking = [];
     for (const org of orgs) {
-      const descendantIds = await OrganizationService.getDescendantIds(org.id);
+      const descendants = await OrganizationService.getDescendantIds(org.id);
+      const descendantIds = allowed ? descendants.filter(id => allowed.has(id)) : descendants;
       const overview = await this.getOverview(descendantIds, completionRange);
       ranking.push({
         organizationId: org.id,

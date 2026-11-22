@@ -43,18 +43,17 @@ class OrganizationService {
 
   static async getDescendantIds(orgId) {
     const [rows] = await db.query('SELECT id, parentId FROM organizations');
-    const ids = [];
-    const collect = (parentId) => {
-      rows.forEach((row) => {
-        if (idsEqual(row.parentId, parentId)) {
-          ids.push(Number(row.id));
-          collect(row.id);
-        }
-      });
-    };
-    collect(orgId);
-    ids.push(Number(orgId));
-    return [...new Set(ids)];
+    const root = Number(orgId);
+    if (!rows.some(row => Number(row.id) === root)) return [];
+    const ids = new Set();
+    const pending = [root];
+    while (pending.length) {
+      const id = pending.pop();
+      if (ids.has(id)) continue;
+      ids.add(id);
+      pending.push(...rows.filter(row => idsEqual(row.parentId, id)).map(row => Number(row.id)));
+    }
+    return [...ids];
   }
 
   static async getAncestorIds(orgId) {

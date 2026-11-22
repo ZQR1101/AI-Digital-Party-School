@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const StatisticsService = require('../../services/statisticsService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate } = require('../../middleware/auth');
+const { loadActiveActor, resolveOrganizationScope } = require('../../services/organizationAccess');
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate);
 
 /**
  * GET /api/admin/statistics
@@ -13,13 +14,18 @@ router.use(authenticate, requireAdmin);
 router.get('/', async (req, res) => {
   try {
     const { organizationId, range = '6m' } = req.query;
+    const actor = await loadActiveActor(req.user);
+    const { orgIds } = await resolveOrganizationScope(actor, { id: organizationId === '' ? null : organizationId });
     const dashboard = await StatisticsService.getDashboard({
-      organizationId: organizationId || null,
+      orgIds,
       range,
     });
     return ResponseHelper.success(res, dashboard);
   } catch (err) {
-    console.error('Statistics error:', err);
+    if ([400, 401, 403].includes(err.statusCode)) {
+      return ResponseHelper.error(res, err.message, err.statusCode, err.statusCode);
+    }
+    console.error('Statistics query failed:', err.code || 'internal_error');
     return ResponseHelper.error(res);
   }
 });

@@ -4,7 +4,7 @@ const { calculateEvaluation } = require('../ai/scoring');
 const { AIClient } = require('./aiClient');
 
 class ReportService {
-  static async generateReport(userId) {
+  static async generateReport(userId, trace = {}) {
     const profile = await LearningProfileService.getProfile(userId);
     const evaluation = calculateEvaluation(profile);
     const facts = {
@@ -30,11 +30,13 @@ class ReportService {
     };
 
     const status = evaluation.score == null ? 'insufficient_data' : 'ready';
+    if (status === 'insufficient_data') trace.fallbackReason = 'insufficient_data';
     const [recommendations, modelNarrative] = await Promise.all([
       RecommendationService.getReportRecommendations(profile),
-      status === 'ready' ? this.generateModelNarrative(aiInput) : null
+      status === 'ready' ? AIClient.generateEvaluationNarrative(aiInput, trace) : null
     ]);
     const generatedBy = modelNarrative ? 'llm' : 'rules';
+    trace.resultMode = modelNarrative ? 'model' : 'rules';
     const narrative = modelNarrative || this.generateFallbackNarrative(profile, evaluation);
 
     return {
@@ -67,15 +69,6 @@ class ReportService {
       generatedBy,
       disclaimer: '本报告由系统依据学习数据自动生成，仅用于学习辅助，不替代正式组织评价。'
     };
-  }
-
-  static async generateModelNarrative(input) {
-    try {
-      return await AIClient.generateEvaluationNarrative(input);
-    } catch (error) {
-      console.warn('AI评语生成失败，使用确定性模板:', error.message);
-      return null;
-    }
   }
 
   static generateFallbackNarrative(profile, evaluation) {
