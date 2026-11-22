@@ -1,7 +1,7 @@
 const path = require('path');
 const DocumentParser = require('../rag/documentParser');
 const { BM25Retriever } = require('../rag/bm25');
-const { VectorStore } = require('../rag/vectorStore');
+const { VectorStore, EmbeddingClient } = require('../rag/vectorStore');
 const { reciprocalRankFusion } = require('../rag/fusion');
 const Reranker = require('../rag/reranker');
 const { AIClient } = require('./aiClient');
@@ -55,6 +55,20 @@ class RagService {
     // 3. Reranker 深度语义精排
     const reranked = await Reranker.rerank(query, rrfCandidates, topK);
     return reranked;
+  }
+
+  /**
+   * 检索后端诊断：暴露 Embedding/Reranker 实际使用的模型与是否语义检索。
+   * 用于评测报告与运维排障，确认真实模型是否生效。
+   */
+  static getBackendStatus() {
+    return {
+      embedding: EmbeddingClient.getBackendInfo(),
+      reranker: Reranker.getBackendInfo(),
+      chunkCount: this.chunks.length,
+      vectorDim: this.vectorStore.vectorDim,
+      initialized: this.isInitialized
+    };
   }
 
   /**

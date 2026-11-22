@@ -1,0 +1,439 @@
+{
+  "generatedAt": "2026-11-22T14:41:41.237Z",
+  "evalCount": 19,
+  "k": 3,
+  "chunkCount": 50,
+  "backend": {
+    "embedding": {
+      "configured": false,
+      "model": "BAAI/bge-m3",
+      "dim": 1024,
+      "backend": "local-hash",
+      "semantic": false
+    },
+    "reranker": {
+      "configured": false,
+      "model": "BAAI/bge-reranker-v2-m3",
+      "backend": "local-keyword",
+      "semantic": false
+    }
+  },
+  "summary": {
+    "bm25": {
+      "hitAtK": 1,
+      "recallAtK": 1,
+      "mrr": 0.9737
+    },
+    "vector": {
+      "hitAtK": 0.8947,
+      "recallAtK": 0.8947,
+      "mrr": 0.8333
+    },
+    "hybrid": {
+      "hitAtK": 0.9474,
+      "recallAtK": 0.9474,
+      "mrr": 0.9211
+    }
+  },
+  "details": [
+    {
+      "query": "支部每年开的那次组织生活 和领导干部的批评会是不是一回事",
+      "relevant": [
+        "党组织生活制度规范.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "三会一课到底指的是哪三会哪一课",
+      "relevant": [
+        "党组织生活制度规范.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "党员之间谈心谈话 以及年底打分评议是怎么安排的",
+      "relevant": [
+        "党组织生活制度规范.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "刚入党还没转正的预备党员算不算有党龄 这个年限从哪天起算",
+      "relevant": [
+        "党员组织关系与党籍管理.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "调到别的单位上班 党组织关系需不需要跟着转走",
+      "relevant": [
+        "党员组织关系与党籍管理.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "月工资四千块 每个月党费要交多少比例",
+      "relevant": [
+        "党费收缴使用与管理规定.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "大家交上来的党费一般用在哪些地方",
+      "relevant": [
+        "党费收缴使用与管理规定.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "从递交申请到成为正式党员 中间要经过哪些步骤",
+      "relevant": [
+        "党员教育管理与发展工作细则.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 0,
+        "recall": 0,
+        "rr": 0
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "作为一名党员 可以行使哪些权利",
+      "relevant": [
+        "党章核心要义与党员权利义务.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "党员必须做好的八件事具体是哪些",
+      "relevant": [
+        "党章核心要义与党员权利义务.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "违反党纪之后 可能受到哪几种处分",
+      "relevant": [
+        "党规党纪与纪律处分要点.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 0.5
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "支部委员会任期满了 改选新的班子要走什么流程",
+      "relevant": [
+        "党的基层组织建设与换届选举.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "基层党支部平时主要要干好哪些事情",
+      "relevant": [
+        "党的基层组织建设与换届选举.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 0.5
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "规定里对新闻报道和宣传报道有什么具体约束",
+      "relevant": [
+        "中央八项规定精神与作风建设.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "形式主义官僚主义享乐主义和奢靡之风分别指什么",
+      "relevant": [
+        "中央八项规定精神与作风建设.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "党史上那个生死攸关的转折点是哪次会议",
+      "relevant": [
+        "党史学习教育要点.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "我们党的发展历史大致可以分成哪几个阶段",
+      "relevant": [
+        "党史学习教育要点.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 0.3333333333333333
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 0.5
+      }
+    },
+    {
+      "query": "后台看板里学习完成率这个指标是怎么算出来的",
+      "relevant": [
+        "指标统计口径.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "hybrid": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      }
+    },
+    {
+      "query": "怎样才算一名活跃的党员 统计上怎么定义",
+      "relevant": [
+        "指标统计口径.md"
+      ],
+      "bm25": {
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
+      },
+      "vector": {
+        "hit": 0,
+        "recall": 0,
+        "rr": 0
+      },
+      "hybrid": {
+        "hit": 0,
+        "recall": 0,
+        "rr": 0
+      }
+    }
+  ]
+}

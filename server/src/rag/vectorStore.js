@@ -1,9 +1,9 @@
 const axios = require('axios');
 const { tokenize } = require('./bm25');
 
-const VECTOR_DIM = 1024;
+const DEFAULT_VECTOR_DIM = 1024;
 
-function hashTokenToDim(token, maxDim = VECTOR_DIM) {
+function hashTokenToDim(token, maxDim = DEFAULT_VECTOR_DIM) {
   let hash = 2166136261;
   for (let i = 0; i < token.length; i++) {
     hash ^= token.charCodeAt(i);
@@ -22,10 +22,9 @@ function normalizeVector(vec) {
 }
 
 function cosineSimilarity(vecA, vecB) {
+  const len = Math.min(vecA.length, vecB.length);
   let dot = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dot += vecA[i] * vecB[i];
-  }
+  for (let i = 0; i < len; i++) dot += vecA[i] * vecB[i];
   return dot;
 }
 
@@ -60,37 +59,103 @@ async function qdrantRequest(method, url, data, timeoutMs = 600) {
   }
 }
 
+/**
+ * EmbeddingClient —— 真实语义向量客户端（OpenAI / SiliconFlow 兼容）。
+ *
+ * 配置优先级：
+ *   EMBEDDING_API_URL  OpenAI 兼容的 embeddings 端点；未配置则判定为“未接入真实模型”。
+ *   EMBEDDING_API_KEY  该服务专用 Key；缺省回退到 AI_API_KEY。
+ *   EMBEDDING_MODEL    模型名，默认 BAAI/bge-m3。
+ *   EMBEDDING_DIM      向量维度，默认 1024（BGE-M3）；真实返回维度会自动覆盖。
+ *   EMBEDDING_BATCH    单次请求文本数，默认 32。
+ *   EMBEDDING_TIMEOUT_MS 请求超时，默认 8000ms。
+ *
+ * 未配置或调用失败时降级为本地哈希特征向量（关键词级，非语义），
+ * 并通过 lastBackendsnapshot 暴露当前实际使用的后端，便于评测与排障。
+ */
 class EmbeddingClient {
+  static _envSnapshot() {
+    return {
+      configured: Boolean(process.env.EMBEDDING_API_URL),
+      model: process.env.EMBEDDING_MODEL || 'BAAI/bge-m3',
+      dim: Number(process.env.EMBEDDING_DIM || DEFAULT_VECTOR_DIM)
+    };
+  }
+
+  static getBackendInfo() {
+    return { ...(this.lastBackend || this._envSnapshot()) };
+  }
+
   static isApiConfigured() {
     return Boolean(process.env.EMBEDDING_API_URL);
   }
 
+  static get apiKey() {
+    return process.env.EMBEDDING_API_KEY || process.env.AI_API_KEY || '';
+  }
+
+  static get timeoutMs() {
+    return Number(process.env.EMBEDDING_TIMEOUT_MS || 8000);
+  }
+
+  static get batchSize() {
+    return Math.max(1, Number(process.env.EMBEDDING_BATCH || 32));
+  }
+
   static async embedTexts(texts) {
+    if (!texts.length) return [];
     if (!this.isApiConfigured()) {
+      this.lastBackend = { ...this._envSnapshot(), backend: 'local-hash', semantic: false };
       return texts.map(t => this.localEmbed(t));
     }
 
-    try {
-      const response = await axios.post(
-        process.env.EMBEDDING_API_URL,
-        { input: texts, model: process.env.EMBEDDING_MODEL || 'BAAI/bge-m3' },
-        {
-          headers: process.env.AI_API_KEY ? { Authorization: `Bearer ${process.env.AI_API_KEY}` } : {},
-          timeout: 5000
-        }
-      );
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        return response.data.data.map(item => normalizeVector(item.embedding));
-      }
-    } catch (err) {
-      console.warn('[EmbeddingClient] API 调用失败，自动降级为语义特征嵌入:', err.message);
-    }
+    const headers = {};
+    if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;
 
-    return texts.map(t => this.localEmbed(t));
+    try {
+      const allVectors = [];
+      const batch = this.batchSize;
+      for (let i = 0; i < texts.length; i += batch) {
+        const slice = texts.slice(i, i + batch);
+        const response = await axios.post(
+          process.env.EMBEDDING_API_URL,
+          {
+            model: process.env.EMBEDDING_MODEL || 'BAAI/bge-m3',
+            input: slice,
+            encoding_format: 'float'
+          },
+          { headers, timeout: this.timeoutMs, proxy: false }
+        );
+        const rows = response.data?.data;
+        if (!Array.isArray(rows) || rows.length !== slice.length) {
+          throw new Error('embeddings 响应 data 数组长度与输入不一致');
+        }
+        // 响应可能按 index 乱序，需按 index 还原
+        const indexed = rows.map((item, pos) => ({
+          index: Number.isInteger(item.index) ? item.index : pos,
+          embedding: item.embedding
+        })).sort((a, b) => a.index - b.index);
+        for (const item of indexed) {
+          if (!Array.isArray(item.embedding) || !item.embedding.length) {
+            throw new Error('embeddings 响应包含空向量');
+          }
+          allVectors.push(normalizeVector(Float32Array.from(item.embedding)));
+        }
+      }
+      const dim = allVectors[0]?.length || DEFAULT_VECTOR_DIM;
+      this.lastBackend = {
+        ...this._envSnapshot(), dim, backend: 'api', semantic: true
+      };
+      return allVectors;
+    } catch (err) {
+      console.warn('[EmbeddingClient] API 调用失败，降级为本地哈希特征向量:', err.message);
+      this.lastBackend = { ...this._envSnapshot(), backend: 'local-hash', semantic: false, error: err.message };
+      return texts.map(t => this.localEmbed(t));
+    }
   }
 
   static localEmbed(text) {
-    const vec = new Float32Array(VECTOR_DIM);
+    const vec = new Float32Array(DEFAULT_VECTOR_DIM);
     const tokens = tokenize(text);
     if (!tokens.length) return vec;
 
@@ -113,6 +178,7 @@ class VectorStore {
     this.qdrantAvailable = null;
     this.qdrantCheckInFlight = null; // 合并并发探测，避免重复建连
     this.inMemoryPoints = []; // [{ id, vector, chunk }]
+    this.vectorDim = DEFAULT_VECTOR_DIM;
   }
 
   /**
@@ -158,6 +224,7 @@ class VectorStore {
 
     const texts = chunks.map(c => `${c.title}\n${c.content}`);
     const vectors = await EmbeddingClient.embedTexts(texts);
+    this.vectorDim = vectors[0]?.length || DEFAULT_VECTOR_DIM;
 
     for (let i = 0; i < chunks.length; i++) {
       this.inMemoryPoints.push({
@@ -172,7 +239,7 @@ class VectorStore {
 
     try {
       await qdrantRequest('put', `${this.qdrantUrl}/collections/${this.collectionName}`, {
-        vectors: { size: VECTOR_DIM, distance: 'Cosine' }
+        vectors: { size: this.vectorDim, distance: 'Cosine' }
       }, 1500).catch(() => {});
 
       const points = this.inMemoryPoints.map((p, idx) => ({
@@ -233,4 +300,4 @@ class VectorStore {
   }
 }
 
-module.exports = { VectorStore, EmbeddingClient, cosineSimilarity, normalizeVector };
+module.exports = { VectorStore, EmbeddingClient, cosineSimilarity, normalizeVector, DEFAULT_VECTOR_DIM };

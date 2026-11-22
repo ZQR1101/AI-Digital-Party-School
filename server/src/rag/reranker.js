@@ -1,44 +1,89 @@
 const axios = require('axios');
 const { tokenize } = require('./bm25');
 
+/**
+ * Reranker —— 真实语义重排客户端（SiliconFlow / OpenAI 兼容 rerank 接口）。
+ *
+ * 配置：
+ *   RERANKER_API_URL   兼容 /v1/rerank 的端点；未配置则使用本地关键词重排。
+ *   RERANKER_API_KEY   该服务专用 Key；缺省回退到 AI_API_KEY / EMBEDDING_API_KEY。
+ *   RERANKER_MODEL     模型名，默认 BAAI/bge-reranker-v2-m3。
+ *   RERANKER_TIMEOUT_MS 请求超时，默认 8000ms。
+ *
+ * 调用失败时降级为本地精准关键词重排，并通过 lastBackend 暴露实际后端。
+ */
 class Reranker {
   static isApiConfigured() {
     return Boolean(process.env.RERANKER_API_URL);
+  }
+
+  static get apiKey() {
+    return process.env.RERANKER_API_KEY
+      || process.env.EMBEDDING_API_KEY
+      || process.env.AI_API_KEY
+      || '';
+  }
+
+  static get timeoutMs() {
+    return Number(process.env.RERANKER_TIMEOUT_MS || 8000);
+  }
+
+  static getBackendInfo() {
+    return {
+      configured: this.isApiConfigured(),
+      model: process.env.RERANKER_MODEL || 'BAAI/bge-reranker-v2-m3',
+      ...(this.lastBackend || {})
+    };
   }
 
   static async rerank(query, candidates, topK = 5) {
     if (!candidates.length) return [];
 
     if (this.isApiConfigured()) {
+      const headers = {};
+      if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;
       try {
         const response = await axios.post(
           process.env.RERANKER_API_URL,
           {
-            model: process.env.RERANKER_MODEL || 'BAAI/bge-reranker-large',
+            model: process.env.RERANKER_MODEL || 'BAAI/bge-reranker-v2-m3',
             query,
-            documents: candidates.map(c => `${c.chunk.title}\n${c.chunk.content}`)
+            documents: candidates.map(c => `${c.chunk.title}\n${c.chunk.content}`),
+            top_n: Math.min(topK, candidates.length)
           },
-          {
-            headers: process.env.AI_API_KEY ? { Authorization: `Bearer ${process.env.AI_API_KEY}` } : {},
-            timeout: 5000
-          }
+          { headers, timeout: this.timeoutMs, proxy: false }
         );
 
-        if (response.data?.results && Array.isArray(response.data.results)) {
-          const scored = response.data.results.map(r => ({
-            chunk: candidates[r.index].chunk,
-            relevanceScore: Math.max(0, Math.min(1, Number(r.relevance_score || 0))),
-            rrfScore: candidates[r.index].rrfScore
-          }));
+        const results = response.data?.results;
+        if (Array.isArray(results)) {
+          const scored = results.map(r => {
+            const idx = Number(r.index);
+            const candidate = candidates[idx];
+            if (!candidate) return null;
+            return {
+              chunk: candidate.chunk,
+              relevanceScore: Math.max(0, Math.min(1, Number(r.relevance_score ?? r.score ?? 0))),
+              rrfScore: candidate.rrfScore,
+              bm25Score: candidate.bm25Score,
+              vectorScore: candidate.vectorScore,
+              model: 'reranker-api'
+            };
+          }).filter(Boolean);
           scored.sort((a, b) => b.relevanceScore - a.relevanceScore);
+          this.lastBackend = { backend: 'api', semantic: true, scored: scored.length };
           return scored.slice(0, topK);
         }
       } catch (err) {
-        console.warn('[Reranker] API 重排调用失败，使用内置精准重排引擎:', err.message);
+        console.warn('[Reranker] API 重排调用失败，降级为本地精准重排:', err.message);
+        this.lastBackend = { backend: 'local-keyword', semantic: false, error: err.message };
       }
     }
 
-    return this.localRerank(query, candidates, topK);
+    const result = this.localRerank(query, candidates, topK);
+    if (!this.lastBackend || this.lastBackend.backend !== 'local-keyword') {
+      this.lastBackend = { backend: 'local-keyword', semantic: false };
+    }
+    return result;
   }
 
   static localRerank(query, candidates, topK = 5) {
@@ -49,7 +94,6 @@ class Reranker {
       const chunk = item.chunk;
       const titleLower = String(chunk.title || '').toLowerCase();
       const contentLower = String(chunk.content || '').toLowerCase();
-      const combined = `${titleLower}\n${contentLower}`;
 
       let score = 0;
 
@@ -68,7 +112,6 @@ class Reranker {
       if (contentLower.includes(qRaw)) {
         score += 0.30;
       } else {
-        // N-gram coverage in content
         let tokenMatches = 0;
         for (const t of qTokens) {
           if (contentLower.includes(t)) tokenMatches += 1;
@@ -92,7 +135,8 @@ class Reranker {
         relevanceScore: calibrated,
         rrfScore: item.rrfScore,
         bm25Score: item.bm25Score,
-        vectorScore: item.vectorScore
+        vectorScore: item.vectorScore,
+        model: 'local-keyword'
       };
     });
 
