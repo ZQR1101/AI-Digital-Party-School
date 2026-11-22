@@ -42,15 +42,15 @@ test('组织名称与时间范围辅助解析', () => {
 
 test('综合评分由固定权重确定', () => {
   const result = calculateEvaluation({
+    totalTasks: 10,
     completionRate: 90,
     activeDays: 20,
     totalStudyHours: 20,
-    avgScore: 80,
-    weakCategories: []
+    assessments: { quiz: { count: 1, avgScore: 70 }, exam: { count: 1, avgScore: 90 } }
   });
   assert.equal(result.score, 88);
   assert.equal(result.level, '良好');
-  assert.equal(result.ruleVersion, '2026.1');
+  assert.equal(result.ruleVersion, '2026.2');
 });
 
 test('AI JSON提取与额外数字检测', () => {

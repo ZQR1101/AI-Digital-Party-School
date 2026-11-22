@@ -94,7 +94,7 @@ router.post('/recommendations/:contentId/feedback', async (req, res) => {
 router.get('/report/me', async (req, res) => {
   try {
     const report = await ReportService.generateReport(req.user.userId);
-    await AIAuditService.record({ actor: req.user, scene: 'learning_evaluation', question: '生成个人学习报告', resultSummary: `${report.score}分/${report.level}` });
+    await AIAuditService.record({ actor: req.user, scene: 'learning_evaluation', question: '生成个人学习报告', resultSummary: report.score == null ? report.level : `${report.score}分/${report.level}` });
     return ResponseHelper.success(res, report);
   } catch (error) {
     return handleError(res, error);

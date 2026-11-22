@@ -1,5 +1,8 @@
 const db = require('../config/db');
 const OrganizationService = require('./organizationService');
+const { dashboardTimeRange, resolveTimeRange } = require('../ai/queryParser');
+const { queryTaskCompletion } = require('./taskCompletionStatistics');
+const { queryAssessmentStats } = require('./assessmentStatistics');
 
 function placeholders(values) {
   return values.map(() => '?').join(',');
@@ -47,11 +50,12 @@ class StatisticsService {
   static async getDashboard({ organizationId, range = '6m' } = {}) {
     const orgIds = await this.getOrgIds(organizationId);
     const bounds = getRangeBounds(range);
+    const completionRange = resolveTimeRange(dashboardTimeRange(range));
     const [overview, activityTrend, passRateTrend, ranking] = await Promise.all([
-      this.getOverview(orgIds),
+      this.getOverview(orgIds, completionRange),
       this.getActivityTrend(orgIds, range, bounds),
       this.getPassRateTrend(orgIds),
-      this.getBranchRanking(orgIds),
+      this.getBranchRanking(orgIds, completionRange),
     ]);
     const insight = this.buildInsight(overview, passRateTrend);
     return {
@@ -65,7 +69,7 @@ class StatisticsService {
     };
   }
 
-  static async getOverview(orgIds) {
+  static async getOverview(orgIds, completionRange) {
     const scope = this.buildUserScope(orgIds);
     const [[userCount]] = await db.query(
       `SELECT COUNT(*) AS total FROM users u WHERE u.status = 1 AND u.role = 'member'${scope.sql}`,
@@ -84,29 +88,8 @@ class StatisticsService {
        WHERE 1=1${scope.sql}`,
       scope.params
     );
-    const [[completion]] = await db.query(
-      `SELECT COUNT(DISTINCT u.id) AS totalMembers,
-              COUNT(DISTINCT CASE WHEN lr.status = 'completed' THEN u.id END) AS completedMembers
-       FROM users u
-       LEFT JOIN learning_records lr ON lr.userId = u.id
-       WHERE u.role = 'member' AND u.status = 1${scope.sql}`,
-      scope.params
-    );
-    const [[avgScore]] = await db.query(
-      `SELECT COALESCE(AVG(er.score), 0) AS avgScore
-       FROM exam_records er
-       JOIN users u ON er.userId = u.id
-       WHERE 1=1${scope.sql}`,
-      scope.params
-    );
-    const [[passRow]] = await db.query(
-      `SELECT COUNT(*) AS examCount,
-              SUM(CASE WHEN er.score >= 60 THEN 1 ELSE 0 END) AS passedCount
-       FROM exam_records er
-       JOIN users u ON er.userId = u.id
-       WHERE 1=1${scope.sql}`,
-      scope.params
-    );
+    const completion = await queryTaskCompletion(orgIds, completionRange);
+    const [examStats] = await queryAssessmentStats({ scope });
     const [[newMembers]] = await db.query(
       `SELECT COUNT(*) AS total FROM users u
        WHERE u.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) AND u.role = 'member'${scope.sql}`,
@@ -119,8 +102,8 @@ class StatisticsService {
 
     const totalMembers = Number(userCount.total || 0);
     const totalSeconds = Number(totalStudy.totalSeconds || 0);
-    const examCount = Number(passRow.examCount || 0);
-    const passedCount = Number(passRow.passedCount || 0);
+    const examCount = Number(examStats.examCount);
+    const passedCount = Number(examStats.passedCount);
     const avgStudyHours = totalMembers
       ? Math.round((totalSeconds / 3600 / totalMembers) * 10) / 10
       : 0;
@@ -131,10 +114,9 @@ class StatisticsService {
       totalContents: Number(contentCount.total || 0),
       totalStudyHours: Math.round((totalSeconds / 3600) * 100) / 100,
       avgStudyHours,
-      completionRate: Number(completion.totalMembers) > 0
-        ? Math.round((Number(completion.completedMembers) / Number(completion.totalMembers)) * 100)
-        : 0,
-      avgScore: Math.round(Number(avgScore.avgScore || 0) * 100) / 100,
+      completionRate: completion.value,
+      completionSampleSize: completion.denominator,
+      avgScore: Math.round(Number(examStats.avgScore) * 100) / 100,
       passRate: examCount ? Math.round((passedCount / examCount) * 1000) / 10 : 0,
       memberChange: Number(newMembers.total || 0),
       contentChange: Number(newContents.total || 0),
@@ -184,17 +166,7 @@ class StatisticsService {
 
   static async getPassRateTrend(orgIds) {
     const scope = this.buildUserScope(orgIds);
-    const [rows] = await db.query(
-      `SELECT YEAR(er.submittedAt) AS y, QUARTER(er.submittedAt) AS q,
-              COUNT(*) AS examCount,
-              SUM(CASE WHEN er.score >= 60 THEN 1 ELSE 0 END) AS passedCount
-       FROM exam_records er
-       JOIN users u ON er.userId = u.id
-       WHERE er.submittedAt IS NOT NULL${scope.sql}
-       GROUP BY y, q
-       ORDER BY y, q`,
-      scope.params
-    );
+    const rows = await queryAssessmentStats({ scope, groupBy: 'quarter' });
     const lookup = Object.fromEntries(rows.map((row) => [
       `${row.y}-${row.q}`,
       Number(row.examCount) ? Math.round((Number(row.passedCount) / Number(row.examCount)) * 1000) / 10 : 0,
@@ -205,7 +177,7 @@ class StatisticsService {
     }));
   }
 
-  static async getBranchRanking(orgIds) {
+  static async getBranchRanking(orgIds, completionRange) {
     let sql = `SELECT id, name FROM organizations WHERE type = 'branch'`;
     const params = [];
     if (orgIds && orgIds.length) {
@@ -217,7 +189,7 @@ class StatisticsService {
     const ranking = [];
     for (const org of orgs) {
       const descendantIds = await OrganizationService.getDescendantIds(org.id);
-      const overview = await this.getOverview(descendantIds);
+      const overview = await this.getOverview(descendantIds, completionRange);
       ranking.push({
         organizationId: org.id,
         name: org.name,
@@ -236,7 +208,7 @@ class StatisticsService {
     let warning = '当前学习秩序总体平稳，可持续跟踪各支部完成情况和测验成绩差异。';
     if (overview.totalMembers === 0) {
       warning = '当前范围内还没有党员账号，请先在人员管理中补充组织成员。';
-    } else if (overview.completionRate < 80) {
+    } else if (overview.completionSampleSize > 0 && overview.completionRate < 80) {
       warning = `当前学习完成率为 ${overview.completionRate}%，建议关注尚未完成任务的党员并及时提醒。`;
     } else if (overview.passRate > 0 && overview.passRate < 80) {
       warning = `当前考试及格率为 ${overview.passRate}%，建议围绕错题和薄弱知识点安排补学。`;

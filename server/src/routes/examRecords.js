@@ -1,26 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const ExamRecordService = require('../services/examRecordService');
+const AssessmentService = require('../services/assessmentService');
 const ResponseHelper = require('../utils/response');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
+const assessmentErrors = require('./assessmentErrors');
 
 /**
  * POST /api/exam-records
- * 提交答案并返回成绩或错题分析
+ * 使用已下发的测评 ID 提交答案并返回成绩和错题分析
  */
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, authorize('member'), async (req, res, next) => {
   try {
-    const { taskId, answers } = req.body;
-
-    if (!taskId || !answers) {
-      return ResponseHelper.badRequest(res, 'taskId 和 answers 为必填项');
+    const { assessmentId, answers } = req.body || {};
+    if (!assessmentId) {
+      return ResponseHelper.badRequest(res, '请提交已下发的测评 ID（assessmentId）');
     }
-
-    const result = await ExamRecordService.submit(req.user.userId, { taskId, answers });
+    const result = await AssessmentService.submit(req.user.userId, assessmentId, answers);
     return ResponseHelper.success(res, result, '提交成功');
-  } catch (err) {
-    console.error('Submit exam error:', err);
-    return ResponseHelper.error(res, err.message);
+  } catch (error) {
+    return next(error);
   }
 });
 
@@ -41,4 +40,5 @@ router.get('/my', authenticate, async (req, res) => {
   }
 });
 
+router.use(assessmentErrors);
 module.exports = router;

@@ -7,12 +7,12 @@ const METRICS = {
   average_exam_score: {
     name: '考试平均分',
     unit: '分',
-    aliases: ['考试平均分', '平均分', '平均成绩']
+    aliases: ['考试平均分', '测验平均分', '考核平均分', '考试平均成绩', '测验平均成绩', '考核平均成绩', '平均分', '平均成绩']
   },
   exam_pass_rate: {
     name: '考试及格率',
     unit: '%',
-    aliases: ['考试及格率', '及格率']
+    aliases: ['考试及格率', '测验及格率', '考核及格率', '考试通过率', '测验通过率', '考核通过率', '及格率', '通过率']
   },
   total_study_hours: {
     name: '学习时长',
@@ -22,81 +22,112 @@ const METRICS = {
   active_member_count: {
     name: '活跃党员人数',
     unit: '人',
-    aliases: ['活跃党员人数', '活跃人数', '活跃党员']
+    aliases: ['活跃党员人数', '活跃人数', '活跃党员', '学习活跃度', '活跃度']
   }
 };
 
-function resolveMetric(message) {
+const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+const TIME_PATTERN = /20\d{2}年(?:\s*\d{1,2}月)?|(?:最近|过去|近)\s*(?:3|三|6|六)\s*个?月|(?:最近|过去|近)\s*(?:30|三十)\s*天|今年|去年|上个月|上月|这个月|本月/g;
+const METRIC_PATTERN = new RegExp(Object.values(METRICS).flatMap(item => item.aliases).sort((a, b) => b.length - a.length).join('|'), 'g');
+const ALL_ORGANIZATIONS = /^(?:全校(?:党组织|所有党组织)?|全部(?:党组织|组织)?|所有(?:党组织|组织)|全体(?:党组织|组织))$/;
+
+function findMetrics(message) {
   const text = String(message || '').trim();
-  for (const [key, definition] of Object.entries(METRICS)) {
-    if (definition.aliases.some(alias => text.includes(alias))) return key;
-  }
-  return null;
+  return Object.keys(METRICS).filter(key => METRICS[key].aliases.some(alias => text.includes(alias)));
+}
+
+function resolveMetric(message) {
+  return findMetrics(message)[0] || null;
+}
+
+function invalidQuery(message, code = 'INVALID_QUERY') {
+  return Object.assign(new Error(message), { code, statusCode: 400 });
+}
+
+function timeRange(label, start, end) {
+  return {
+    label,
+    startDate: `${start.toISOString().slice(0, 10)} 00:00:00`,
+    endDate: `${end.toISOString().slice(0, 10)} 00:00:00`
+  };
 }
 
 function yearRange(year) {
-  return {
-    label: `${year}年`,
-    startDate: `${year}-01-01 00:00:00`,
-    endDate: `${year + 1}-01-01 00:00:00`
-  };
+  return timeRange(`${year}年`, new Date(Date.UTC(year, 0, 1)), new Date(Date.UTC(year + 1, 0, 1)));
 }
 
-function monthRange(year, month) {
-  const nextYear = month === 12 ? year + 1 : year;
-  const nextMonth = month === 12 ? 1 : month + 1;
-  const pad = value => String(value).padStart(2, '0');
-  return {
-    label: `${year}年${month}月`,
-    startDate: `${year}-${pad(month)}-01 00:00:00`,
-    endDate: `${nextYear}-${pad(nextMonth)}-01 00:00:00`
-  };
+function monthRange(year, monthIndex) {
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1));
+  return timeRange(`${start.getUTCFullYear()}年${start.getUTCMonth() + 1}月`, start, end);
 }
 
 function resolveTimeRange(message, now = new Date()) {
-  const text = String(message || '');
-  const currentYear = now.getFullYear();
-  const explicitMonth = text.match(/(20\d{2})年\s*(1[0-2]|0?[1-9])月/);
-  if (explicitMonth) return monthRange(Number(explicitMonth[1]), Number(explicitMonth[2]));
-
-  const explicitYear = text.match(/(20\d{2})年/);
-  if (explicitYear) return yearRange(Number(explicitYear[1]));
-  if (text.includes('去年')) return yearRange(currentYear - 1);
-  if (text.includes('本月') || text.includes('这个月')) {
-    return monthRange(currentYear, now.getMonth() + 1);
+  const periods = String(message || '').match(TIME_PATTERN) || [];
+  if (periods.length > 1) throw invalidQuery('请在一次查询中指定一个统计周期');
+  const beijing = new Date(now.getTime() + BEIJING_OFFSET_MS);
+  const year = beijing.getUTCFullYear();
+  const month = beijing.getUTCMonth();
+  const period = periods[0] || '今年';
+  const explicit = period.match(/^(20\d{2})年(?:\s*(\d{1,2})月)?$/);
+  if (explicit) {
+    if (!explicit[2]) return yearRange(Number(explicit[1]));
+    const monthNumber = Number(explicit[2]);
+    if (monthNumber < 1 || monthNumber > 12) throw invalidQuery('月份应为 1 至 12 月');
+    return monthRange(Number(explicit[1]), monthNumber - 1);
   }
-  return yearRange(currentYear);
+  if (period === '去年') return yearRange(year - 1);
+  if (period === '上月' || period === '上个月') return monthRange(year, month - 1);
+  if (period === '本月' || period === '这个月') return monthRange(year, month);
+  if (period.endsWith('天')) {
+    const day = beijing.getUTCDate();
+    return timeRange('最近30天', new Date(Date.UTC(year, month, day - 29)), new Date(Date.UTC(year, month, day + 1)));
+  }
+  if (period.endsWith('月')) {
+    const count = /[6六]/.test(period) ? 6 : 3;
+    return timeRange(`最近${count}个月（含本月）`, new Date(Date.UTC(year, month - count + 1, 1)), new Date(Date.UTC(year, month + 1, 1)));
+  }
+  return yearRange(year);
+}
+
+function dashboardTimeRange(range) {
+  return { '30d': '最近30天', '3m': '最近3个月', '6m': '最近6个月' }[range] || '最近6个月';
+}
+
+function toUtcSqlDate(beijingSqlDate) {
+  return new Date(`${beijingSqlDate.replace(' ', 'T')}+08:00`).toISOString().slice(0, 19).replace('T', ' ');
 }
 
 function extractOrganizationName(message) {
-  const text = String(message || '').replace(/[，。？！?,!]/g, ' ').trim();
-  const patterns = [
-    /(?:查询|统计|看看|分析)?\s*([^\s]{2,30}(?:党委|党总支|党支部|支部|党小组))(?=的|学习|考试|完成|平均|及格|活跃|今年|去年|本月|20\d{2}年|\s|$)/,
-    /(?:今年|去年|本月|\d{4}年)\s*([^\s]{2,30}(?:党委|党总支|党支部|支部|党小组))/
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) return match[1].replace(/^(今年|去年|本月)/, '').trim();
-  }
-  return null;
+  const text = String(message || '');
+  const quoted = text.match(/「([^」]+)」/g);
+  if (quoted?.length > 1) throw invalidQuery('请在一次查询中指定一个组织范围');
+  const scope = (quoted ? quoted[0].slice(1, -1) : text
+    .replace(TIME_PATTERN, ' ')
+    .replace(METRIC_PATTERN, ' ')
+    .replace(/[，。？！；：?!,;:“”"「」]/g, ' ')
+    .replace(/^(?:\s|请问|请|帮我|查一下|看一下|怎么查|查询|统计|看看|分析|查看)+/, '')
+    .replace(/(?:\s|的|是多少|多少|怎么样|如何|情况|数据|月度趋势|趋势|每月|月度|按月|是|呢|吗)+$/, ''))
+    .trim();
+  return !scope || ALL_ORGANIZATIONS.test(scope) ? null : scope;
 }
 
 function parseOrganizationQuery(message, now = new Date()) {
-  const metric = resolveMetric(message);
-  if (!metric) {
-    const error = new Error('暂不支持该指标，可查询学习完成率、考试平均分、考试及格率、学习时长或活跃党员人数');
-    error.code = 'UNSUPPORTED_METRIC';
-    throw error;
-  }
   const text = String(message || '');
+  const [metric, secondMetric] = findMetrics(text.replace(/「[^」]+」/g, ' '));
+  if (!metric) {
+    throw invalidQuery('暂不支持该指标，可查询学习完成率、考试平均分、考试及格率、学习时长或活跃党员人数', 'UNSUPPORTED_METRIC');
+  }
+  if (secondMetric) throw invalidQuery('请在一次查询中选择一个指标');
+  if (/对比|环比|同比|排名|排行/.test(text)) throw invalidQuery('请先查询一个组织和统计周期，可使用月度趋势查看各月数据');
   return {
     intent: 'metric_query',
     metric,
     metricDefinition: METRICS[metric],
     organizationName: extractOrganizationName(text),
-    timeRange: resolveTimeRange(text, now),
+    timeRange: resolveTimeRange(text.replace(/「[^」]+」/g, ' '), now),
     groupBy: /趋势|每月|月度|按月/.test(text) ? 'month' : null
   };
 }
 
-module.exports = { METRICS, parseOrganizationQuery, resolveMetric, resolveTimeRange, extractOrganizationName };
+module.exports = { METRICS, parseOrganizationQuery, resolveMetric, resolveTimeRange, extractOrganizationName, dashboardTimeRange, toUtcSqlDate };

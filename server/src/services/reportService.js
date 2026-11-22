@@ -1,4 +1,5 @@
 const LearningProfileService = require('./learningProfileService');
+const RecommendationService = require('./recommendationService');
 const { calculateEvaluation } = require('../ai/scoring');
 const { AIClient } = require('./aiClient');
 
@@ -8,6 +9,8 @@ class ReportService {
     const evaluation = calculateEvaluation(profile);
     const facts = {
       completionRate: profile.completionRate,
+      completedTasks: profile.completedTasks,
+      totalTasks: profile.totalTasks,
       totalStudyHours: profile.totalStudyHours,
       activeDays: profile.activeDays,
       totalExams: profile.totalExams,
@@ -19,23 +22,30 @@ class ReportService {
       score: evaluation.score,
       level: evaluation.level,
       dimensions: evaluation.dimensions,
-      ...facts
+      completionRate: facts.completionRate,
+      totalStudyHours: facts.totalStudyHours,
+      activeDays: facts.activeDays,
+      assessments: profile.assessments,
+      weakKnowledgePoints: profile.weakCategories
     };
 
-    let narrative;
-    let generatedBy = 'rules';
-    try {
-      narrative = await AIClient.generateEvaluationNarrative(aiInput);
-      if (narrative) generatedBy = 'llm';
-    } catch (error) {
-      console.warn('AI评语生成失败，使用确定性模板:', error.message);
-    }
-    narrative ||= this.generateFallbackNarrative(profile, evaluation);
+    const status = evaluation.score == null ? 'insufficient_data' : 'ready';
+    const [recommendations, modelNarrative] = await Promise.all([
+      RecommendationService.getReportRecommendations(profile),
+      status === 'ready' ? this.generateModelNarrative(aiInput) : null
+    ]);
+    const generatedBy = modelNarrative ? 'llm' : 'rules';
+    const narrative = modelNarrative || this.generateFallbackNarrative(profile, evaluation);
 
     return {
       scene: 'learning_evaluation',
       generatedAt: new Date().toISOString(),
-      period: 'current',
+      status,
+      period: profile.period,
+      assessments: profile.assessments,
+      weakKnowledgePoints: profile.weakCategories,
+      knowledgeProgress: profile.knowledgeProgress,
+      recommendations,
       user: {
         id: profile.userId,
         name: profile.userName,
@@ -59,13 +69,33 @@ class ReportService {
     };
   }
 
+  static async generateModelNarrative(input) {
+    try {
+      return await AIClient.generateEvaluationNarrative(input);
+    } catch (error) {
+      console.warn('AI评语生成失败，使用确定性模板:', error.message);
+      return null;
+    }
+  }
+
   static generateFallbackNarrative(profile, evaluation) {
+    if (evaluation.score == null) {
+      return {
+        summary: '本周期还没有已判分的测评或考试，完成一份后即可查看综合评分。',
+        strengths: [],
+        weaknesses: [],
+        suggestions: [{ title: '完成一次测评', content: '前往测评，提交已下发的试卷以查看知识点诊断。', knowledgePoint: null }]
+      };
+    }
     const strengths = [];
     const weaknesses = [];
-    if (profile.completionRate >= 85) strengths.push('学习任务完成情况较好');
-    else weaknesses.push('学习任务完成度仍有提升空间');
-    if (profile.avgScore >= 80) strengths.push('考试成绩较为稳定');
-    else if (profile.totalExams > 0) weaknesses.push('测验和考试知识掌握需要进一步巩固');
+    if (profile.totalTasks) {
+      if (profile.completionRate >= 85) strengths.push('学习任务完成情况较好');
+      else weaknesses.push('还有必修学习任务待完成');
+    }
+    const assessed = Object.values(profile.assessments).filter(item => item.count);
+    if (assessed.every(item => item.avgScore >= 80)) strengths.push('本周期已完成的测评成绩较好');
+    else weaknesses.push('可结合测评错题集中复习');
     if (profile.activeDays >= 10) strengths.push('能够保持一定学习频率');
     else weaknesses.push('学习频率分布不够均衡');
     const weak = profile.weakCategories[0];
@@ -79,7 +109,7 @@ class ReportService {
         knowledgePoint: weak.category
       });
     }
-    if (profile.completionRate < 90) {
+    if (profile.totalTasks && profile.completionRate < 90) {
       suggestions.push({ title: '完善学习计划', content: '优先完成尚未结束的必修学习任务。', knowledgePoint: null });
     }
     if (!suggestions.length) {

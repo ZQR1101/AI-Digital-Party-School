@@ -1,4 +1,5 @@
 import { formatBeijingDateTime } from './dateTime.js'
+import { buildOrganizationExcelXml, buildOrganizationPrintHtml } from './organizationReport.js'
 
 export const DEFAULT_COMPARISON = {
   title: '党组织任务完成率对比报表',
@@ -50,6 +51,7 @@ export function normalizeComparisonReport(message) {
 }
 
 export function buildComparisonExcelXml(message) {
+  if (message?.queryResult) return buildOrganizationExcelXml(message.queryResult)
   const report = normalizeComparisonReport(message)
   const cell = (value, style) => `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`
   const body = report.rows.map((row) => `
@@ -96,6 +98,7 @@ export function buildComparisonExcelXml(message) {
 }
 
 export function buildComparisonPrintHtml(message) {
+  if (message?.queryResult) return buildOrganizationPrintHtml(message.queryResult)
   const report = normalizeComparisonReport(message)
   const rows = report.rows.map((row) => `
         <tr>
@@ -153,7 +156,7 @@ export function downloadComparisonExcel(message) {
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
   link.href = url
-  link.download = `党组织对比报表-${stamp}.xls`
+  link.download = `${message?.queryResult ? '组织数据查询报表' : '党组织对比报表'}-${stamp}.xls`
   document.body.appendChild(link)
   link.click()
   link.remove()

@@ -1,28 +1,15 @@
 const db = require('../config/db');
 const LearningProfileService = require('./learningProfileService');
+const { normalizeTags, beijingDayKey } = LearningProfileService;
 const { AIClient } = require('./aiClient');
 
-function normalizeTags(value) {
-  if (Array.isArray(value)) return value.map(String).map(item => item.trim()).filter(Boolean);
-  return String(value || '').split(/[,，;；]/).map(item => item.trim()).filter(Boolean);
-}
-
 function includesSignal(searchable, signal) {
-  const normalized = String(signal || '').trim().toLowerCase();
+  const normalized = String(signal || '').normalize('NFKC').trim().toLowerCase();
   return normalized.length > 0 && searchable.includes(normalized);
 }
 
 function round(value) {
   return Math.round(Number(value || 0) * 10) / 10;
-}
-
-function beijingDayKey(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(date);
 }
 
 function toPublicItem(item) {
@@ -31,7 +18,7 @@ function toPublicItem(item) {
 }
 
 function parseSnapshot(raw) {
-  const parsed = JSON.parse(raw || '[]');
+  const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (Array.isArray(parsed)) {
     if (parsed.length && typeof parsed[0] === 'object') {
       return { ids: parsed.map(item => Number(item.contentId)).filter(Boolean), items: parsed };
@@ -41,7 +28,7 @@ function parseSnapshot(raw) {
   if (parsed && typeof parsed === 'object') {
     const items = Array.isArray(parsed.items) ? parsed.items : [];
     const ids = (parsed.ids || items.map(item => item.contentId)).map(Number).filter(Boolean);
-    return { ids, items };
+    return { ids, items, revision: parsed.revision };
   }
   return { ids: [], items: [] };
 }
@@ -72,39 +59,25 @@ class RecommendationService {
   static async getForUser(userId, limit = 5) {
     const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
     const dayKey = beijingDayKey();
-    const snapshot = await this.loadDailySnapshot(userId, dayKey);
-    const live = await this.getPublicCandidates(userId);
-    const liveIds = new Set(live.map(item => Number(item.id)));
-
-    if (snapshot.items.length) {
-      const kept = snapshot.items.filter(item => liveIds.has(Number(item.contentId))).slice(0, safeLimit);
-      if (kept.length) {
-        if (kept.length !== snapshot.items.length) {
-          await this.saveDailySnapshot(userId, dayKey, kept);
-        }
-        // 每日快照直接复用（含规则降级结果）：当天内容不再重新计算，
-        // 否则规则模式下缓存永远不命中，首页每次打开都要等待AI超时。
-        return this.present(kept, { recommendationMode: 'daily_cache', cached: true });
+    const [snapshot, assessmentRevision] = await Promise.all([
+      this.loadDailySnapshot(userId, dayKey),
+      LearningProfileService.getAssessmentRevision(userId)
+    ]);
+    const revision = `2:${assessmentRevision}`;
+    const sameRevision = snapshot.revision === revision;
+    if (sameRevision && snapshot.items.length) {
+      const kept = await this.withCurrentContentUrls(userId, snapshot.items);
+      if (kept.length && (kept.length >= safeLimit || kept.length === snapshot.items.length)) {
+        return this.present(kept.slice(0, safeLimit), { recommendationMode: 'daily_cache', cached: true });
       }
     }
 
-    if (snapshot.ids.length && snapshot.items.some(item => item.rankSource === 'ai_hybrid')) {
-      const hydrated = snapshot.ids
-        .map(id => live.find(item => Number(item.id) === Number(id)))
-        .filter(Boolean)
-        .map(item => this.rankContent(item, [], []))
-        .map(toPublicItem)
-        .slice(0, safeLimit);
-      if (hydrated.length) {
-        await this.saveDailySnapshot(userId, dayKey, hydrated);
-        return this.present(hydrated, { recommendationMode: 'daily_cache', cached: true });
-      }
-    }
-
-    const profile = await LearningProfileService.getProfile(userId);
+    const [profile, live] = await Promise.all([
+      LearningProfileService.getProfile(userId),
+      this.getPublicCandidates(userId)
+    ]);
     const historySignals = this.buildHistorySignals(profile.learningHistory);
-    const ruleRanked = live.map(content => this.rankContent(content, profile.weakCategories, historySignals))
-      .sort((a, b) => b.ruleScore - a.ruleScore || new Date(b.createdAt) - new Date(a.createdAt));
+    const ruleRanked = this.rankCandidates(live, profile.weakCategories, historySignals);
     const candidatePool = ruleRanked.slice(0, 20);
     let recommendations = candidatePool;
     let recommendationMode = 'rules_fallback';
@@ -120,9 +93,10 @@ class RecommendationService {
       console.warn('[AI recommendation fallback]', error.message);
     }
 
-    recommendations = applyDailyOrder(recommendations, snapshot.ids, safeLimit).map(toPublicItem);
-    await this.saveDailySnapshot(userId, dayKey, recommendations);
-    return this.present(recommendations, {
+    recommendations = applyDailyOrder(recommendations, sameRevision ? snapshot.ids : [], 20).map(toPublicItem);
+    await this.saveDailySnapshot(userId, dayKey, recommendations, revision);
+    const current = await this.withCurrentContentUrls(userId, recommendations);
+    return this.present(current.slice(0, safeLimit), {
       recommendationMode,
       aiError,
       profile,
@@ -159,7 +133,10 @@ class RecommendationService {
     };
   }
 
-  static async getPublicCandidates(userId, includeFeedback = true) {
+  static async getPublicCandidates(userId, ids, includeFeedback = true) {
+    if (ids && !ids.length) return [];
+    const selectBody = ids ? ', c.bodyOrVideoUrl' : '';
+    const restrictIds = ids ? 'AND c.id IN (?)' : '';
     const dismissClause = includeFeedback
       ? `AND NOT EXISTS (
            SELECT 1 FROM recommendation_feedback dismissed
@@ -169,7 +146,7 @@ class RecommendationService {
       : '';
     try {
       const [contents] = await db.query(
-      `SELECT c.id, c.title, c.type, c.coverUrl, c.bodyOrVideoUrl, c.summary, c.tags, c.createdAt,
+      `SELECT c.id, c.title, c.type, c.coverUrl, c.summary, c.tags, c.createdAt${selectBody},
               EXISTS (
                 SELECT 1 FROM learning_tasks completedTask
                 JOIN learning_records completedRecord ON completedRecord.taskId = completedTask.id
@@ -178,19 +155,42 @@ class RecommendationService {
               ) AS hasCompleted
        FROM contents c
        WHERE c.isPublic = 1 AND c.status = 'published'
-         ${dismissClause}
-       ORDER BY c.createdAt DESC
-       LIMIT 60`,
-        includeFeedback ? [userId, userId] : [userId]
+         ${dismissClause} ${restrictIds}
+       ORDER BY c.createdAt DESC, c.id DESC`,
+        [userId, ...(includeFeedback ? [userId] : []), ...(ids ? [ids] : [])]
       );
       return contents;
     } catch (error) {
       if (includeFeedback && error.code === 'ER_NO_SUCH_TABLE') {
         console.warn('[Recommendation feedback disabled] recommendation_feedback table is missing');
-        return this.getPublicCandidates(userId, false);
+        return this.getPublicCandidates(userId, ids, false);
       }
       throw error;
     }
+  }
+
+  static async withCurrentContentUrls(userId, items) {
+    const rows = await this.getPublicCandidates(userId, items.map(item => Number(item.contentId)));
+    const current = new Map(rows.map(row => [Number(row.id), row]));
+    return items.filter(item => current.has(Number(item.contentId))).map(item => ({
+      ...item,
+      contentUrl: current.get(Number(item.contentId)).bodyOrVideoUrl
+    }));
+  }
+
+  static rankCandidates(live, weakCategories, historySignals = []) {
+    return live.map(content => this.rankContent(content, weakCategories, historySignals))
+      .sort((a, b) => Number(Boolean(b.evidence.length)) - Number(Boolean(a.evidence.length))
+        || b.ruleScore - a.ruleScore || new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  static async getReportRecommendations(profile) {
+    if (!profile.weakCategories.length) return [];
+    const live = await this.getPublicCandidates(profile.userId);
+    return this.rankCandidates(live, profile.weakCategories)
+      .filter(item => item.evidence.length)
+      .slice(0, 3)
+      .map(({ contentId, title, reason, matchedKnowledgePoints }) => ({ contentId, title, reason, matchedKnowledgePoints }));
   }
 
   static buildHistorySignals(history = []) {
@@ -208,8 +208,10 @@ class RecommendationService {
 
   static rankContent(content, weakCategories = [], historySignals = []) {
     const tags = normalizeTags(content.tags);
-    const searchable = `${content.title || ''} ${content.summary || ''} ${tags.join(' ')}`.toLowerCase();
-    const matchedWeak = weakCategories.filter(item => includesSignal(searchable, item.category));
+    const contentText = `${content.title || ''} ${content.summary || ''}`.normalize('NFKC').toLowerCase();
+    const searchable = `${contentText} ${tags.join(' ').toLowerCase()}`;
+    const tagKeys = new Set(tags.map(tag => tag.toLowerCase()));
+    const matchedWeak = weakCategories.filter(item => tagKeys.has(item.category.toLowerCase()) || includesSignal(contentText, item.category));
     const matchedHistory = historySignals.filter(item => includesSignal(searchable, item.name));
     const primaryWeak = matchedWeak[0] || null;
     const weakEvidenceScore = matchedWeak.length
@@ -224,9 +226,7 @@ class RecommendationService {
     let ruleScore = weakEvidenceScore * 0.55 + historyScore * 0.30 + freshnessScore * 0.15;
     if (content.hasCompleted && !matchedWeak.length) ruleScore -= 15;
     const reason = primaryWeak
-      ? content.hasCompleted
-        ? `你在“${primaryWeak.category}”仍存在薄弱项，建议通过该内容再次复习巩固。`
-        : `该内容与“${primaryWeak.category}”薄弱知识点相关，建议优先学习。`
+      ? `最近一次涉及“${primaryWeak.category}”的测评中，${primaryWeak.attempts} 道题有 ${primaryWeak.wrongCount} 道答错，推荐学习这门相关课程。`
       : matchedHistory.length
         ? `与你近期学习的“${matchedHistory.slice(0, 2).map(item => item.name).join('、')}”相关，适合继续深入。`
         : '这是已发布的公共学习内容，可用于拓展学习。';
@@ -235,7 +235,6 @@ class RecommendationService {
       title: content.title,
       contentType: content.type,
       coverUrl: content.coverUrl,
-      contentUrl: content.bodyOrVideoUrl,
       summary: content.summary,
       tags,
       score: round(Math.max(0, ruleScore)),
@@ -245,6 +244,7 @@ class RecommendationService {
       freshnessScore: round(freshnessScore),
       reason,
       matchedEvidence: [],
+      evidence: matchedWeak.map(({ category, attempts, wrongCount, wrongRate }) => ({ category, attempts, wrongCount, wrongRate })),
       matchedKnowledgePoints: matchedWeak.map(item => item.category),
       matchedHistoryTags: matchedHistory.map(item => item.name),
       recommendationType: primaryWeak ? (content.hasCompleted ? 'weakness_review' : 'weakness_learning') : matchedHistory.length ? 'history_related' : 'public_discovery',
@@ -256,7 +256,6 @@ class RecommendationService {
   }
 
   static mergeAIRanking(candidates, aiRanking) {
-    const byId = new Map(candidates.map(item => [Number(item.contentId), item]));
     const aiById = new Map(aiRanking.map(item => [Number(item.contentId), item]));
     return candidates.map(candidate => {
       const ai = aiById.get(Number(candidate.contentId));
@@ -266,14 +265,13 @@ class RecommendationService {
         + candidate.historyScore * 0.10
         + candidate.freshnessScore * 0.05;
       return {
-        ...byId.get(Number(candidate.contentId)),
+        ...candidate,
         score: round(score),
         semanticScore: round(ai.semanticScore),
-        reason: ai.reason,
-        matchedEvidence: ai.matchedEvidence,
         rankSource: 'ai_hybrid'
       };
-    }).sort((a, b) => b.score - a.score || b.ruleScore - a.ruleScore);
+    }).sort((a, b) => Number(Boolean(b.evidence.length)) - Number(Boolean(a.evidence.length))
+      || b.score - a.score || b.ruleScore - a.ruleScore);
   }
 
   static async recordFeedback(userId, contentId, action) {
@@ -289,13 +287,6 @@ class RecommendationService {
        VALUES (?, ?, ?)`,
       [userId, contentId, action]
     );
-    if (action === 'dismiss') {
-      const dayKey = beijingDayKey();
-      const snapshot = await this.loadDailySnapshot(userId, dayKey);
-      const items = (snapshot.items.length ? snapshot.items : snapshot.ids.map(id => ({ contentId: id })))
-        .filter(item => Number(item.contentId) !== Number(contentId));
-      await this.saveDailySnapshot(userId, dayKey, items);
-    }
     return { contentId, action };
   }
 
@@ -331,17 +322,13 @@ class RecommendationService {
     }
   }
 
-  static async loadDailyIds(userId, dayKey) {
-    const snapshot = await this.loadDailySnapshot(userId, dayKey);
-    return snapshot.ids;
-  }
-
-  static async saveDailySnapshot(userId, dayKey, items) {
+  static async saveDailySnapshot(userId, dayKey, items, revision) {
     if (!(await this.ensureDailyTable())) return;
     const list = (items || []).map(item => (typeof item === 'object' ? item : { contentId: item }));
     const payload = JSON.stringify({
       ids: list.map(item => Number(item.contentId)).filter(Boolean),
       items: list.filter(item => item.title || item.contentType),
+      revision
     });
     try {
       await db.query(
@@ -355,9 +342,6 @@ class RecommendationService {
     }
   }
 
-  static async saveDailyIds(userId, dayKey, ids) {
-    await this.saveDailySnapshot(userId, dayKey, (ids || []).map(id => ({ contentId: id })));
-  }
 }
 
 module.exports = RecommendationService;

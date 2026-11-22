@@ -1,10 +1,23 @@
 const db = require('../config/db');
 const OrganizationService = require('./organizationService');
-const { parseOrganizationQuery } = require('../ai/queryParser');
+const { parseOrganizationQuery, toUtcSqlDate } = require('../ai/queryParser');
 const RagService = require('./ragService');
+const { queryAssessmentStats } = require('./assessmentStatistics');
+const { queryTaskCompletion } = require('./taskCompletionStatistics');
 
 function placeholders(values) {
   return values.map(() => '?').join(',');
+}
+
+function chartMonths(timeRange) {
+  const month = new Date(`${timeRange.startDate.slice(0, 7)}-01T00:00:00Z`);
+  const end = new Date(`${timeRange.endDate.slice(0, 10)}T00:00:00Z`);
+  const labels = [];
+  while (month < end) {
+    labels.push(month.toISOString().slice(0, 7));
+    month.setUTCMonth(month.getUTCMonth() + 1);
+  }
+  return labels;
 }
 
 class OrganizationQueryService {
@@ -16,6 +29,8 @@ class OrganizationQueryService {
     const knowledge = await RagService.search(`${parsed.metricDefinition.name} 统计口径`, 2);
     const scopeName = organization ? organization.name : '全部组织';
     const answer = this.buildAnswer(parsed, scopeName, result);
+    const months = result.trend?.length ? chartMonths(parsed.timeRange) : [];
+    const values = new Map((result.trend || []).map(item => [item.month, item.value]));
     return {
       scene: 'organization_query',
       answer,
@@ -31,16 +46,17 @@ class OrganizationQueryService {
         metric: parsed.metric,
         metricName: parsed.metricDefinition.name,
         value: result.value,
+        hasData: result.hasData ?? (result.denominator !== 0),
         unit: parsed.metricDefinition.unit,
         numerator: result.numerator,
         denominator: result.denominator,
         details: result.details || null
       },
-      charts: result.trend && result.trend.length ? [{
+      charts: months.length ? [{
         type: 'line',
         title: `${scopeName}${parsed.timeRange.label}${parsed.metricDefinition.name}趋势`,
-        xAxis: result.trend.map(item => item.month),
-        series: [{ name: parsed.metricDefinition.name, data: result.trend.map(item => item.value) }]
+        xAxis: months,
+        series: [{ name: parsed.metricDefinition.name, data: months.map(month => values.get(month) ?? null) }]
       }] : [],
       sources: [{
         type: 'metric',
@@ -57,38 +73,41 @@ class OrganizationQueryService {
   }
 
   static async resolveOrganization(name, actor) {
-    let organization = null;
-    if (name) {
-      const [rows] = await db.query(
-        `SELECT id, name, type, parentId FROM organizations
-         WHERE name = ? OR name LIKE ? ORDER BY name = ? DESC, CHAR_LENGTH(name) ASC LIMIT 2`,
-        [name, `%${name}%`, name]
-      );
-      if (!rows.length) throw new Error(`未找到组织：${name}`);
-      organization = rows[0];
-    } else if (actor.role === 'secretary') {
-      organization = await OrganizationService.getById(Number(actor.organizationId));
+    let home = null;
+    let allowedIds = null;
+    if (actor.role === 'secretary') {
+      home = actor.organizationId ? await OrganizationService.getById(Number(actor.organizationId)) : null;
+      if (!home) throw Object.assign(new Error('当前账号未分配有效的查询组织'), { statusCode: 403 });
+      allowedIds = await OrganizationService.getDescendantIds(home.id);
     }
+    if (!name) return home;
 
-    if (actor.role === 'secretary' && organization) {
-      const allowedIds = await OrganizationService.getDescendantIds(Number(actor.organizationId));
-      if (!allowedIds.includes(Number(organization.id))) {
-        const error = new Error('无权查询该组织数据');
-        error.statusCode = 403;
-        throw error;
-      }
+    const allowed = allowedIds ? `AND id IN (${placeholders(allowedIds)})` : '';
+    const [rows] = await db.query(
+      `SELECT id, name, (name = ?) AS exactMatch FROM organizations
+       WHERE LOCATE(?, name) > 0 ${allowed}
+       ORDER BY exactMatch DESC, name ASC, id ASC LIMIT 2`,
+      [name, name, ...(allowedIds || [])]
+    );
+    if (!rows.length) {
+      const message = allowedIds ? '未找到可查询的组织，请提供权限范围内的完整组织名称' : `未找到组织「${name}」，请核对统计周期和组织名称`;
+      throw Object.assign(new Error(message), { statusCode: allowedIds ? 403 : 400 });
     }
-    return organization;
+    if (rows.length > 1 && Number(rows[0].exactMatch) === Number(rows[1].exactMatch)) {
+      throw Object.assign(new Error('匹配到多个组织，请提供能区分它们的完整组织名称'), { statusCode: 400 });
+    }
+    return rows[0];
   }
 
   static buildScope(orgIds, alias = 'u') {
-    if (!orgIds || !orgIds.length) return { sql: '', params: [] };
+    if (orgIds == null) return { sql: '', params: [] };
+    if (!orgIds.length) return { sql: ' AND 1 = 0', params: [] };
     return { sql: ` AND ${alias}.organizationId IN (${placeholders(orgIds)})`, params: orgIds };
   }
 
   static async executeMetric(metric, orgIds, timeRange, groupBy) {
     if (metric === 'learning_completion_rate') {
-      return this.queryCompletionRate(orgIds, timeRange, groupBy);
+      return queryTaskCompletion(orgIds, timeRange, groupBy);
     }
     if (metric === 'average_exam_score' || metric === 'exam_pass_rate') {
       return this.queryExamMetric(metric, orgIds, timeRange, groupBy);
@@ -99,91 +118,34 @@ class OrganizationQueryService {
     throw new Error(`不支持的指标：${metric}`);
   }
 
-  static async queryCompletionRate(orgIds, timeRange, groupBy) {
-    const scope = this.buildScope(orgIds);
-    const params = [timeRange.startDate, timeRange.endDate, ...scope.params];
-    const [rows] = await db.query(
-      `SELECT COUNT(lt.id) AS requiredCount,
-              SUM(CASE WHEN lr.status = 'completed' THEN 1 ELSE 0 END) AS completedCount
-       FROM users u
-       JOIN learning_tasks lt ON lt.organizationId = u.organizationId AND lt.status = 'published'
-       LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = u.id
-       WHERE u.role = 'member' AND lt.createdAt >= ? AND lt.createdAt < ?${scope.sql}`,
-      params
-    );
-    const required = Number(rows[0].requiredCount || 0);
-    const completed = Number(rows[0].completedCount || 0);
-    const result = {
-      value: required ? Math.round((completed / required) * 10000) / 100 : 0,
-      numerator: completed,
-      denominator: required
-    };
-    if (groupBy === 'month') {
-      const [trend] = await db.query(
-        `SELECT DATE_FORMAT(lt.createdAt, '%Y-%m') AS month,
-                COUNT(lt.id) AS requiredCount,
-                SUM(CASE WHEN lr.status = 'completed' THEN 1 ELSE 0 END) AS completedCount
-         FROM users u
-         JOIN learning_tasks lt ON lt.organizationId = u.organizationId AND lt.status = 'published'
-         LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = u.id
-         WHERE u.role = 'member' AND lt.createdAt >= ? AND lt.createdAt < ?${scope.sql}
-         GROUP BY month ORDER BY month`,
-        params
-      );
-      result.trend = trend.map(row => ({
-        month: row.month,
-        value: Number(row.requiredCount) ? Math.round((Number(row.completedCount) / Number(row.requiredCount)) * 10000) / 100 : 0
-      }));
-    }
-    return result;
-  }
-
   static async queryExamMetric(metric, orgIds, timeRange, groupBy) {
     const scope = this.buildScope(orgIds);
-    const params = [timeRange.startDate, timeRange.endDate, ...scope.params];
-    const [rows] = await db.query(
-      `SELECT COUNT(*) AS examCount, COALESCE(AVG(er.score), 0) AS avgScore,
-              SUM(CASE WHEN er.score >= 60 THEN 1 ELSE 0 END) AS passedCount
-       FROM exam_records er JOIN users u ON u.id = er.userId
-       WHERE er.submittedAt >= ? AND er.submittedAt < ?${scope.sql}`,
-      params
-    );
-    const exams = Number(rows[0].examCount || 0);
-    const passed = Number(rows[0].passedCount || 0);
-    const value = metric === 'average_exam_score'
-      ? Math.round(Number(rows[0].avgScore || 0) * 100) / 100
-      : exams ? Math.round((passed / exams) * 10000) / 100 : 0;
+    const [totals] = await queryAssessmentStats({ scope, timeRange });
+    const exams = Number(totals.examCount);
+    const passed = Number(totals.passedCount);
+    const isPassRate = metric === 'exam_pass_rate';
+    const valueForRow = row => isPassRate
+      ? (Number(row.examCount) ? Math.round(Number(row.passedCount) / Number(row.examCount) * 10000) / 100 : 0)
+      : Math.round(Number(row.avgScore) * 100) / 100;
     const result = {
-      value,
-      numerator: metric === 'exam_pass_rate' ? passed : undefined,
-      denominator: metric === 'exam_pass_rate' ? exams : undefined,
+      value: valueForRow(totals),
+      hasData: exams > 0,
+      numerator: isPassRate ? passed : undefined,
+      denominator: isPassRate ? exams : undefined,
       details: { examCount: exams }
     };
     if (groupBy === 'month') {
-      const [trend] = await db.query(
-        `SELECT DATE_FORMAT(er.submittedAt, '%Y-%m') AS month,
-                COUNT(*) AS examCount, AVG(er.score) AS avgScore,
-                SUM(CASE WHEN er.score >= 60 THEN 1 ELSE 0 END) AS passedCount
-         FROM exam_records er JOIN users u ON u.id = er.userId
-         WHERE er.submittedAt >= ? AND er.submittedAt < ?${scope.sql}
-         GROUP BY month ORDER BY month`,
-        params
-      );
-      result.trend = trend.map(row => ({
-        month: row.month,
-        value: metric === 'average_exam_score'
-          ? Math.round(Number(row.avgScore || 0) * 100) / 100
-          : Number(row.examCount) ? Math.round((Number(row.passedCount) / Number(row.examCount)) * 10000) / 100 : 0
-      }));
+      const trend = await queryAssessmentStats({ scope, timeRange, groupBy });
+      result.trend = trend.map(row => ({ month: row.month, value: valueForRow(row) }));
     }
     return result;
   }
 
   static async queryLearningActivity(metric, orgIds, timeRange, groupBy) {
     const scope = this.buildScope(orgIds);
-    const params = [timeRange.startDate, timeRange.endDate, ...scope.params];
+    const params = [toUtcSqlDate(timeRange.startDate), toUtcSqlDate(timeRange.endDate), ...scope.params];
     const [rows] = await db.query(
-      `SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds,
+      `SELECT COUNT(*) AS recordCount, COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds,
               COUNT(DISTINCT CASE WHEN lr.studySeconds > 0 THEN lr.userId END) AS activeMembers
        FROM learning_records lr JOIN users u ON u.id = lr.userId
        WHERE lr.updatedAt >= ? AND lr.updatedAt < ?${scope.sql}`,
@@ -192,10 +154,10 @@ class OrganizationQueryService {
     const value = metric === 'total_study_hours'
       ? Math.round((Number(rows[0].totalSeconds || 0) / 3600) * 100) / 100
       : Number(rows[0].activeMembers || 0);
-    const result = { value };
+    const result = { value, hasData: Number(rows[0].recordCount) > 0 };
     if (groupBy === 'month') {
       const [trend] = await db.query(
-        `SELECT DATE_FORMAT(lr.updatedAt, '%Y-%m') AS month,
+        `SELECT DATE_FORMAT(DATE_ADD(lr.updatedAt, INTERVAL 8 HOUR), '%Y-%m') AS month,
                 SUM(lr.studySeconds) AS totalSeconds,
                 COUNT(DISTINCT CASE WHEN lr.studySeconds > 0 THEN lr.userId END) AS activeMembers
          FROM learning_records lr JOIN users u ON u.id = lr.userId
@@ -215,6 +177,9 @@ class OrganizationQueryService {
 
   static buildAnswer(parsed, scopeName, result) {
     const unit = parsed.metricDefinition.unit;
+    if (result.hasData === false || result.denominator === 0) {
+      return `${parsed.timeRange.label}${scopeName}暂无可用于统计${parsed.metricDefinition.name}的记录。`;
+    }
     let answer = `${parsed.timeRange.label}${scopeName}${parsed.metricDefinition.name}为${result.value}${unit}。`;
     if (result.denominator !== undefined) {
       answer += `统计口径为${result.numerator || 0}/${result.denominator || 0}。`;

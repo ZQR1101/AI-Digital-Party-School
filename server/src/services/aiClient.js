@@ -57,6 +57,29 @@ function collectNumbers(value) {
   return new Set((JSON.stringify(value).match(/\d+(?:\.\d+)?/g) || []).map(number => String(Number(number))));
 }
 
+function validateEvaluationNarrative(value, payload) {
+  const isText = (text, max) => typeof text === 'string' && text.trim().length > 0 && text.length <= max;
+  const isList = list => Array.isArray(list) && list.length <= 4 && list.every(text => isText(text, 100));
+  const topics = new Set((payload.weakKnowledgePoints || []).map(item => item.category));
+  const suggestions = value?.suggestions;
+  if (!isText(value?.summary, 120) || !isList(value.strengths) || !isList(value.weaknesses)
+    || !Array.isArray(suggestions) || !suggestions.length || suggestions.length > 4
+    || !suggestions.every(item => isText(item?.title, 60) && isText(item?.content, 160)
+      && (item.knowledgePoint === null || topics.has(item.knowledgePoint)))) {
+    throw new Error('AI评语格式无效或引用了未知知识点');
+  }
+  const narrative = {
+    summary: value.summary,
+    strengths: value.strengths,
+    weaknesses: value.weaknesses,
+    suggestions: suggestions.map(({ title, content, knowledgePoint }) => ({ title, content, knowledgePoint }))
+  };
+  if (containsUnexpectedNumber(narrative, collectNumbers(payload))) {
+    throw new Error('AI评语包含输入事实之外的数字');
+  }
+  return narrative;
+}
+
 function validateRecommendationRanking(value, candidates, allowedNumbers = new Set()) {
   if (!value || !Array.isArray(value.recommendations)) throw new Error('AI推荐结果缺少recommendations数组');
   const candidateIds = new Set(candidates.map(item => Number(item.contentId)));
@@ -101,21 +124,13 @@ class AIClient {
     if (!this.isConfigured()) return null;
     // 延迟加载，未配置大模型时规则报告不依赖HTTP客户端初始化。
     const axios = require('axios');
-    const allowedNumbers = new Set([
-      payload.score,
-      payload.completionRate,
-      payload.totalStudyHours,
-      payload.totalExams,
-      payload.avgScore,
-      payload.maxScore,
-      ...Object.values(payload.dimensions || {})
-    ].map(value => String(Number(value))));
     const response = await axios.post(
       process.env.AI_API_URL,
       {
         model: process.env.AI_MODEL || 'deepseek-chat',
         temperature: 0.2,
-        max_tokens: 700,
+        max_tokens: 900,
+        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
@@ -123,7 +138,7 @@ class AIClient {
           },
           {
             role: 'user',
-            content: `请生成学习辅助报告。固定分数和等级不得修改。返回格式：{"summary":"不超过60字","strengths":["..."],"weaknesses":["..."],"suggestions":[{"title":"...","content":"...","knowledgePoint":"..."}]}。输入：${JSON.stringify(payload)}`
+            content: `请生成学习辅助报告。固定分数和等级不得修改，null 表示该维度缺少样本。返回格式：{"summary":"不超过60字","strengths":["..."],"weaknesses":["..."],"suggestions":[{"title":"...","content":"...","knowledgePoint":null}]}。每个数组最多四项，knowledgePoint 只填输入薄弱知识点的 category 原名或 null。输入：${JSON.stringify(payload)}`
           }
         ]
       },
@@ -132,11 +147,7 @@ class AIClient {
         timeout: Number(process.env.AI_TIMEOUT_MS || 15000)
       }
     );
-    const narrative = extractJson(response.data?.choices?.[0]?.message?.content);
-    if (containsUnexpectedNumber(narrative, allowedNumbers)) {
-      throw new Error('AI评语包含输入事实之外的数字');
-    }
-    return narrative;
+    return validateEvaluationNarrative(extractJson(response.data?.choices?.[0]?.message?.content), payload);
   }
 
   static async rankLearningContents(profile, candidates) {
@@ -147,11 +158,6 @@ class AIClient {
         title: item.title,
         tags: item.tags,
         status: item.status
-      })),
-      recentWrongQuestions: (profile.recentWrongQuestions || []).slice(0, 10).map(item => ({
-        title: item.title,
-        category: item.category,
-        analysis: item.analysis
       })),
       weakKnowledgePoints: (profile.weakCategories || []).slice(0, 8)
     };
@@ -198,5 +204,6 @@ module.exports = {
   extractJson,
   containsUnexpectedNumber,
   collectNumbers,
+  validateEvaluationNarrative,
   validateRecommendationRanking
 };

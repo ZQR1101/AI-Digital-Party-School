@@ -180,5 +180,6 @@ class TaskService {
 }
 
 TaskService.memberProgress = memberProgress;
+TaskService.dedupeMemberTasks = dedupeMemberTasks;
 
 module.exports = TaskService;

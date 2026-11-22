@@ -22,7 +22,7 @@
         </div>
         <div class="featured-body">
           <h2>{{ featured.title }}</h2>
-          <p>{{ featured.summary || '公共学习内容' }}</p>
+          <p>{{ contentDescription(featured) }}</p>
           <div class="featured-foot">
             <span><Icon name="schedule" /> {{ featured.type === 'video' ? '视频课程' : '学习文章' }}</span>
             <b>开始学习</b>
@@ -30,10 +30,10 @@
         </div>
       </article>
 
-      <section>
+      <section v-if="list.length || !featured">
         <h3>推荐课程</h3>
-        <div v-if="loading" class="state-box"><i></i><strong>正在加载课程</strong></div>
-        <div v-else-if="error" class="state-box"><strong>课程加载失败</strong><p>{{ error }}</p><button type="button" @click="load">重新加载</button></div>
+        <div v-if="loadingForTab" class="state-box"><i></i><strong>{{ activeTab === 'ai' ? '正在匹配推荐课程' : '正在加载课程' }}</strong></div>
+        <div v-else-if="errorForTab" class="state-box"><strong>课程加载失败</strong><p>{{ errorForTab }}</p><button type="button" @click="load">重新加载</button></div>
         <div v-else-if="!list.length" class="state-box"><strong>暂无课程</strong><p>管理员发布公共内容后会显示在这里</p></div>
         <div v-else class="course-list">
           <article v-for="item in list" :key="item.id" @click="open(item)">
@@ -42,7 +42,7 @@
             </div>
             <div class="copy">
               <h4>{{ item.title }}</h4>
-              <p>{{ item.summary || '公共学习内容' }}</p>
+              <p>{{ contentDescription(item) }}</p>
               <div class="meta">
                 <span>{{ item.type === 'video' ? '视频' : '文章' }}</span>
                 <em><Icon name="group" /> 开始学习</em>
@@ -59,13 +59,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNav from './components/BottomNav.vue'
 import Icon from './components/Icon.vue'
 import { listPublicContents } from './api/contents'
 import { getMyRecommendations } from './api/recommendations'
-import { mapRecItems, readRecCache, writeRecCache } from './api/recCache'
+import { getRecCacheVersion, mapRecItems, readRecCache, writeRecCache } from './api/recCache'
 
 defineOptions({ name: 'CatalogPage' })
 
@@ -76,7 +76,10 @@ const keyword = ref('')
 const activeTab = ref('all')
 const contents = ref([])
 const recommended = ref([])
+const recsLoading = ref(true)
+const recsError = ref('')
 const toast = ref('')
+let recommendationVersion = getRecCacheVersion()
 const tabs = [
   { label: '最新课程', value: 'all' },
   { label: '视频课', value: 'video' },
@@ -94,9 +97,14 @@ const filtered = computed(() => {
 })
 const featured = computed(() => filtered.value[0] || null)
 const list = computed(() => filtered.value.slice(featured.value ? 1 : 0))
+const loadingForTab = computed(() => activeTab.value === 'ai' ? recsLoading.value : loading.value)
+const errorForTab = computed(() => activeTab.value === 'ai' ? recsError.value : error.value)
 
 function hideImage(event) { event.target.style.display = 'none' }
 function open(item) { router.push(`/learn/${item.id || item.contentId}`) }
+function contentDescription(item) {
+  return (activeTab.value === 'ai' && item.reason) || item.summary || '公共学习内容'
+}
 let timer = 0
 function onSearch() {
   window.clearTimeout(timer)
@@ -119,17 +127,22 @@ async function loadCourses() {
 }
 
 async function loadRecs() {
+  const version = getRecCacheVersion()
+  recommendationVersion = version
   const cached = readRecCache()
   if (cached) recommended.value = mapRecItems(cached)
+  recsLoading.value = !recommended.value.length
+  recsError.value = ''
   try {
     const rec = await getMyRecommendations(12)
-    if (rec?.recommendations?.length) {
-      writeRecCache(rec)
-      recommended.value = mapRecItems(rec)
-      if (!contents.value.length) contents.value = recommended.value
-    }
-  } catch {
-    /* 推荐失败不影响课程列表 */
+    if (version !== getRecCacheVersion()) return
+    writeRecCache(rec)
+    recommended.value = mapRecItems(rec)
+    if (!contents.value.length) contents.value = recommended.value
+  } catch (err) {
+    if (version === getRecCacheVersion() && !recommended.value.length) recsError.value = err.message
+  } finally {
+    if (version === getRecCacheVersion()) recsLoading.value = false
   }
 }
 
@@ -139,6 +152,11 @@ function load() {
 }
 
 onMounted(load)
+onActivated(() => {
+  if (recommendationVersion === getRecCacheVersion()) return
+  recommended.value = []
+  loadRecs()
+})
 </script>
 
 <style scoped>

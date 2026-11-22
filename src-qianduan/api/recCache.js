@@ -1,8 +1,19 @@
+let cacheVersion = 0
+
 export function recCacheKey() {
   const user = JSON.parse(localStorage.getItem('mobileUser') || '{}')
   const id = user.id || user.userId || user.username || 'guest'
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date())
   return `home-rec:${id}:${day}`
+}
+
+export function getRecCacheVersion() {
+  return cacheVersion
+}
+
+export function invalidateRecCache() {
+  cacheVersion++
+  try { sessionStorage.removeItem(recCacheKey()) } catch { /* session storage unavailable */ }
 }
 
 export function readRecCache() {

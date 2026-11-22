@@ -21,6 +21,11 @@ const questionDialog = ref(false)
 const questionPreviewVisible = ref(false)
 const paperDialog = ref(false)
 const paperPreviewVisible = ref(false)
+const assessmentDialog = ref(false)
+const assessmentSaving = ref(false)
+const assessmentOrganizations = ref([])
+const assessmentPaper = ref(null)
+const assessmentForm = reactive({ organizationId: null, kind: 'quiz', deadline: '' })
 const questionMode = ref('create')
 const paperMode = ref('create')
 const paperStep = ref(1)
@@ -309,6 +314,39 @@ async function publishPaper(row) {
   }
 }
 
+async function openAssessment(row) {
+  try {
+    assessmentOrganizations.value = await request.get('/admin/organizations')
+    assessmentPaper.value = row
+    Object.assign(assessmentForm, { organizationId: null, kind: 'quiz', deadline: '' })
+    assessmentDialog.value = true
+  } catch (error) {
+    ElMessage.error(error.message || '组织架构加载失败')
+  }
+}
+
+async function publishAssessment() {
+  if (!assessmentForm.organizationId) {
+    ElMessage.warning('请选择下发组织')
+    return
+  }
+  assessmentSaving.value = true
+  try {
+    await request.post('/admin/assessments', {
+      paperId: assessmentPaper.value.id,
+      organizationId: assessmentForm.organizationId,
+      kind: assessmentForm.kind,
+      deadline: assessmentForm.deadline || null,
+    })
+    ElMessage.success('测评已下发，学员可在测评列表中查看')
+    assessmentDialog.value = false
+  } catch (error) {
+    ElMessage.error(error.message || '测评下发失败')
+  } finally {
+    assessmentSaving.value = false
+  }
+}
+
 async function deletePaper(row) {
   try {
     await ElMessageBox.confirm(`确定删除试卷“${row.title}”吗？`, '删除试卷', { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' })
@@ -364,7 +402,15 @@ onMounted(() => Promise.all([loadQuestions(), loadPapers()]))
             <el-table-column prop="title" label="试卷名称" min-width="280" /><el-table-column prop="category" label="分类" width="120" /><el-table-column prop="questionCount" label="题目数" width="90" />
             <el-table-column prop="totalScore" label="总分" width="80" /><el-table-column prop="passScore" label="及格分" width="90" /><el-table-column prop="duration" label="时长（分钟）" width="120" /><el-table-column prop="creatorName" label="创建人" width="110" /><el-table-column prop="updatedAtLabel" label="更新时间" width="170" />
             <el-table-column label="状态" width="90"><template #default="{ row }"><el-tag :type="row.status === 2 ? 'success' : 'warning'">{{ row.status === 2 ? '已发布' : '草稿' }}</el-tag></template></el-table-column>
-            <el-table-column label="操作" width="210" align="right"><template #default="{ row }"><el-button link type="primary" @click="previewPaper(row)">预览</el-button><el-button link type="primary" @click="openEditPaper(row)">编辑</el-button><el-button v-if="row.status !== 2" link type="success" @click="publishPaper(row)">发布</el-button><el-button link type="danger" @click="deletePaper(row)">删除</el-button></template></el-table-column>
+            <el-table-column label="操作" width="240" align="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="previewPaper(row)">预览</el-button>
+                <el-button link type="primary" @click="openEditPaper(row)">编辑</el-button>
+                <el-button v-if="row.status !== 2" link type="success" @click="publishPaper(row)">发布</el-button>
+                <el-button v-else link type="success" @click="openAssessment(row)">下发测评</el-button>
+                <el-button link type="danger" @click="deletePaper(row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
           <div class="pagination-row"><span>共 {{ paperTotal }} 份试卷</span><el-pagination v-model:current-page="paperPage" v-model:page-size="paperPageSize" background layout="prev,pager,next,sizes" :page-sizes="[10,20,50]" :total="paperTotal" @change="loadPapers" /></div>
         </el-tab-pane>
@@ -402,6 +448,37 @@ onMounted(() => Promise.all([loadQuestions(), loadPapers()]))
     <el-dialog v-model="paperPreviewVisible" title="试卷预览" width="760px">
       <div v-if="paperPreview" class="paper-preview"><div class="preview-meta"><el-tag>{{ paperPreview.category || '未分类' }}</el-tag><span>{{ paperPreview.duration }} 分钟</span><span>总分 {{ Number(paperPreview.totalScore) }}</span><span>及格 {{ Number(paperPreview.passScore) }}</span></div><h2>{{ paperPreview.title }}</h2><p class="paper-description">{{ paperPreview.description || '暂无试卷说明' }}</p><div v-for="(question, index) in paperPreview.questions" :key="question.id" class="paper-question"><strong>{{ index + 1 }}. {{ question.title }}</strong><ul v-if="question.options.length"><li v-for="option in question.options" :key="option">{{ option }}</li></ul><small>{{ question.score }} 分 · {{ question.typeLabel }}</small></div></div>
       <template #footer><el-button @click="paperPreviewVisible = false">关闭</el-button><el-button type="primary" :icon="View" @click="paperPreviewVisible = false; openEditPaper(paperPreview)">编辑试卷</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="assessmentDialog" title="下发测评" width="480px" :close-on-click-modal="!assessmentSaving">
+      <el-form label-position="top">
+        <el-form-item label="试卷"><b>{{ assessmentPaper?.title }}</b></el-form-item>
+        <el-form-item label="下发组织（包含下级组织）" required>
+          <el-tree-select
+            v-model="assessmentForm.organizationId"
+            :data="assessmentOrganizations"
+            node-key="id"
+            :props="{ label: 'name' }"
+            check-strictly
+            filterable
+            placeholder="请选择组织"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="测评类型">
+          <el-radio-group v-model="assessmentForm.kind">
+            <el-radio value="quiz">阶段测验</el-radio>
+            <el-radio value="exam">正式考试</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="截止日期（可选）">
+          <el-date-picker v-model="assessmentForm.deadline" type="date" value-format="YYYY-MM-DD" placeholder="不限日期" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button :disabled="assessmentSaving" @click="assessmentDialog = false">取消</el-button>
+        <el-button type="primary" :loading="assessmentSaving" @click="publishAssessment">确认下发</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>

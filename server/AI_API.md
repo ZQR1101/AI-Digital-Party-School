@@ -37,9 +37,23 @@
 
 ```bash
 npm run db:upgrade:ai
+npm run db:upgrade:assessments
 ```
 
 新增 `recommendation_feedback` 与 `ai_audit_logs`。未升级时核心查询、推荐和报告仍可执行，但推荐反馈无法保存，审计日志会降级为服务端警告。
+
+测评升级新增 `assessments` 和 `assessment_attempts`。原有 `exam_records` 保留供历史成绩读取。错题诊断和复测对比使用新测评保存的逐题判分结果。
+
+## 测评和复测流程
+
+1. 在后台创建并发布试卷，然后选择「下发测评」，指定学员的组织和测验或正式考试。该组织及其下级组织的学员均可查看。
+2. 用一致的知识点名称维护题目分类和公共课程标签。学员提交后会看到逐题判分，并可从首页或学习档案打开推荐课程。
+3. 用同一个知识点的另一份试卷下发复测。「学习档案」会显示最近两次作答各答对几道题，并更新薄弱知识点。
+
+- `POST /api/admin/assessments` 下发试卷，参数为 `paperId`、`organizationId`、`kind`（`quiz` 或 `exam`）和可选的 `deadline`。
+- `GET /api/assessments` 列出当前学员可参加的测评，`GET /api/assessments/:id` 获取不含答案的试卷或本人的交卷结果。
+- `POST /api/assessments/:id/submit` 提交按题号索引的 `answers`。重复交卷返回已有结果。
+- 报告按北京时间统计最近 30 个日历日，阶段测验和正式考试分别计算。没有已判分的测评时只展示已有事实。学习活跃天数按有进度更新的任务记录计算，学习时长为这些任务的累计时长。
 
 ## 设计约束
 

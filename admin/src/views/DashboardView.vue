@@ -29,6 +29,7 @@ const overview = ref({
   memberChange: 0,
   contentChange: 0,
   completionRate: 0,
+  completionSampleSize: 0,
 })
 const activityTrend = ref([])
 const passRates = ref([])
@@ -67,8 +68,8 @@ const selectedOrganizationName = computed(() => organizationOptions.value.find(i
 
 const metrics = computed(() => [
   { label: '学习总人数', value: String(overview.value.totalMembers), change: String(overview.value.memberChange), changePrefix: '近 30 天新增', icon: User },
-  { label: '平均学习时长', value: `${overview.value.avgStudyHours}h/人`, change: `${overview.value.completionRate}%`, changePrefix: '任务完成率', icon: Clock },
-  { label: '综合及格率', value: `${overview.value.passRate}%`, change: `${overview.value.passRate}`, changePrefix: '考试成绩 ≥ 60 分', icon: CircleCheckFilled },
+  { label: '平均学习时长', value: `${overview.value.avgStudyHours}h/人`, change: overview.value.completionSampleSize === 0 ? '暂无数据' : `${overview.value.completionRate}%`, changePrefix: '任务完成率', icon: Clock },
+  { label: '综合及格率', value: `${overview.value.passRate}%`, change: `${overview.value.passRate}`, changePrefix: '按各场考核规则计分', icon: CircleCheckFilled },
   { label: '课程资源总数', value: String(overview.value.totalContents), change: String(overview.value.contentChange), changePrefix: '近 30 天新增', icon: Collection },
 ])
 
@@ -168,14 +169,17 @@ function renderTrendChart() {
 
 async function showReport() {
   reporting.value = true
+  const period = { '30d': '最近30天', '3m': '最近3个月', '6m': '最近6个月' }[timeRange.value] || '最近6个月'
+  const name = selectedOrganizationName.value
+  const reportMetrics = ['学习完成率', '考试及格率']
   try {
-    const result = await request.post('/ai/query', {
-      message: `查询${selectedOrganizationName.value}今年的学习完成率和考试及格率趋势`,
-    })
-    await ElMessageBox.alert(result.answer || insight.value.warning, '智能分析报告', { confirmButtonText: '知道了' })
-  } catch (error) {
-    ElMessageBox.alert(insight.value.warning, '智能分析报告', { confirmButtonText: '知道了' })
-    if (error.message) ElMessage.warning(error.message)
+    const results = await Promise.allSettled(reportMetrics.map(metric => request.post('/ai/query', {
+      message: `查询「${name}」${period}的${metric}趋势`,
+    })))
+    const paragraphs = results.map((result, index) => result.status === 'fulfilled'
+      ? result.value.answer
+      : `${reportMetrics[index]}：${result.reason?.message || '查询失败'}`)
+    await ElMessageBox.alert(paragraphs.join('\n'), '智能分析报告', { confirmButtonText: '知道了' }).catch(() => {})
   } finally {
     reporting.value = false
   }

@@ -1,55 +1,93 @@
 <template>
   <div class="page-shell">
     <main class="canvas">
-      <div class="chips hide-scroll">
-        <button v-for="item in filters" :key="item.value" :class="{ on: filter === item.value }" type="button" @click="filter = item.value">{{ item.label }}</button>
+      <div class="page-head">
+        <h1>学习测评</h1>
+        <RouterLink to="/record">学习报告</RouterLink>
       </div>
-      <div class="list">
-        <article v-for="item in visible" :key="item.id" :class="item.status">
-          <div class="head">
-            <h2>{{ item.title }}</h2>
-            <span>{{ statusText[item.status] }}</span>
-          </div>
-          <p v-if="item.duration"><Icon name="timer" /> 考试时长: {{ item.duration }}分钟</p>
-          <p v-if="item.questionCount"><Icon name="list" /> 题目数量: {{ item.detail }}</p>
-          <p v-if="item.deadline" class="warn"><Icon name="event" /> 截止时间: {{ item.deadline }}</p>
-          <p v-if="item.openAt"><Icon name="calendar" /> 开放时间: {{ item.openAt }}</p>
-          <p v-if="item.score != null"><Icon name="check" /> 得分: {{ item.score }}/100</p>
-          <p v-if="item.submittedAt"><Icon name="calendar" /> 交卷时间: {{ item.submittedAt }}</p>
-          <button :disabled="!item.take" type="button" @click="open(item)">{{ item.action }}</button>
-        </article>
+      <div v-if="loading" class="state-box" role="status"><i></i>正在加载测评</div>
+      <div v-else-if="error" class="state-box" role="alert">
+        <strong>测评加载失败</strong><p>{{ error }}</p><button type="button" @click="load">重新加载</button>
       </div>
+      <template v-else>
+        <div v-if="assessments.length" class="chips hide-scroll" aria-label="筛选测评">
+          <button v-for="item in filters" :key="item.value" :class="{ on: filter === item.value }" :aria-pressed="filter === item.value" type="button" @click="filter = item.value">{{ item.label }}</button>
+        </div>
+        <div v-if="visible.length" class="list">
+          <article v-for="item in visible" :key="item.id" :class="status(item)">
+            <div class="head">
+              <h2>{{ item.title }}</h2>
+              <span>{{ statusText[status(item)] }}</span>
+            </div>
+            <p><Icon name="list" /> {{ item.kind === 'exam' ? '考试' : '测验' }} · {{ item.questionCount }} 题 · 满分 {{ item.totalScore }} 分</p>
+            <p v-if="item.deadline"><Icon name="event" /> 截止 {{ formatAssessmentDate(item.deadline) }}</p>
+            <p v-if="item.attempt"><Icon name="check" /> 得分 {{ item.attempt.earnedPoints }}/{{ item.attempt.totalScore }} · {{ item.attempt.passed ? '通过' : '未通过' }}</p>
+            <p v-if="item.attempt?.submittedAt"><Icon name="calendar" /> 交卷 {{ formatAssessmentDate(item.attempt.submittedAt) }}</p>
+            <button :disabled="status(item) === 'closed'" type="button" @click="open(item)">{{ actionText[status(item)] }}</button>
+          </article>
+        </div>
+        <div v-else class="state-box"><p>{{ assessments.length ? '当前筛选下暂无测评' : '暂无分配给你的测评' }}</p></div>
+      </template>
     </main>
     <BottomNav active="exam" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNav from './components/BottomNav.vue'
 import Icon from './components/Icon.vue'
-import { EXAMS } from './data/exams'
+import { getMyAssessments } from './api/assessments'
+import { formatAssessmentDate } from './utils/assessmentDate'
 
 const router = useRouter()
 const filter = ref('all')
+const assessments = ref([])
+const loading = ref(true)
+const error = ref('')
 const filters = [
-  { label: '全部考试', value: 'all' },
-  { label: '未开始 (1)', value: 'pending' },
-  { label: '进行中 (1)', value: 'ongoing' },
-  { label: '已结束', value: 'ended' },
+  { label: '全部测评', value: 'all' },
+  { label: '待作答', value: 'ongoing' },
+  { label: '已交卷', value: 'submitted' },
+  { label: '已截止', value: 'closed' },
 ]
-const statusText = { ongoing: '进行中', pending: '未开始', ended: '已结束' }
-const visible = computed(() => filter.value === 'all' ? EXAMS : EXAMS.filter(item => item.status === filter.value))
+const statusText = { ongoing: '待作答', submitted: '已交卷', closed: '已截止' }
+const actionText = { ongoing: '开始作答', submitted: '查看成绩与解析', closed: '已截止' }
+const visible = computed(() => filter.value === 'all'
+  ? assessments.value
+  : assessments.value.filter(item => status(item) === filter.value))
+
+function status(item) {
+  if (item.attempt) return 'submitted'
+  return item.closed ? 'closed' : 'ongoing'
+}
 
 function open(item) {
-  if (!item.take) return
-  router.push({ path: '/exam/take', query: item.review ? { review: '1' } : {} })
+  router.push({ name: 'exam-take', query: { id: item.id } })
 }
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    const result = await getMyAssessments()
+    assessments.value = result.list
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
 </script>
 
 <style scoped>
 .canvas { padding: 16px var(--pad) 32px; max-width: 720px; margin: 0 auto; }
+.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-head h1 { font-size: 22px; }
+.page-head a { color: var(--primary); font-size: 14px; }
 .chips { display: flex; gap: 12px; overflow-x: auto; margin-bottom: 24px; min-width: 0; max-width: 100%; }
 .chips button {
   flex: none; padding: 8px 16px; border-radius: 999px; background: var(--surface); color: var(--muted);
@@ -62,23 +100,21 @@ article {
   position: relative; overflow: hidden; border: 1px solid transparent;
 }
 article.ongoing::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--primary-container); }
-article.ended { opacity: 0.82; border-color: var(--line); }
+article.closed { opacity: 0.82; border-color: var(--line); }
 .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding-left: 8px; }
 article:not(.ongoing) .head { padding-left: 0; }
 h2 { font-size: 18px; line-height: 1.4; }
 .head span { flex: none; padding: 4px 8px; border-radius: 4px; background: #ffdea8; color: #5e4200; font-size: 11px; }
-article.pending .head span, article.ended .head span { background: var(--surface-highest); color: var(--muted); }
+article.submitted .head span, article.closed .head span { background: var(--surface-highest); color: var(--muted); }
 p { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 15px; margin: 6px 0; padding-left: 8px; }
 article:not(.ongoing) p { padding-left: 0; }
-.warn { color: var(--error); }
-button {
+article button {
   width: 100%; height: 40px; margin-top: 16px; border-radius: 8px; background: var(--primary-container);
   color: #fff; font-size: 13px; letter-spacing: 0.05em;
 }
-article.pending button, article.ended button {
+article.submitted button, article.closed button {
   background: transparent; color: var(--primary); border: 1px solid var(--line);
 }
-article.pending button { opacity: 0.5; color: var(--primary); }
-article.ended button { color: var(--muted); }
+article.closed button { color: var(--muted); }
 button:disabled { cursor: not-allowed; }
 </style>

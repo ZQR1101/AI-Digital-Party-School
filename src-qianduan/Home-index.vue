@@ -64,8 +64,12 @@
                 <span class="kind">{{ item.contentType === 'video' ? '视频' : '专题' }}</span>
               </div>
               <div class="card-foot">
-                <h4>{{ item.title }}</h4>
-                <button type="button" aria-label="不感兴趣" @click.stop="dismiss(item)"><Icon name="bookmark" /></button>
+                <div class="card-content">
+                  <h4><button class="card-title" type="button" @click.stop="start(item)">{{ item.title }}</button></h4>
+                  <p v-if="item.reason" class="rec-reason">{{ item.reason }}</p>
+                  <p v-if="item.matchedKnowledgePoints?.length" class="rec-knowledge">{{ item.matchedKnowledgePoints.join('、') }}</p>
+                </div>
+                <button class="dismiss-rec" type="button" aria-label="不感兴趣" @click.stop="dismiss(item)"><Icon name="bookmark" /></button>
               </div>
             </article>
           </HScroll>
@@ -113,7 +117,7 @@ import Icon from './components/Icon.vue'
 import HScroll from './components/HScroll.vue'
 import { getMyRecommendations, sendRecommendationFeedback } from './api/recommendations'
 import { getMyTasks } from './api/tasks'
-import { readRecCache, writeRecCache } from './api/recCache'
+import { getRecCacheVersion, readRecCache, writeRecCache } from './api/recCache'
 import { applyTaskProgress, onTaskProgress } from './api/taskProgressCache'
 
 defineOptions({ name: 'HomePage' })
@@ -136,6 +140,7 @@ const streak = 12
 const weekHours = computed(() => (tasks.value.filter(item => item.status === 'completed').length * 0.8 + 2.1).toFixed(1))
 const pendingCount = computed(() => tasks.value.filter(item => item.status !== 'completed').length)
 const visibleItems = computed(() => pool.value.filter(item => !dismissed.value.has(item.contentId)).slice(0, 6))
+let recommendationVersion = getRecCacheVersion()
 const todayItem = computed(() => {
   const task = tasks.value.find(item => item.status !== 'completed') || tasks.value[0]
   if (task) return { title: task.title, kind: 'task', id: task.taskId, status: task.status }
@@ -166,20 +171,23 @@ function taskProgress(item) {
 }
 
 async function loadRecommendations(showSpinner) {
+  const version = getRecCacheVersion()
+  recommendationVersion = version
   if (showSpinner) {
     loading.value = true
     error.value = ''
   }
   try {
     const recommendation = await getMyRecommendations(12)
+    if (version !== getRecCacheVersion()) return
     data.value = recommendation
     pool.value = recommendation?.recommendations || []
     writeRecCache(recommendation)
     dismissed.value = new Set()
   } catch (err) {
-    if (!pool.value.length) error.value = err.message
+    if (version === getRecCacheVersion() && !pool.value.length) error.value = err.message
   } finally {
-    loading.value = false
+    if (version === getRecCacheVersion()) loading.value = false
   }
 }
 
@@ -222,6 +230,10 @@ onMounted(() => {
 })
 onActivated(() => {
   tasks.value = tasks.value.map(applyTaskProgress)
+  if (recommendationVersion !== getRecCacheVersion()) {
+    pool.value = []
+    loadRecommendations(true)
+  }
   if (loading.value) return
   loadTasks()
 })
@@ -334,9 +346,14 @@ function onRecommendDrag(active) {
 }
 .kind { position: absolute; top: 8px; left: 8px; padding: 3px 8px; border-radius: 4px; background: rgba(145, 0, 24, 0.9); color: #fff; font-size: 11px; }
 .cover.article .kind { background: rgba(93, 65, 0, 0.9); }
-.card-foot { padding: 10px; display: flex; justify-content: space-between; gap: 8px; }
+.card-foot { padding: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.card-content { flex: 1; min-width: 0; }
 .card-foot h4 { font-size: 15px; line-height: 1.45; }
-.card-foot button { color: var(--muted); font-size: 20px; }
+.card-title { text-align: left; color: inherit; font-weight: inherit; }
+.card-foot .dismiss-rec { flex: none; color: var(--muted); font-size: 20px; }
+.rec-reason, .rec-knowledge { font-size: 12px; margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
+.rec-reason { color: var(--muted); }
+.rec-knowledge { color: var(--primary); }
 .task-list { display: grid; gap: 8px; }
 .task-list article {
   background: var(--surface); padding: 16px; border-radius: var(--radius-xl); box-shadow: var(--whisper);

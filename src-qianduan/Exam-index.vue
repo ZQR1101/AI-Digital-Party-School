@@ -1,24 +1,35 @@
 <template>
   <div class="exam-page">
     <header class="top">
-      <button type="button" aria-label="返回" @click="back()"><Icon name="arrow_back" /></button>
-      <h1>{{ view === 'sheet' ? '答题卡' : view === 'result' ? '测评成绩' : view === 'explain' ? '解析详情' : '专题测验' }}</h1>
-      <div v-if="view === 'question'" class="timer"><Icon name="timer" /> {{ timeLabel }}</div>
-      <span v-else></span>
+      <button type="button" aria-label="返回" :disabled="submitting" @click="back"><Icon name="arrow_back" /></button>
+      <h1>{{ heading }}</h1>
+      <span></span>
     </header>
 
-    <main v-if="view === 'question'" class="question-view">
+    <main v-if="view === 'loading'" class="question-view">
+      <div class="state-box" role="status"><i></i>正在加载试卷</div>
+    </main>
+    <main v-else-if="view === 'unavailable'" class="question-view">
+      <div class="state-box" role="alert">
+        <strong>{{ message }}</strong>
+        <button v-if="canRetry" type="button" @click="load">重新加载</button>
+        <button v-else type="button" @click="back">返回测评列表</button>
+      </div>
+    </main>
+    <main v-else-if="view === 'question'" class="question-view">
+      <p v-if="assessment.deadline" class="deadline">截止 {{ formatAssessmentDate(assessment.deadline) }}</p>
       <div class="progress-line">
         <div><span>当前第 {{ currentIndex + 1 }} 题</span><em>共 {{ questions.length }} 题</em></div>
-        <div class="bar"><i :style="{ width: `${(currentIndex + 1) / questions.length * 100}%` }"></i></div>
+        <div class="bar"><i :style="{ width: ((currentIndex + 1) / questions.length * 100) + '%' }"></i></div>
       </div>
-      <span class="qtype">{{ currentQuestion.type }}</span>
+      <span class="qtype">{{ questionTypes[currentQuestion.type] || '试题' }} · {{ currentQuestion.score }} 分</span>
       <h2>{{ currentQuestion.title }}</h2>
       <div class="options">
-        <label v-for="option in currentQuestion.options" :key="option.value" :class="{ selected: selectedAnswers[currentQuestion.id] === option.value }">
-          <input v-model="selectedAnswers[currentQuestion.id]" type="radio" :name="`q-${currentQuestion.id}`" :value="option.value">
-          <b>{{ option.value }}</b>
-          <span>{{ option.text }}</span>
+        <label v-for="option in currentQuestion.options" :key="option.key" :class="{ selected: includesAnswer(selectedAnswers[currentQuestion.id], option.key) }">
+          <input v-if="currentQuestion.type === 'multiple'" v-model="selectedAnswers[currentQuestion.id]" type="checkbox" :name="'q-' + currentQuestion.id" :value="option.key">
+          <input v-else v-model="selectedAnswers[currentQuestion.id]" type="radio" :name="'q-' + currentQuestion.id" :value="option.key">
+          <b v-if="currentQuestion.type !== 'judge'">{{ option.key }}</b>
+          <span>{{ option.label }}</span>
         </label>
       </div>
     </main>
@@ -33,203 +44,241 @@
         <button
           v-for="(item, index) in questions"
           :key="item.id"
-          :class="{ done: selectedAnswers[item.id], now: currentIndex === index }"
+          :class="{ done: isAnswered(item.id), now: currentIndex === index }"
+          :disabled="submitting"
           type="button"
           @click="jump(index)"
         >{{ index + 1 }}</button>
       </section>
+      <p v-if="unansweredCount" class="sheet-note">还有 {{ unansweredCount }} 题未答，留空交卷会按答错计。</p>
     </main>
 
     <main v-else-if="view === 'result'" class="result-view">
       <section class="score-card">
-        <span>{{ passed ? '优秀' : '需加强' }}</span>
-        <div><strong class="stat-num">{{ score }}</strong><em>分</em></div>
-        <p>党的理论知识在线测评</p>
+        <span>{{ attempt.passed ? '已通过' : '未通过' }}</span>
+        <div><strong class="stat-num">{{ attempt.earnedPoints }}</strong><em>/ {{ attempt.totalScore }} 分</em></div>
+        <p>{{ assessment.title }}</p>
       </section>
       <section class="stats">
-        <div><Icon name="verified" /><span>正确率</span><b>{{ Math.round(correctCount / questions.length * 100) }}%</b></div>
-        <div><Icon name="timer" /><span>用时</span><b>{{ usedLabel }}</b></div>
-        <div><Icon name="leaderboard" /><span>答对</span><b>{{ correctCount }}/{{ questions.length }}</b></div>
+        <div><Icon name="verified" /><span>正确率</span><b>{{ results.length ? Math.round(correctCount / results.length * 100) + '%' : '—' }}</b></div>
+        <div><Icon name="leaderboard" /><span>折算成绩</span><b>{{ attempt.score }}/100</b></div>
+        <div><Icon name="list" /><span>答对</span><b>{{ correctCount }}/{{ results.length }}</b></div>
       </section>
-      <section class="knowledge">
+      <section v-if="knowledge.length" class="knowledge">
         <h3>知识点掌握</h3>
         <div class="know-card">
           <div v-for="item in knowledge" :key="item.name">
             <div><span>{{ item.name }}</span><em>{{ item.score }}%</em></div>
-            <div class="bar"><i :style="{ width: `${item.score}%` }"></i></div>
+            <div class="bar"><i :style="{ width: item.score + '%' }"></i></div>
           </div>
         </div>
       </section>
+      <p v-if="attempt.submittedAt" class="sheet-note">交卷时间 {{ formatAssessmentDate(attempt.submittedAt) }}</p>
     </main>
 
-    <main v-else class="explain-view">
-      <div :class="['banner', isCorrect(currentQuestion) ? 'ok' : 'bad']">
-        <Icon :name="isCorrect(currentQuestion) ? 'check_circle' : 'cancel'" />
-        <strong>{{ isCorrect(currentQuestion) ? '回答正确' : '回答错误' }}</strong>
+    <main v-else-if="view === 'explain'" class="explain-view">
+      <div :class="['banner', currentResult.correct ? 'ok' : 'bad']">
+        <Icon :name="currentResult.correct ? 'check_circle' : 'cancel'" />
+        <strong>{{ currentResult.correct ? '回答正确' : '回答错误' }}</strong>
         <div>
-          <span>您的答案: {{ selectedAnswers[currentQuestion.id] || '未作答' }}</span>
-          <b>正确答案: {{ currentQuestion.answer }}</b>
+          <span>你的答案 {{ answerLabel(currentResult.userAnswer) || '未作答' }}</span>
+          <b>正确答案 {{ answerLabel(currentResult.correctAnswer) }}</b>
         </div>
       </div>
-      <div class="chips"><span>{{ currentQuestion.type }}</span><span class="gold">{{ currentQuestion.category }}</span></div>
-      <h2>{{ currentQuestion.title }}</h2>
-      <div class="options review">
+      <div class="chips">
+        <span>第 {{ currentIndex + 1 }} / {{ results.length }} 题</span>
+        <span v-if="currentResult.category" class="gold">{{ currentResult.category }}</span>
+      </div>
+      <h2>{{ currentResult.title }}</h2>
+      <div v-if="reviewQuestion" class="options review">
         <div
-          v-for="option in currentQuestion.options"
-          :key="option.value"
+          v-for="option in reviewQuestion.options"
+          :key="option.key"
           :class="{
-            correct: option.value === currentQuestion.answer,
-            wrong: option.value === selectedAnswers[currentQuestion.id] && option.value !== currentQuestion.answer
+            correct: includesAnswer(currentResult.correctAnswer, option.key),
+            wrong: includesAnswer(currentResult.userAnswer, option.key) && !includesAnswer(currentResult.correctAnswer, option.key)
           }"
         >
-          <b>{{ option.value }}</b>
-          <span>{{ option.text }}</span>
+          <b v-if="reviewQuestion.type !== 'judge'">{{ option.key }}</b>
+          <span>{{ option.label }}</span>
         </div>
       </div>
-      <section class="analysis">
+      <section v-if="currentResult.explanation" class="analysis">
         <h3>试题解析</h3>
-        <p>{{ currentQuestion.explanation }}</p>
+        <p>{{ currentResult.explanation }}</p>
       </section>
     </main>
 
     <footer v-if="view === 'question'" class="bar">
       <button class="ghost" :disabled="currentIndex === 0" type="button" @click="currentIndex--">上一题</button>
       <button class="sheet-btn" type="button" @click="view = 'sheet'">
-        <Icon name="grid" />
-        <span>答题卡</span>
+        <Icon name="grid" /><span>答题卡</span>
       </button>
-      <button class="solid" type="button" @click="nextOrSubmit">{{ currentIndex < questions.length - 1 ? '下一题' : '交卷' }}</button>
+      <button class="solid" type="button" @click="nextOrReview">{{ currentIndex < questions.length - 1 ? '下一题' : '检查并交卷' }}</button>
     </footer>
     <footer v-else-if="view === 'sheet'" class="bar sheet-bar">
-      <button class="ghost" type="button" @click="view = 'question'">返回作答</button>
-      <button class="solid" type="button" @click="submitExam">立即交卷</button>
+      <button class="ghost" type="button" :disabled="submitting" @click="jump(currentIndex)">返回作答</button>
+      <button class="solid" type="button" :disabled="submitting" @click="submitExam">{{ submitting ? '交卷中…' : unansweredCount ? '留空交卷' : '立即交卷' }}</button>
     </footer>
     <footer v-else-if="view === 'result'" class="bar">
-      <button class="ghost" type="button" @click="resetExam">重新练习</button>
-      <button class="solid" type="button" @click="openExplain(0)">查看全部解析</button>
+      <button class="ghost" type="button" @click="router.push('/record')">查看学习报告</button>
+      <button v-if="results.length" class="solid" type="button" @click="openExplain">查看解析</button>
     </footer>
-    <footer v-else class="bar">
+    <footer v-else-if="view === 'explain'" class="bar">
       <button class="ghost" :disabled="currentIndex === 0" type="button" @click="currentIndex--">上一题</button>
-      <button class="solid" type="button" @click="currentIndex < questions.length - 1 ? currentIndex++ : (view = 'result')">{{ currentIndex < questions.length - 1 ? '下一题' : '返回成绩' }}</button>
+      <button class="solid" type="button" @click="currentIndex < results.length - 1 ? currentIndex++ : (view = 'result')">{{ currentIndex < results.length - 1 ? '下一题' : '返回成绩' }}</button>
     </footer>
-    <div v-if="message" class="app-toast">{{ message }}</div>
+    <div v-if="submitError" class="app-toast" role="alert">{{ submitError }}</div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from './components/Icon.vue'
-import { QUESTIONS } from './data/exams'
+import { getAssessment, submitAssessment } from './api/assessments'
+import { invalidateRecCache } from './api/recCache'
+import { formatAssessmentDate } from './utils/assessmentDate'
 
 const router = useRouter()
 const route = useRoute()
-const questions = ref(QUESTIONS)
+const questionTypes = { single: '单选题', multiple: '多选题', judge: '判断题' }
+const view = ref('loading')
+const assessment = ref(null)
+const attempt = ref(null)
 const selectedAnswers = ref({})
 const currentIndex = ref(0)
-const view = ref('question')
 const submitting = ref(false)
 const message = ref('')
-const score = ref(0)
-const remain = ref(60 * 60)
-const used = ref(0)
+const canRetry = ref(false)
+const submitError = ref('')
+const questions = computed(() => assessment.value?.questions ?? [])
+const results = computed(() => attempt.value?.results ?? [])
+const heading = computed(() => ({
+  sheet: '答题卡', result: '测评成绩', explain: '解析详情',
+})[view.value] || assessment.value?.title || '学习测评')
 const currentQuestion = computed(() => questions.value[currentIndex.value])
-const totalScore = computed(() => questions.value.reduce((sum, item) => sum + item.score, 0))
-const answeredCount = computed(() => Object.keys(selectedAnswers.value).length)
-const correctCount = computed(() => questions.value.filter(isCorrect).length)
-const passed = computed(() => score.value >= totalScore.value * 0.6)
-const timeLabel = computed(() => formatTime(remain.value))
-const usedLabel = computed(() => formatTime(used.value))
+const currentResult = computed(() => results.value[currentIndex.value])
+const reviewQuestion = computed(() => questions.value.find(item => item.id === currentResult.value?.questionId))
+const unansweredCount = computed(() => questions.value.filter(item => !isAnswered(item.id)).length)
+const correctCount = computed(() => results.value.filter(item => item.correct).length)
 const knowledge = computed(() => {
-  const groups = {}
-  for (const item of questions.value) {
-    if (!groups[item.category]) groups[item.category] = { total: 0, right: 0 }
-    groups[item.category].total += 1
-    if (isCorrect(item)) groups[item.category].right += 1
+  const groups = new Map()
+  for (const item of results.value) {
+    if (!item.category) continue
+    const group = groups.get(item.category) ?? { total: 0, right: 0 }
+    group.total += 1
+    if (item.correct) group.right += 1
+    groups.set(item.category, group)
   }
-  return Object.entries(groups).map(([name, item]) => ({ name, score: Math.round(item.right / item.total * 100) }))
+  return Array.from(groups, ([name, item]) => ({ name, score: Math.round(item.right / item.total * 100) }))
 })
 
-let timer = 0
-function formatTime(seconds) {
-  const value = Math.max(0, seconds)
-  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
+function answerParts(answer) {
+  if (Array.isArray(answer)) return answer
+  return String(answer ?? '').split(',').map(value => value.trim()).filter(Boolean)
 }
-function notify(text) {
-  message.value = text
-  window.setTimeout(() => { message.value = '' }, 1800)
+
+function includesAnswer(answer, key) { return answerParts(answer).includes(key) }
+function isAnswered(id) { return answerParts(selectedAnswers.value[id]).length > 0 }
+
+function answerLabel(answer) {
+  return answerParts(answer).map(key => {
+    if (reviewQuestion.value?.type !== 'judge') return key
+    return reviewQuestion.value.options.find(option => option.key === key)?.label ?? key
+  }).join('、')
 }
-function isCorrect(question) { return selectedAnswers.value[question.id] === question.answer }
-function jump(index) { currentIndex.value = index; view.value = 'question' }
-function openExplain(index) { currentIndex.value = index; view.value = 'explain' }
+
+function jump(index) {
+  currentIndex.value = index
+  submitError.value = ''
+  view.value = 'question'
+}
+
+function openExplain() {
+  currentIndex.value = 0
+  view.value = 'explain'
+}
+
 function back() {
+  submitError.value = ''
   if (view.value === 'sheet') view.value = 'question'
   else if (view.value === 'explain') view.value = 'result'
   else router.push('/exam')
 }
-function nextOrSubmit() {
-  if (currentIndex.value < questions.value.length - 1) {
-    if (!selectedAnswers.value[currentQuestion.value.id]) notify('请先选择本题答案')
-    else currentIndex.value++
-    return
-  }
-  submitExam()
-}
-function submitExam(force = false) {
-  const firstUnanswered = questions.value.findIndex(item => !selectedAnswers.value[item.id])
-  if (!force && firstUnanswered !== -1) {
-    currentIndex.value = firstUnanswered
-    view.value = 'question'
-    notify(`还有 ${questions.value.length - answeredCount.value} 题未作答`)
-    return
-  }
-  submitting.value = true
-  score.value = questions.value.reduce((sum, item) => sum + (isCorrect(item) ? item.score : 0), 0)
-  used.value = 60 * 60 - remain.value
-  view.value = 'result'
-  submitting.value = false
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-function resetExam() {
-  selectedAnswers.value = {}
-  currentIndex.value = 0
-  score.value = 0
-  remain.value = 60 * 60
-  used.value = 0
-  view.value = 'question'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+
+function nextOrReview() {
+  if (currentIndex.value < questions.value.length - 1) currentIndex.value++
+  else view.value = 'sheet'
 }
 
-onMounted(() => {
-  if (route.query.review === '1') {
-    selectedAnswers.value = Object.fromEntries(questions.value.map(item => [item.id, item.answer]))
-    score.value = totalScore.value
-    used.value = 25 * 60 + 14
+async function submitExam() {
+  if (submitting.value) return
+  submitting.value = true
+  submitError.value = ''
+  const id = assessment.value.id
+  try {
+    const result = await submitAssessment(id, selectedAnswers.value)
+    invalidateRecCache()
+    if (String(route.query.id) !== String(id)) return
+    attempt.value = result
     view.value = 'result'
+    window.scrollTo(0, 0)
+  } catch (err) {
+    if (String(route.query.id) === String(id)) submitError.value = err.message
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function load() {
+  const id = route.query.id
+  assessment.value = null
+  attempt.value = null
+  currentIndex.value = 0
+  selectedAnswers.value = {}
+  canRetry.value = false
+  message.value = ''
+  submitError.value = ''
+  if (typeof id !== 'string' || !/^\d+$/.test(id)) {
+    message.value = '请从测评列表选择试卷'
+    view.value = 'unavailable'
     return
   }
-  timer = window.setInterval(() => {
-    if (view.value !== 'question' && view.value !== 'sheet') return
-    if (remain.value <= 0) {
-      window.clearInterval(timer)
-      submitExam(true)
-      return
+  view.value = 'loading'
+  try {
+    const result = await getAssessment(id)
+    if (route.query.id !== id) return
+    assessment.value = result
+    attempt.value = result.attempt
+    if (attempt.value) view.value = 'result'
+    else if (result.closed || !questions.value.length) {
+      message.value = result.closed ? '该测评已截止' : '此试卷暂无题目'
+      view.value = 'unavailable'
+    } else {
+      selectedAnswers.value = Object.fromEntries(questions.value
+        .filter(item => item.type === 'multiple').map(item => [item.id, []]))
+      view.value = 'question'
     }
-    remain.value -= 1
-  }, 1000)
-})
-onBeforeUnmount(() => window.clearInterval(timer))
+  } catch (err) {
+    if (route.query.id !== id) return
+    message.value = err.message
+    canRetry.value = true
+    view.value = 'unavailable'
+  }
+}
+
+watch(() => route.query.id, load, { immediate: true })
 </script>
 
 <style scoped>
 .exam-page { min-height: 100vh; background: var(--bg-paper); color: var(--ink); padding-bottom: 96px; display: flex; flex-direction: column; }
 .top {
-  height: 64px; padding: 0 var(--pad); display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px;
+  height: 64px; padding: 0 var(--pad); display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px;
   position: sticky; top: 0; z-index: 10; background: var(--bg-paper); border-bottom: 1px solid var(--line);
 }
 .top h1 { font-size: 16px; text-align: center; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
 .top button { font-size: 22px; width: 40px; height: 40px; border-radius: 50%; }
-.timer { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 218, 214, 0.7); color: var(--secondary); font-size: 13px; letter-spacing: 0.06em; }
 .question-view, .sheet-view, .result-view, .explain-view { padding: 24px var(--pad); max-width: 720px; margin: 0 auto; width: 100%; }
 .progress-line { display: grid; gap: 8px; margin-bottom: 24px; }
 .progress-line > div:first-child { display: flex; justify-content: space-between; font-size: 13px; }
@@ -258,7 +307,7 @@ h2 { margin: 16px 0 24px; font-size: 22px; line-height: 1.55; }
 .legend .done { background: var(--primary-container); border-color: var(--primary-container); }
 .legend .now { background: #fff; border: 2px solid var(--primary-container); }
 .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; background: var(--surface); padding: 16px; border-radius: 8px; box-shadow: var(--whisper); }
-.grid button { width: 48px; height: 48px; margin: auto; border-radius: 50%; background: var(--surface-high); border: 1px solid var(--line); color: var(--muted); }
+.grid button { width: min(48px, 100%); aspect-ratio: 1; margin: auto; border-radius: 50%; background: var(--surface-high); border: 1px solid var(--line); color: var(--muted); }
 .grid .done { background: var(--primary-container); color: #fff; border-color: var(--primary-container); }
 .grid .now { background: #fff; color: var(--primary-container); border: 2px solid var(--primary-container); font-weight: 700; }
 .score-card {
@@ -297,6 +346,7 @@ h2 { margin: 16px 0 24px; font-size: 22px; line-height: 1.55; }
 .analysis p { color: var(--muted); line-height: 1.7; }
 .bar.sheet-bar, footer.bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(252, 249, 248, 0.92);
+  height: auto; border-radius: 0; overflow: visible;
   backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom));
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
 }
@@ -306,5 +356,8 @@ h2 { margin: 16px 0 24px; font-size: 22px; line-height: 1.55; }
 .ghost:disabled { opacity: 0.4; }
 .sheet-btn { display: grid; place-items: center; gap: 2px; color: var(--muted); font-size: 11px; letter-spacing: 0.12em; }
 .sheet-btn :deep(.app-icon) { font-size: 24px; }
-.app-toast { bottom: 96px; }
+.app-toast { bottom: 96px; white-space: normal; }
+.deadline, .sheet-note { color: var(--muted); font-size: 13px; margin: 12px 0 16px; }
+.options label:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.solid:disabled { opacity: 0.55; cursor: wait; }
 </style>

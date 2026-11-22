@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const learningRecordRoutes = require('./routes/learningRecords');
 const examRecordRoutes = require('./routes/examRecords');
+const assessmentRoutes = require('./routes/assessments');
 const reportRoutes = require('./routes/reports');
 const aiRoutes = require('./routes/ai');
 const contentRoutes = require('./routes/contents');
@@ -17,6 +18,7 @@ const adminContentRoutes = require('./routes/admin/contents');
 const adminTaskRoutes = require('./routes/admin/tasks');
 const adminQuestionRoutes = require('./routes/admin/questions');
 const adminPaperRoutes = require('./routes/admin/papers');
+const adminAssessmentRoutes = require('./routes/admin/assessments');
 const adminStatisticsRoutes = require('./routes/admin/statistics');
 
 const app = express();
@@ -36,6 +38,7 @@ app.use('/api', authRoutes); // /api/users/me 挂载在 auth 路由下
 app.use('/api/tasks', taskRoutes);
 app.use('/api/learning-records', learningRecordRoutes);
 app.use('/api/exam-records', examRecordRoutes);
+app.use('/api/assessments', assessmentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/contents', contentRoutes);
 app.use('/api/ai', aiRoutes);
@@ -47,6 +50,7 @@ app.use('/api/admin/contents', adminContentRoutes);
 app.use('/api/admin/tasks', adminTaskRoutes);
 app.use('/api/admin/questions', adminQuestionRoutes);
 app.use('/api/admin/papers', adminPaperRoutes);
+app.use('/api/admin/assessments', adminAssessmentRoutes);
 app.use('/api/admin/statistics', adminStatisticsRoutes);
 
 // 404
