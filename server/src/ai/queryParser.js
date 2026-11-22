@@ -23,6 +23,21 @@ const METRICS = {
     name: '活跃党员人数',
     unit: '人',
     aliases: ['活跃党员人数', '活跃人数', '活跃党员', '学习活跃度', '活跃度']
+  },
+  organization_overview: {
+    name: '组织基本概况',
+    unit: '',
+    aliases: ['组织概况', '支部概况', '组织信息', '基本情况']
+  },
+  member_distribution: {
+    name: '党员人数分布',
+    unit: '人',
+    aliases: ['党员人数分布', '人数分布', '人员分布', '党员数量分布']
+  },
+  sub_organization_count: {
+    name: '下属组织数量',
+    unit: '个',
+    aliases: ['下级党组织', '下级组织', '下属支部', '支部数量']
   }
 };
 
@@ -102,12 +117,30 @@ function extractOrganizationName(message) {
   const text = String(message || '');
   const quoted = text.match(/「([^」]+)」/g);
   if (quoted?.length > 1) throw invalidQuery('请在一次查询中指定一个组织范围');
-  const scope = (quoted ? quoted[0].slice(1, -1) : text
+  if (quoted) {
+    const name = quoted[0].slice(1, -1).trim();
+    return !name || ALL_ORGANIZATIONS.test(name) ? null : name;
+  }
+
+  const strippedText = text
     .replace(TIME_PATTERN, ' ')
     .replace(METRIC_PATTERN, ' ')
     .replace(/[，。？！；：?!,;:“”"「」]/g, ' ')
+    .replace(/(?:学习情况|完成情况|考试情况|整体情况|哪几个月|比较低|比较高|最低|最高)/g, ' ');
+
+  const known = ['学生第一党支部', '行政第一党支部', '教师党支部', '第一党支部', '第一党小组', '第二党小组', '软件工程系党总支', '计算机系党总支', '信息工程学院党委', '机关党委', '学校党委'];
+  for (const org of known.sort((a, b) => b.length - a.length)) {
+    if (strippedText.includes(org)) return org;
+  }
+  const orgMatch = strippedText.match(/([a-zA-Z0-9\u4e00-\u9fa5]+?(?:党委|党总支|党支部|支部|党小组))/);
+  if (orgMatch) {
+    const candidate = orgMatch[1].replace(/^(?:请问|请|帮我|查一下|看一下|查询|统计|分析|查看)/, '').trim();
+    if (candidate && !ALL_ORGANIZATIONS.test(candidate)) return candidate;
+  }
+
+  const scope = strippedText
     .replace(/^(?:\s|请问|请|帮我|查一下|看一下|怎么查|查询|统计|看看|分析|查看)+/, '')
-    .replace(/(?:\s|的|是多少|多少|怎么样|如何|情况|数据|月度趋势|趋势|每月|月度|按月|是|呢|吗)+$/, ''))
+    .replace(/(?:\s|的|是多少|多少|怎么样|如何|情况|数据|月度趋势|趋势|每月|月度|按月|是|呢|吗)+$/, '')
     .trim();
   return !scope || ALL_ORGANIZATIONS.test(scope) ? null : scope;
 }
@@ -126,7 +159,7 @@ function parseOrganizationQuery(message, now = new Date()) {
     metricDefinition: METRICS[metric],
     organizationName: extractOrganizationName(text),
     timeRange: resolveTimeRange(text.replace(/「[^」]+」/g, ' '), now),
-    groupBy: /趋势|每月|月度|按月/.test(text) ? 'month' : null
+    groupBy: /趋势|每月|月度|按月|走势|哪几个月|哪些月|各月/.test(text) ? 'month' : null
   };
 }
 

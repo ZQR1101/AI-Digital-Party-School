@@ -79,7 +79,14 @@ function selectOrganizationScope(actor, selector, rows) {
       ? accessError(403, '未找到可查询的组织，请提供权限范围内的完整组织名称')
       : accessError(400, '未找到该组织，请核对组织名称或编号');
   }
-  if (matches.length > 1) throw accessError(400, '组织名称匹配到多个结果，请提供完整名称');
+  if (matches.length > 1) {
+    const studentBranch = matches.find(r => r.name.startsWith('学生'));
+    if (studentBranch && !normalizedName.includes('行政')) {
+      const orgIds = subtree(studentBranch, byId, children);
+      return { organization: studentBranch, orgIds };
+    }
+    throw accessError(400, `组织名称“${name}”匹配到多个结果（${matches.map(m => m.name).join('、')}），请提供完整名称`);
+  }
   const organization = matches[0];
   const orgIds = subtree(organization, byId, children);
   if (allowed && orgIds.some(orgId => !allowed.has(orgId))) {

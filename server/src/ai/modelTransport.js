@@ -61,7 +61,8 @@ async function requestModel({ payload, budgetMs, parse }, trace = {}) {
           maxContentLength: 256 * 1024
         });
         addUsage(trace, response.data?.usage);
-        const result = parse(response.data?.choices?.[0]?.message?.content);
+        const message = response.data?.choices?.[0]?.message;
+        const result = parse(message?.content, message);
         trace.resultMode = 'model';
         return result;
       } catch (error) {
