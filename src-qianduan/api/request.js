@@ -15,17 +15,21 @@ request.interceptors.request.use((config) => {
 request.interceptors.response.use(
   response => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    const message = error.response?.data?.message
+    // 401 = 未登录/Token 过期；403 且提示停用 = 账号已被停用或删除，均需清除本地登录态
+    const sessionInvalid = status === 401 || (status === 403 && /停用|不存在/.test(message || ''))
+    if (sessionInvalid) {
       localStorage.removeItem('mobileToken')
       localStorage.removeItem('mobileUser')
       if (!window.location.hash.includes('/login')) window.location.hash = '#/login'
     }
-    const message = error.response?.data?.message
+    const finalMessage = message
       || (error.code === 'ECONNABORTED' ? '请求超时，请稍后重试'
         : (error.code === 'ERR_NETWORK' || error.message === 'Network Error'
           ? '无法连接服务器，请确认后端已启动'
           : '网络异常，请稍后重试'))
-    return Promise.reject(new Error(message))
+    return Promise.reject(new Error(finalMessage))
   }
 )
 
