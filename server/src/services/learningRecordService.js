@@ -1,6 +1,9 @@
 const db = require('../config/db');
 const OrganizationService = require('./organizationService');
-const { requiredStudySeconds, shouldComplete, validateReportedSeconds } = require('./studyDuration');
+const {
+  requiredStudySeconds, shouldComplete, validateReportedSeconds,
+  creditableSeconds, MIN_COMPLETION_SECONDS,
+} = require('./studyDuration');
 
 function recordError(statusCode, message) {
   return Object.assign(new Error(message), { statusCode });
@@ -11,7 +14,10 @@ class LearningRecordService {
    * 提交学习记录。
    * 真实性校验：
    *  1) 任务必须存在、已发布，且下发给当前用户所属组织或其上级组织；
-   *  2) 上报秒数必须为合法有限数，且单次增量/累计值受服务端上限约束。
+   *  2) 上报秒数必须为合法有限数；
+   *  3) 可计入时长以服务端两次心跳之间的【真实经过时间】为上限（creditableSeconds），
+   *     客户端绝对值不可信：首次上报最多计入 60s，之后按 lastActiveAt 计算经过时间；
+   *  4) 完成还需满足最小服务端累计时长，防止 1 秒即标记学完。
    */
   static async submit(userId, { taskId, studySeconds, completed }) {
     if (!Number.isInteger(taskId) || taskId <= 0) throw recordError(400, '任务编号无效');
@@ -37,43 +43,65 @@ class LearningRecordService {
     }
 
     const [existing] = await db.query(
-      'SELECT id, status, studySeconds FROM learning_records WHERE userId = ? AND taskId = ?',
+      'SELECT id, status, studySeconds, lastActiveAt FROM learning_records WHERE userId = ? AND taskId = ?',
       [userId, taskId]
     );
 
     const prev = Number(existing[0]?.studySeconds) || 0;
     const requiredSeconds = requiredStudySeconds(task);
-    // 服务端校验并规范化上报秒数（非法输入抛 400）
-    const seconds = validateReportedSeconds({
-      reported: studySeconds,
-      previous: prev,
-      requiredSeconds,
+    // 数值合法性校验（非法输入抛 400）
+    const incoming = validateReportedSeconds({ reported: studySeconds, contentType: task.contentType });
+    // 客户端计数可能回退（换设备/重开页面），增量取非负；服务端绝对值只增不减
+    const delta = Math.max(0, incoming - prev);
+
+    const lastActiveAt = existing[0]?.lastActiveAt ? new Date(existing[0].lastActiveAt) : null;
+    const isFirstReport = existing.length === 0 || !lastActiveAt;
+    const serverElapsedSeconds = lastActiveAt ? Math.floor((Date.now() - lastActiveAt.getTime()) / 1000) : null;
+    const credit = creditableSeconds({
+      requestedDelta: delta,
+      serverElapsedSeconds,
+      isFirstReport,
       contentType: task.contentType,
+      requiredSeconds,
     });
+    const seconds = prev + credit;
+    const now = new Date();
 
     const videoEnded = task.contentType === 'video' && completed;
     const alreadyDone = existing[0]?.status === 'completed';
-    const done = alreadyDone || shouldComplete({
-      ...task,
-      studySeconds: seconds,
-      requiredSeconds,
-      videoEnded,
-    }) || (Boolean(completed) && task.contentType !== 'video' && seconds >= requiredSeconds);
+    // 完成门槛：累计时长需达到 min(required, MIN_COMPLETION_SECONDS) 以上（video 无字数基准时取 MIN）
+    const completionFloor = task.contentType === 'video'
+      ? MIN_COMPLETION_SECONDS
+      : Math.max(requiredSeconds, MIN_COMPLETION_SECONDS);
+    const done = alreadyDone
+      || (seconds >= completionFloor && shouldComplete({
+        ...task,
+        studySeconds: seconds,
+        requiredSeconds,
+        videoEnded,
+      }))
+      || (Boolean(completed) && task.contentType !== 'video' && seconds >= completionFloor);
     const newStatus = done ? 'completed' : (seconds > 0 ? 'inProgress' : 'pending');
     const completedAt = done ? new Date() : null;
 
     if (existing.length > 0) {
       await db.query(
-        'UPDATE learning_records SET studySeconds = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
-        [seconds, newStatus, completedAt, existing[0].id]
+        'UPDATE learning_records SET studySeconds = ?, lastActiveAt = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
+        [seconds, now, newStatus, completedAt, existing[0].id]
       );
     } else {
       await db.query(
-        'INSERT INTO learning_records (userId, taskId, studySeconds, status, completedAt) VALUES (?, ?, ?, ?, ?)',
-        [userId, taskId, seconds, newStatus, completedAt]
+        'INSERT INTO learning_records (userId, taskId, studySeconds, lastActiveAt, status, completedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, taskId, seconds, now, newStatus, completedAt]
       );
     }
-    return { studySeconds: seconds, status: newStatus, requiredSeconds, progress: done ? 100 : Math.min(99, requiredSeconds ? Math.round(seconds / requiredSeconds * 100) : 0) };
+    return {
+      studySeconds: seconds,
+      creditedSeconds: credit,
+      status: newStatus,
+      requiredSeconds,
+      progress: done ? 100 : Math.min(99, requiredSeconds ? Math.round(seconds / requiredSeconds * 100) : 0),
+    };
   }
 
   static async getCompletionStats(organizationId) {

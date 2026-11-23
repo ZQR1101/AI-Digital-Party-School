@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS learning_records (
   userId INT NOT NULL COMMENT '用户ID',
   taskId INT NOT NULL COMMENT '任务ID',
   studySeconds INT DEFAULT 0 COMMENT '学习时长(秒)',
+  lastActiveAt DATETIME NULL COMMENT '最近一次学习心跳时间，服务端据此限制可计入时长',
   completedAt DATETIME NULL COMMENT '完成时间',
   status VARCHAR(20) DEFAULT 'inProgress' COMMENT '状态: inProgress/completed',
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,

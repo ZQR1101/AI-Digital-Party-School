@@ -7,6 +7,19 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
+/** 幂等补列：列已存在则跳过 */
+async function ensureColumn(conn, table, column, alterSql) {
+  const [cols] = await conn.query(
+    `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column]
+  );
+  if (cols[0].n === 0) {
+    await conn.query(alterSql);
+    console.log(`已补齐列 ${table}.${column}`);
+  }
+}
+
 async function init() {
   if (!process.env.DB_PASSWORD) {
     throw new Error('缺少环境变量 DB_PASSWORD，请在 server/.env 中配置数据库口令');
@@ -43,6 +56,10 @@ async function init() {
         console.log(`已应用增量脚本 ${file}`);
       }
     }
+
+    // 旧库列补齐：learning_records.lastActiveAt（CREATE TABLE IF NOT EXISTS 不会改已有表）
+    await ensureColumn(conn, 'learning_records', 'lastActiveAt',
+      "ALTER TABLE party_school.learning_records ADD COLUMN lastActiveAt DATETIME NULL COMMENT '最近一次学习心跳时间' AFTER studySeconds");
 
     const [orgs] = await conn.query('SELECT id, name, type, parentId FROM party_school.organizations ORDER BY id');
     console.log(`\n组织数据（${orgs.length} 条）：`);
