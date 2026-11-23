@@ -4,6 +4,7 @@ const TaskService = require('../../services/taskService');
 const ContentService = require('../../services/contentService');
 const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
+const OrgScopeService = require('../../services/orgScopeService');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 router.use(authenticate, loadCurrentUser, requireManager);
@@ -12,6 +13,30 @@ function normalizeDeadline(value) {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return `${value} 23:59:59`;
   return value;
+}
+
+function handleRouteError(res, err, context) {
+  if (err && err.statusCode) {
+    return ResponseHelper.error(res, err.message, err.statusCode, err.statusCode);
+  }
+  console.error(context, err);
+  return ResponseHelper.error(res);
+}
+
+/**
+ * 校验一组目标组织是否都在当前账号的数据范围内（admin 不限制，书记限本组织及下级）
+ */
+async function assertScopeForOrgIds(req, orgIds) {
+  const scopeIds = await OrgScopeService.getScopedOrgIds(req.user);
+  OrgScopeService.assertInScope(scopeIds, orgIds, '无权对所选组织发布或管理学习任务');
+  return scopeIds;
+}
+
+/** 校验单个任务的归属组织是否在当前账号范围内 */
+async function assertScopeForTask(req, task) {
+  const scopeIds = await OrgScopeService.getScopedOrgIds(req.user);
+  OrgScopeService.assertInScope(scopeIds, [task.organizationId], '无权管理其他组织的学习任务');
+  return scopeIds;
 }
 
 async function resolveOrganizationIds({ organizationId, organizationIds, includeChildren }) {
@@ -37,13 +62,22 @@ async function resolveOrganizationIds({ organizationId, organizationIds, include
 router.get('/', async (req, res) => {
   try {
     const { page = 1, pageSize = 10, keyword, organizationId, status } = req.query;
+    const scopeIds = await OrgScopeService.getScopedOrgIds(req.user);
+    // 书记只看本组织及下级组织的任务；admin 的 scopeIds 为 null 不限制。
+    // 书记自己传的 organizationId 筛选参数也必须落在范围内才生效。
+    let scopedFilter = organizationId;
+    if (scopeIds) {
+      if (organizationId && !scopeIds.map(Number).includes(Number(organizationId))) {
+        return ResponseHelper.forbidden(res, '无权查看其他组织的学习任务');
+      }
+      scopedFilter = undefined;
+    }
     const result = await TaskService.list({
-      page: Number(page), pageSize: Number(pageSize), keyword, organizationId, status
+      page: Number(page), pageSize: Number(pageSize), keyword, organizationId: scopedFilter, organizationIds: scopeIds, status
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('List tasks error:', err);
-    return ResponseHelper.error(res);
+    return handleRouteError(res, err, 'List tasks error:');
   }
 });
 
@@ -54,9 +88,10 @@ router.get('/:id', async (req, res) => {
   try {
     const task = await TaskService.getById(req.params.id);
     if (!task) return ResponseHelper.notFound(res, '任务不存在');
+    await assertScopeForTask(req, task);
     return ResponseHelper.success(res, task);
   } catch (err) {
-    return ResponseHelper.error(res);
+    return handleRouteError(res, err, 'Get task error:');
   }
 });
 
@@ -79,6 +114,7 @@ router.post('/', async (req, res) => {
 
     const orgIds = await resolveOrganizationIds({ organizationId, organizationIds, includeChildren });
     if (!orgIds.length) return ResponseHelper.badRequest(res, '请选择下发组织');
+    await assertScopeForOrgIds(req, orgIds);
 
     const ids = [];
     for (const orgId of orgIds) {
@@ -94,8 +130,7 @@ router.post('/', async (req, res) => {
     }
     return ResponseHelper.success(res, { ids, count: ids.length, contentType: content.type }, `已向 ${ids.length} 个组织发布任务`);
   } catch (err) {
-    console.error('Create task error:', err);
-    return ResponseHelper.error(res);
+    return handleRouteError(res, err, 'Create task error:');
   }
 });
 
@@ -105,8 +140,9 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const task = await TaskService.getById(req.params.id);
+    const task = await TaskService.getById(req.params.id, { withCompletion: false });
     if (!task) return ResponseHelper.notFound(res, '任务不存在');
+    await assertScopeForTask(req, task);
     const payload = { ...req.body };
     if (payload.contentId) {
       const content = await ContentService.getById(payload.contentId);
@@ -118,12 +154,15 @@ router.put('/:id', async (req, res) => {
     if (Array.isArray(payload.organizationIds) && payload.organizationIds.length) {
       payload.organizationId = Number(payload.organizationIds[0]);
     }
+    // 任务改派组织时，新组织同样必须在自己的管理范围内
+    if (payload.organizationId != null && payload.organizationId !== '') {
+      await assertScopeForOrgIds(req, [payload.organizationId]);
+    }
     if (payload.deadline) payload.deadline = normalizeDeadline(payload.deadline);
     await TaskService.update(req.params.id, payload);
     return ResponseHelper.success(res, null, '更新成功');
   } catch (err) {
-    console.error('Update task error:', err);
-    return ResponseHelper.error(res);
+    return handleRouteError(res, err, 'Update task error:');
   }
 });
 
@@ -133,12 +172,13 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const task = await TaskService.getById(req.params.id);
+    const task = await TaskService.getById(req.params.id, { withCompletion: false });
     if (!task) return ResponseHelper.notFound(res, '任务不存在');
+    await assertScopeForTask(req, task);
     await TaskService.delete(req.params.id);
     return ResponseHelper.success(res, null, '删除成功');
   } catch (err) {
-    return ResponseHelper.error(res);
+    return handleRouteError(res, err, 'Delete task error:');
   }
 });
 

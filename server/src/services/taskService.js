@@ -28,7 +28,7 @@ function dedupeMemberTasks(rows) {
 }
 
 class TaskService {
-  static async list({ page = 1, pageSize = 10, keyword, organizationId, status }) {
+  static async list({ page = 1, pageSize = 10, keyword, organizationId, organizationIds, status }) {
     let sql = `SELECT t.*, c.title as contentTitle, c.type as contentType, c.coverUrl, c.bodyOrVideoUrl,
                       o.name as organizationName, u.realName as creatorName,
                       ${COMPLETION_SQL} as completionRate
@@ -39,6 +39,13 @@ class TaskService {
     const params = [];
     if (keyword) { sql += ' AND (t.title LIKE ? OR c.title LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`); }
     if (organizationId) { sql += ' AND t.organizationId = ?'; params.push(organizationId); }
+    const scopedIds = Array.isArray(organizationIds)
+      ? [...new Set(organizationIds.map(Number).filter(Boolean))]
+      : null;
+    if (scopedIds && scopedIds.length) {
+      sql += ` AND t.organizationId IN (${scopedIds.map(() => '?').join(',')})`;
+      params.push(...scopedIds);
+    }
     if (status && ['draft', 'published'].includes(status)) {
       sql += ' AND t.status = ?';
       params.push(status);
