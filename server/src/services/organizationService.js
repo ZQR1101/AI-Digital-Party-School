@@ -41,19 +41,39 @@ class OrganizationService {
     return ids;
   }
 
-  static async getDescendantIds(orgId) {
-    const [rows] = await db.query('SELECT id, parentId FROM organizations');
+  /**
+   * 从组织快照计算指定组织的子树 ID 集合（本组织及全部下级）。
+   * 语义与 getDescendantIds 完全一致：
+   *  - 根组织不存在于快照中返回 []；
+   *  - 返回数组元素为数字，含根自身；
+   *  - 环状引用自动截断（seen 集合）。
+   * 供需要一次性计算多个子树的调用方复用同一份快照，避免逐个全表查询。
+   */
+  static descendantIdsFromRows(orgId, rows) {
     const root = Number(orgId);
-    if (!rows.some(row => Number(row.id) === root)) return [];
+    let hasRoot = false;
+    const childrenByParent = new Map();
+    for (const row of rows) {
+      if (Number(row.id) === root) hasRoot = true;
+      const parent = row.parentId == null ? null : Number(row.parentId);
+      if (!childrenByParent.has(parent)) childrenByParent.set(parent, []);
+      childrenByParent.get(parent).push(Number(row.id));
+    }
+    if (!hasRoot) return [];
     const ids = new Set();
     const pending = [root];
     while (pending.length) {
       const id = pending.pop();
       if (ids.has(id)) continue;
       ids.add(id);
-      pending.push(...rows.filter(row => idsEqual(row.parentId, id)).map(row => Number(row.id)));
+      pending.push(...(childrenByParent.get(id) || []));
     }
     return [...ids];
+  }
+
+  static async getDescendantIds(orgId) {
+    const [rows] = await db.query('SELECT id, parentId FROM organizations');
+    return this.descendantIdsFromRows(orgId, rows);
   }
 
   static async getAncestorIds(orgId) {

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS users (
   status TINYINT DEFAULT 1 COMMENT '状态: 1启用 0禁用',
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_users_org_status_role (organizationId, status, role) COMMENT '组织范围成员/完成率统计覆盖索引',
   FOREIGN KEY (organizationId) REFERENCES organizations(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS contents (
   createdBy INT NULL COMMENT '创建人ID',
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_contents_status_created (status, createdAt) COMMENT '已发布内容数量统计',
   FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学习内容表';
 
@@ -87,6 +89,7 @@ CREATE TABLE IF NOT EXISTS learning_tasks (
   createdBy INT NULL COMMENT '创建人ID',
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_task_org_status (organizationId, status) COMMENT '按组织范围过滤已发布任务',
   FOREIGN KEY (contentId) REFERENCES contents(id) ON DELETE CASCADE,
   FOREIGN KEY (organizationId) REFERENCES organizations(id) ON DELETE CASCADE,
   FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
@@ -111,7 +114,9 @@ CREATE TABLE IF NOT EXISTS learning_records (
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (taskId) REFERENCES learning_tasks(id) ON DELETE CASCADE,
-  UNIQUE KEY uk_user_task (userId, taskId)
+  UNIQUE KEY uk_user_task (userId, taskId),
+  KEY idx_record_status_completed (status, completedAt) COMMENT '完成率趋势按状态+完成时间过滤',
+  KEY idx_record_updated (updatedAt) COMMENT '活跃趋势按更新时间范围过滤'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学习记录表';
 
 -- ----------------------------

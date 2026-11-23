@@ -64,44 +64,50 @@ class StatisticsService {
     };
   }
 
-  static async getOverview(orgIds, completionRange) {
+  static async getOverview(orgIds, completionRange, orgSnapshot) {
     const scope = this.buildUserScope(orgIds);
     const taskScope = orgIds == null ? '' : orgIds.length ? ' AND organizationId IN (?)' : ' AND 1 = 0';
     const taskParams = orgIds?.length ? [orgIds] : [];
-    const [[userCount]] = await db.query(
-      `SELECT COUNT(*) AS total FROM users u WHERE u.status = 1 AND u.role = 'member'${scope.sql}`,
-      scope.params
-    );
-    const [[taskCount]] = await db.query(
-      `SELECT COUNT(*) AS total FROM learning_tasks WHERE status = 'published'${taskScope}`,
-      taskParams
-    );
     const contentScope = orgIds == null ? '' : `AND (c.isPublic = 1 OR EXISTS (
       SELECT 1 FROM learning_tasks WHERE contentId = c.id AND status = 'published'${taskScope}
     ))`;
-    const [[contentCount]] = await db.query(
-      `SELECT COUNT(*) AS total FROM contents c WHERE c.status = 'published' ${contentScope}`,
-      taskParams
-    );
-    const [[totalStudy]] = await db.query(
-      `SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds
-       FROM learning_records lr
-       JOIN users u ON lr.userId = u.id
-       WHERE 1=1${scope.sql}`,
-      scope.params
-    );
-    const completion = await queryTaskCompletion(orgIds, completionRange);
-    const [examStats] = await queryAssessmentStats({ scope });
-    const [[newMembers]] = await db.query(
-      `SELECT COUNT(*) AS total FROM users u
-       WHERE u.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) AND u.role = 'member'${scope.sql}`,
-      scope.params
-    );
-    const [[newContents]] = await db.query(
-      `SELECT COUNT(*) AS total FROM contents c
-       WHERE c.status = 'published' AND c.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) ${contentScope}`,
-      taskParams
-    );
+    // 8 个统计口径相互独立，并行下发（连接池排队，结果顺序与串行一致）
+    const [
+      [[userCount]], [[taskCount]], [[contentCount]], [[totalStudy]],
+      completion, [examStats], [[newMembers]], [[newContents]],
+    ] = await Promise.all([
+      db.query(
+        `SELECT COUNT(*) AS total FROM users u WHERE u.status = 1 AND u.role = 'member'${scope.sql}`,
+        scope.params
+      ),
+      db.query(
+        `SELECT COUNT(*) AS total FROM learning_tasks WHERE status = 'published'${taskScope}`,
+        taskParams
+      ),
+      db.query(
+        `SELECT COUNT(*) AS total FROM contents c WHERE c.status = 'published' ${contentScope}`,
+        taskParams
+      ),
+      db.query(
+        `SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds
+         FROM learning_records lr
+         JOIN users u ON lr.userId = u.id
+         WHERE 1=1${scope.sql}`,
+        scope.params
+      ),
+      queryTaskCompletion(orgIds, completionRange, undefined, orgSnapshot),
+      queryAssessmentStats({ scope }),
+      db.query(
+        `SELECT COUNT(*) AS total FROM users u
+         WHERE u.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) AND u.role = 'member'${scope.sql}`,
+        scope.params
+      ),
+      db.query(
+        `SELECT COUNT(*) AS total FROM contents c
+         WHERE c.status = 'published' AND c.createdAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) ${contentScope}`,
+        taskParams
+      ),
+    ]);
 
     const totalMembers = Number(userCount.total || 0);
     const totalSeconds = Number(totalStudy.totalSeconds || 0);
@@ -132,9 +138,11 @@ class StatisticsService {
       : 'SELECT id, name FROM organizations WHERE parentId IS NULL';
     const params = parentOrgId ? [Number(parentOrgId)] : [];
     const [orgs] = await db.query(sql, params);
+    // 组织快照只取一次，各子组织的后代集合在本快照上计算（消除逐个全表查询的 N+1）
+    const [orgRows] = await db.query('SELECT id, parentId FROM organizations');
     const stats = [];
     for (const org of orgs) {
-      const orgIds = await OrganizationService.getDescendantIds(org.id);
+      const orgIds = OrganizationService.descendantIdsFromRows(org.id, orgRows);
       const overview = await this.getOverview(orgIds);
       stats.push({ organizationId: org.id, organizationName: org.name, ...overview });
     }
@@ -190,20 +198,22 @@ class StatisticsService {
     }
     sql += ' ORDER BY id';
     const [orgs] = await db.query(sql, params);
+    // 组织快照只取一次，各支部后代集合在本快照上计算（消除逐个全表查询的 N+1）
+    const [orgRows] = await db.query('SELECT id, parentId FROM organizations');
     const allowed = orgIds ? new Set(orgIds) : null;
-    const ranking = [];
-    for (const org of orgs) {
-      const descendants = await OrganizationService.getDescendantIds(org.id);
+    // 各支部概览相互独立，并行计算（结果顺序与串行一致，最后统一排序）
+    const ranking = await Promise.all(orgs.map(async (org) => {
+      const descendants = OrganizationService.descendantIdsFromRows(org.id, orgRows);
       const descendantIds = allowed ? descendants.filter(id => allowed.has(id)) : descendants;
-      const overview = await this.getOverview(descendantIds, completionRange);
-      ranking.push({
+      const overview = await this.getOverview(descendantIds, completionRange, orgRows);
+      return {
         organizationId: org.id,
         name: org.name,
         score: overview.avgScore,
         passRate: overview.passRate,
         completionRate: overview.completionRate,
-      });
-    }
+      };
+    }));
     return ranking.sort((a, b) => b.score - a.score).slice(0, 8);
   }
 

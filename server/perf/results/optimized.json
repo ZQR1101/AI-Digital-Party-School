@@ -1,0 +1,85 @@
+{
+  "label": "optimized",
+  "createdAt": "2026-11-23T13:06:15.062Z",
+  "mysqlVersion": "8.0.46",
+  "orgCount": 134,
+  "results": [
+    {
+      "name": "taskList",
+      "iterations": 5,
+      "meanMs": 3.62,
+      "p50Ms": 3.8,
+      "p95Ms": 4.02,
+      "p99Ms": 4.02,
+      "maxMs": 4.02,
+      "totalMs": 18.11,
+      "throughputOpsPerSec": 276.1
+    },
+    {
+      "name": "taskCompletion",
+      "iterations": 5,
+      "meanMs": 5.36,
+      "p50Ms": 5.21,
+      "p95Ms": 6.39,
+      "p99Ms": 6.39,
+      "maxMs": 6.39,
+      "totalMs": 26.78,
+      "throughputOpsPerSec": 186.68
+    },
+    {
+      "name": "dashboardSecretary",
+      "iterations": 5,
+      "meanMs": 14.44,
+      "p50Ms": 14.31,
+      "p95Ms": 15.78,
+      "p99Ms": 15.78,
+      "maxMs": 15.78,
+      "totalMs": 72.23,
+      "throughputOpsPerSec": 69.23
+    },
+    {
+      "name": "dashboardAdmin",
+      "iterations": 5,
+      "meanMs": 191,
+      "p50Ms": 190.65,
+      "p95Ms": 200.34,
+      "p99Ms": 200.34,
+      "maxMs": 200.34,
+      "totalMs": 955.02,
+      "throughputOpsPerSec": 5.24
+    },
+    {
+      "name": "orgTree",
+      "iterations": 20,
+      "meanMs": 1.77,
+      "p50Ms": 1.68,
+      "p95Ms": 2.11,
+      "p99Ms": 2.12,
+      "maxMs": 2.12,
+      "totalMs": 35.44,
+      "throughputOpsPerSec": 564.35
+    },
+    {
+      "name": "userTasks",
+      "iterations": 20,
+      "meanMs": 2.79,
+      "p50Ms": 2.78,
+      "p95Ms": 3.17,
+      "p99Ms": 3.89,
+      "maxMs": 3.89,
+      "totalMs": 55.82,
+      "throughputOpsPerSec": 358.32
+    },
+    {
+      "name": "recordStats",
+      "iterations": 20,
+      "meanMs": 0.95,
+      "p50Ms": 0.9,
+      "p95Ms": 1.23,
+      "p99Ms": 1.27,
+      "maxMs": 1.27,
+      "totalMs": 19.04,
+      "throughputOpsPerSec": 1050.3
+    }
+  ]
+}

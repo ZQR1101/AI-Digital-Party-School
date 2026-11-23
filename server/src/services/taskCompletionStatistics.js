@@ -38,8 +38,19 @@ function summarizeTaskCompletion(rows, groupBy) {
   };
 }
 
-async function queryTaskCompletion(orgIds, timeRange, groupBy) {
-  const [organizations] = await db.query('SELECT id, parentId FROM organizations');
+/**
+ * @param {Array<{id:number|string, parentId:number|null}>} [orgSnapshot]
+ *        可选组织快照（[{id, parentId}]）。传入时不再自行查询 organizations 表，
+ *        供同一请求内需计算多个组织范围的调用方（如支部排行）复用一份快照。
+ *        不传则行为与旧版完全一致（内部查询一次）。
+ */
+async function queryTaskCompletion(orgIds, timeRange, groupBy, orgSnapshot) {
+  let organizations;
+  if (orgSnapshot) {
+    organizations = orgSnapshot;
+  } else {
+    [organizations] = await db.query('SELECT id, parentId FROM organizations');
+  }
   const scope = orgIds == null ? null : new Set(orgIds.map(Number));
   const pairs = organizations
     .filter(org => scope == null || scope.has(Number(org.id)))

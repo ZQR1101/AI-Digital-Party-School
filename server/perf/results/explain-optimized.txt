@@ -1,0 +1,189 @@
+
+========== 任务列表(逐行完成率子查询) ==========
+SELECT t.*, c.title as contentTitle, o.name as organizationName,
+                   (SELECT ROUND(IFNULL(
+      100 * SUM(CASE WHEN lr.status = 'completed' THEN 1 ELSE 0 END) / NULLIF(COUNT(u.id), 0), 0))
+    FROM users u
+    LEFT JOIN learning_records lr ON lr.userId = u.id AND lr.taskId = t.id
+    WHERE u.organizationId = t.organizationId AND u.status = 1) as completionRate
+            FROM learning_tasks t
+            LEFT JOIN contents c ON t.contentId = c.id
+            LEFT JOIN organizations o ON t.organizationId = o.id
+            LEFT JOIN users u ON t.createdBy = u.id
+            WHERE 1=1 AND t.organizationId IN (39)
+            ORDER BY t.id DESC LIMIT 10 OFFSET 0
+
+-> Limit: 10 row(s)  (cost=3.7 rows=3) (actual time=0.0334..0.0399 rows=3 loops=1)
+    -> Nested loop left join  (cost=3.7 rows=3) (actual time=0.0328..0.0392 rows=3 loops=1)
+        -> Nested loop left join  (cost=2.65 rows=3) (actual time=0.0298..0.0356 rows=3 loops=1)
+            -> Nested loop left join  (cost=2.1 rows=3) (actual time=0.027..0.0321 rows=3 loops=1)
+                -> Sort: t.id DESC, limit input to 10 row(s) per chunk  (cost=1.05 rows=3) (actual time=0.0218..0.0223 rows=3 loops=1)
+                    -> Index lookup on t using idx_task_org_status (organizationId=39)  (cost=1.05 rows=3) (actual time=0.00969..0.013 rows=3 loops=1)
+                -> Single-row index lookup on c using PRIMARY (id=t.contentId)  (cost=0.283 rows=1) (actual time=0.0029..0.00292 rows=1 loops=3)
+            -> Constant row from o  (cost=0.117..0.117 rows=1) (actual time=835e-6..862e-6 rows=1 loops=3)
+        -> Single-row covering index lookup on u using PRIMARY (id=t.createdBy)  (cost=0.283 rows=1) (actual time=0.00101..0.00104 rows=1 loops=3)
+-> Select #2 (subquery in projection; dependent)
+    -> Aggregate: count(u.id), sum((case when (lr.`status` = 'completed') then 1 else 0 end))  (cost=13.7 rows=1) (actual time=0.0686..0.0686 rows=1 loops=3)
+        -> Nested loop left join  (cost=11.3 rows=24.4) (actual time=0.00735..0.0636 rows=28 loops=3)
+            -> Covering index lookup on u using idx_users_org_status_role (organizationId=t.organizationId, status=1)  (cost=2.76 rows=24.4) (actual time=0.00351..0.00914 rows=28 loops=3)
+            -> Single-row index lookup on lr using uk_user_task (userId=u.id, taskId=t.id)  (cost=0.254 rows=1) (actual time=0.00184..0.00185 rows=0.512 loops=84)
+
+
+
+========== 任务完成率聚合(queryTaskCompletion) ==========
+WITH RECURSIVE pairs AS (
+              SELECT o.id AS memberOrgId, o.id AS taskOrgId FROM organizations o WHERE o.id IN (39)
+              UNION ALL
+              SELECT p.memberOrgId, o.id FROM pairs p JOIN organizations o ON o.parentId = p.taskOrgId
+            )
+            SELECT u.id AS userId, lt.contentId, lt.title,
+                   DATE_FORMAT(DATE_ADD(lt.createdAt, INTERVAL 8 HOUR), '%Y-%m') AS month,
+                   CASE WHEN lr.status = 'completed' AND COALESCE(lr.completedAt, lr.updatedAt) < '2026-11-23 13:06:30'
+                        THEN 1 ELSE 0 END AS completed
+            FROM pairs os
+            JOIN users u ON u.organizationId = os.memberOrgId AND u.role = 'member' AND u.status = 1
+            JOIN learning_tasks lt ON lt.organizationId = os.taskOrgId AND lt.status = 'published'
+            LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = u.id
+            WHERE lt.createdAt >= '2026-05-24 13:06:30' AND lt.createdAt < '2026-11-23 13:06:30'
+            ORDER BY u.id, (lt.organizationId = u.organizationId) DESC, lt.id DESC
+
+-> Sort: u.id, `(lt.organizationId = u.organizationId)` DESC, lt.id DESC  (actual time=0.175..0.176 rows=54 loops=1)
+    -> Stream results  (cost=133 rows=180) (actual time=0.034..0.162 rows=54 loops=1)
+        -> Nested loop left join  (cost=133 rows=180) (actual time=0.0281..0.133 rows=54 loops=1)
+            -> Nested loop inner join  (cost=70.5 rows=180) (actual time=0.0237..0.0432 rows=54 loops=1)
+                -> Nested loop inner join  (cost=48.8 rows=13.1) (actual time=0.0193..0.0204 rows=2 loops=1)
+                    -> Filter: ((os.taskOrgId is not null) and (os.memberOrgId is not null))  (cost=12.2..7.56 rows=45) (actual time=0.0112..0.0114 rows=1 loops=1)
+                        -> Table scan on os  (cost=12.3..15.3 rows=45.7) (actual time=0.0103..0.0105 rows=1 loops=1)
+                            -> Materialize recursive CTE pairs  (cost=12.3..12.3 rows=45.7) (actual time=0.01..0.01 rows=1 loops=1)
+                                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=40e-6..130e-6 rows=1 loops=1)
+                                -> Repeat until convergence
+                                    -> Nested loop inner join  (cost=7.7 rows=44.7) (actual time=0.00629..0.00629 rows=0 loops=1)
+                                        -> Filter: (p.taskOrgId is not null)  (cost=2.73 rows=2) (actual time=652e-6..732e-6 rows=1 loops=1)
+                                            -> Scan new records on p  (cost=2.73 rows=2) (actual time=401e-6..431e-6 rows=1 loops=1)
+                                        -> Covering index lookup on o using parentId (parentId=p.taskOrgId)  (cost=1.37 rows=22.3) (actual time=0.00503..0.00503 rows=0 loops=1)
+                    -> Filter: ((lt.createdAt >= TIMESTAMP'2026-05-24 13:06:30') and (lt.createdAt < TIMESTAMP'2026-11-23 13:06:30'))  (cost=0.655 rows=0.291) (actual time=0.00784..0.00857 rows=2 loops=1)
+                        -> Index lookup on lt using idx_task_org_status (organizationId=os.taskOrgId, status='published')  (cost=0.655 rows=2.62) (actual time=0.00717..0.00765 rows=2 loops=1)
+                -> Covering index lookup on u using idx_users_org_status_role (organizationId=os.memberOrgId, status=1, role='member')  (cost=0.391 rows=13.7) (actual time=0.00306..0.0103 rows=27 loops=2)
+            -> Single-row index lookup on lr using uk_user_task (userId=u.id, taskId=lt.id)  (cost=0.251 rows=1) (actual time=0.00154..0.00155 rows=0.796 loops=54)
+
+
+
+========== 统计-总学习时长(范围汇总) ==========
+SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds
+            FROM learning_records lr
+            JOIN users u ON lr.userId = u.id
+            WHERE 1=1 AND u.organizationId IN (39)
+
+-> Aggregate: sum(lr.studySeconds)  (cost=68.5 rows=1) (actual time=0.129..0.129 rows=1 loops=1)
+    -> Nested loop inner join  (cost=54 rows=145) (actual time=0.0122..0.123 rows=130 loops=1)
+        -> Covering index lookup on u using idx_users_org_status_role (organizationId=39)  (cost=3.13 rows=28) (actual time=0.0046..0.00932 rows=28 loops=1)
+        -> Index lookup on lr using uk_user_task (userId=u.id)  (cost=1.32 rows=5.19) (actual time=0.00346..0.0038 rows=4.64 loops=28)
+
+
+
+========== 统计-活跃趋势(时间范围聚合) ==========
+SELECT DATE_FORMAT(lr.updatedAt, '%Y-%m') AS bucket,
+                   COUNT(DISTINCT CASE WHEN lr.studySeconds > 0 THEN lr.userId END) AS activeUsers
+            FROM learning_records lr
+            JOIN users u ON u.id = lr.userId
+            WHERE lr.updatedAt >= '2026-05-24 13:06:30' AND lr.updatedAt < '2026-11-23 13:06:30'
+              AND u.organizationId IN (39)
+            GROUP BY bucket ORDER BY bucket
+
+-> Group aggregate: count(distinct tmp_field)  (actual time=0.184..0.184 rows=1 loops=1)
+    -> Sort: bucket  (actual time=0.167..0.17 rows=130 loops=1)
+        -> Stream results  (cost=54 rows=72.7) (actual time=0.0148..0.14 rows=130 loops=1)
+            -> Nested loop inner join  (cost=54 rows=72.7) (actual time=0.0128..0.121 rows=130 loops=1)
+                -> Covering index lookup on u using idx_users_org_status_role (organizationId=39)  (cost=3.13 rows=28) (actual time=0.0053..0.00985 rows=28 loops=1)
+                -> Filter: ((lr.updatedAt >= TIMESTAMP'2026-05-24 13:06:30') and (lr.updatedAt < TIMESTAMP'2026-11-23 13:06:30'))  (cost=1.31 rows=2.6) (actual time=0.00294..0.00368 rows=4.64 loops=28)
+                    -> Index lookup on lr using uk_user_task (userId=u.id)  (cost=1.31 rows=5.19) (actual time=0.0028..0.00324 rows=4.64 loops=28)
+
+
+
+========== 统计-完成率趋势(全表按月聚合) ==========
+SELECT DATE_FORMAT(completedAt, '%Y-%m') as month, COUNT(*) as completedCount
+            FROM learning_records WHERE status = 'completed' AND completedAt IS NOT NULL
+            GROUP BY month ORDER BY month DESC LIMIT 12
+
+-> Limit: 12 row(s)  (actual time=4.42..4.42 rows=7 loops=1)
+    -> Sort: `month` DESC, limit input to 12 row(s) per chunk  (actual time=4.42..4.42 rows=7 loops=1)
+        -> Table scan on <temporary>  (actual time=4.41..4.41 rows=7 loops=1)
+            -> Aggregate using temporary table  (actual time=4.41..4.41 rows=7 loops=1)
+                -> Filter: ((learning_records.`status` = 'completed') and (learning_records.completedAt is not null))  (cost=1579 rows=7784) (actual time=0.108..2.54 rows=8845 loops=1)
+                    -> Covering index range scan on learning_records using idx_record_status_completed over (status = 'completed' AND NULL < completedAt)  (cost=1579 rows=7784) (actual time=0.107..1.68 rows=8845 loops=1)
+
+
+
+========== 统计-考试通过率(UNION ALL 聚合) ==========
+SELECT COUNT(*) AS examCount, COALESCE(AVG(er.score), 0) AS avgScore,
+                   SUM(CASE WHEN er.passed = 1 THEN 1 ELSE 0 END) AS passedCount
+            FROM (SELECT userId, score, submittedAt, passed FROM assessment_attempts) er
+            JOIN users u ON u.id = er.userId
+            WHERE er.submittedAt IS NOT NULL AND u.organizationId IN (39)
+
+-> Aggregate: avg(assessment_attempts.score), count(0), sum((case when (assessment_attempts.passed = 1) then 1 else 0 end))  (cost=1615 rows=1) (actual time=2.54..2.54 rows=1 loops=1)
+    -> Nested loop inner join  (cost=1597 rows=177) (actual time=0.192..2.53 rows=32 loops=1)
+        -> Table scan on assessment_attempts  (cost=355 rows=3549) (actual time=0.0778..0.542 rows=3549 loops=1)
+        -> Filter: (u.organizationId = 39)  (cost=0.25 rows=0.05) (actual time=500e-6..500e-6 rows=0.00902 loops=3549)
+            -> Single-row index lookup on u using PRIMARY (id=assessment_attempts.userId)  (cost=0.25 rows=1) (actual time=382e-6..400e-6 rows=1 loops=3549)
+
+
+
+========== 组织树(逐行成员计数子查询) ==========
+SELECT o.id, o.name, o.type, o.parentId, o.leaderUserId, o.createdAt,
+                   u.realName AS leaderName,
+                   (SELECT COUNT(*) FROM users usr WHERE usr.organizationId = o.id AND usr.status = 1) AS directMembers
+            FROM organizations o
+            LEFT JOIN users u ON u.id = o.leaderUserId
+            ORDER BY o.id
+
+-> Nested loop left join  (cost=60.5 rows=134) (actual time=0.00837..0.0516 rows=134 loops=1)
+    -> Index scan on o using PRIMARY  (cost=13.7 rows=134) (actual time=0.00697..0.0315 rows=134 loops=1)
+    -> Single-row index lookup on u using PRIMARY (id=o.leaderUserId)  (cost=0.251 rows=1) (actual time=63.2e-6..63.2e-6 rows=0 loops=134)
+-> Select #2 (subquery in projection; dependent)
+    -> Aggregate: count(0)  (cost=5.2 rows=1) (actual time=0.00505..0.00507 rows=1 loops=134)
+        -> Covering index lookup on usr using idx_users_org_status_role (organizationId=o.id, status=1)  (cost=2.76 rows=24.4) (actual time=0.00118..0.00439 rows=23.3 loops=134)
+
+
+
+========== 组织后代集合(全表扫描) ==========
+SELECT id, parentId FROM organizations
+
+-> Covering index scan on organizations using parentId  (cost=13.7 rows=134) (actual time=0.00664..0.0196 rows=134 loops=1)
+
+
+
+========== 党员任务列表 ==========
+SELECT lt.id as taskId, lt.title, lt.deadline, lt.organizationId,
+                   lr.studySeconds, lr.status as progress, lr.completedAt,
+                   c.id as contentId, c.title as contentTitle, c.type as contentType
+            FROM learning_tasks lt
+            JOIN contents c ON lt.contentId = c.id
+            LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = 125
+            WHERE lt.status = 'published' AND lt.organizationId IN (39)
+            ORDER BY (lt.organizationId = 66) DESC, lt.id DESC
+
+-> Nested loop inner join  (cost=2.1 rows=2) (actual time=0.0183..0.0216 rows=2 loops=1)
+    -> Nested loop left join  (cost=1.4 rows=2) (actual time=0.0144..0.0159 rows=2 loops=1)
+        -> Sort: (lt.organizationId = 66) DESC, lt.id DESC  (cost=0.7 rows=2) (actual time=0.012..0.0122 rows=2 loops=1)
+            -> Index lookup on lt using idx_task_org_status (organizationId=39, status='published')  (cost=0.7 rows=2) (actual time=0.00823..0.0091 rows=2 loops=1)
+        -> Single-row index lookup on lr using uk_user_task (userId=125, taskId=lt.id)  (cost=0.3 rows=1) (actual time=0.00159..0.00159 rows=0 loops=2)
+    -> Single-row index lookup on c using PRIMARY (id=lt.contentId)  (cost=0.3 rows=1) (actual time=0.00261..0.00264 rows=1 loops=2)
+
+
+
+========== 学习记录完成统计(组织维度) ==========
+SELECT COUNT(DISTINCT u.id) as totalUsers,
+                   COUNT(DISTINCT CASE WHEN lr.status = 'completed' THEN u.id END) as completedUsers
+            FROM users u
+            LEFT JOIN learning_tasks lt ON lt.organizationId = u.organizationId
+            LEFT JOIN learning_records lr ON lr.userId = u.id AND lr.taskId = lt.id
+            WHERE u.organizationId = 4
+
+-> Aggregate: count(distinct u.id), count(distinct (case when (lr.`status` = 'completed') then u.id end))  (cost=67.8 rows=1) (actual time=0.239..0.239 rows=1 loops=1)
+    -> Nested loop left join  (cost=57.5 rows=103) (actual time=0.01..0.218 rows=90 loops=1)
+        -> Nested loop left join  (cost=21.4 rows=103) (actual time=0.00743..0.0821 rows=90 loops=1)
+            -> Covering index lookup on u using idx_users_org_status_role (organizationId=4)  (cost=3.33 rows=30) (actual time=0.00502..0.0101 rows=30 loops=1)
+            -> Covering index lookup on lt using idx_task_org_status (organizationId=4)  (cost=0.268 rows=3.44) (actual time=729e-6..0.00221 rows=3 loops=30)
+        -> Single-row index lookup on lr using uk_user_task (userId=u.id, taskId=lt.id)  (cost=0.251 rows=1) (actual time=0.00141..0.00141 rows=0.489 loops=90)
+

@@ -20,6 +20,19 @@ async function ensureColumn(conn, table, column, alterSql) {
   }
 }
 
+/** 幂等补索引：索引已存在则跳过（MySQL 8.0 无 CREATE INDEX IF NOT EXISTS） */
+async function ensureIndex(conn, table, indexName, createSql) {
+  const [rows] = await conn.query(
+    `SELECT COUNT(DISTINCT INDEX_NAME) AS n FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+    [table, indexName]
+  );
+  if (rows[0].n === 0) {
+    await conn.query(createSql);
+    console.log(`已创建索引 ${table}.${indexName}`);
+  }
+}
+
 async function init() {
   if (!process.env.DB_PASSWORD) {
     throw new Error('缺少环境变量 DB_PASSWORD，请在 server/.env 中配置数据库口令');
@@ -66,6 +79,18 @@ async function init() {
       "ALTER TABLE party_school.learning_records ADD COLUMN sessionBaseSeconds INT DEFAULT 0 COMMENT '会话开始时的累计时长基线' AFTER sessionStartedAt");
     await ensureColumn(conn, 'contents', 'durationSeconds',
       "ALTER TABLE party_school.contents ADD COLUMN durationSeconds INT NULL COMMENT '视频时长(秒)' AFTER bodyOrVideoUrl");
+
+    // 性能索引补齐（旧库 CREATE TABLE IF NOT EXISTS 不会补建索引）
+    await ensureIndex(conn, 'users', 'idx_users_org_status_role',
+      "ALTER TABLE party_school.users ADD INDEX idx_users_org_status_role (organizationId, status, role)");
+    await ensureIndex(conn, 'learning_tasks', 'idx_task_org_status',
+      "ALTER TABLE party_school.learning_tasks ADD INDEX idx_task_org_status (organizationId, status)");
+    await ensureIndex(conn, 'learning_records', 'idx_record_status_completed',
+      "ALTER TABLE party_school.learning_records ADD INDEX idx_record_status_completed (status, completedAt)");
+    await ensureIndex(conn, 'learning_records', 'idx_record_updated',
+      "ALTER TABLE party_school.learning_records ADD INDEX idx_record_updated (updatedAt)");
+    await ensureIndex(conn, 'contents', 'idx_contents_status_created',
+      "ALTER TABLE party_school.contents ADD INDEX idx_contents_status_created (status, createdAt)");
 
     const [orgs] = await conn.query('SELECT id, name, type, parentId FROM party_school.organizations ORDER BY id');
     console.log(`\n组织数据（${orgs.length} 条）：`);
