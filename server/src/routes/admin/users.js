@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const XLSX = require('xlsx');
 const UserService = require('../../services/userService');
 const ResponseHelper = require('../../utils/response');
 const { sheetFileFilter, assertFileSignature } = require('../../utils/uploadSecurity');
+const { parseSheetRows } = require('../../utils/sheetImport');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 const upload = multer({
@@ -67,9 +67,7 @@ router.post('/import', (req, res, next) => {
       return ResponseHelper.error(res, sigErr.message || '文件内容校验失败', statusCode, statusCode);
     }
 
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const data = await parseSheetRows(req.file.buffer, req.file.originalname);
 
     const users = data.map(row => ({
       username: String(row['用户名'] || row['username'] || '').trim(),

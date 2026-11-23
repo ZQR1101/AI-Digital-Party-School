@@ -19,9 +19,9 @@ const CONTENT_TYPES = new Map([
 ]);
 
 // 允许的表格导入类型
+// 说明：旧版二进制 .xls（SBH/宏风险且 SheetJS 无修复版）已下线，仅支持 .xlsx 与 .csv
 const SHEET_TYPES = new Map([
   ['.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-  ['.xls', 'application/vnd.ms-excel'],
   ['.csv', 'text/csv'],
 ]);
 
