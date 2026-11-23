@@ -5,22 +5,24 @@ const path = require('path');
 const fs = require('fs');
 const ContentService = require('../../services/contentService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { contentFileFilter, safeFileName } = require('../../utils/uploadSecurity');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
-// 配置文件上传
-const uploadDir = path.join(__dirname, '../../../uploads');
+// 文件上传：类型白名单 + 随机文件名 + 独立存储目录（与静态资源隔离）
+const uploadDir = path.join(__dirname, '../../../uploads/content');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-    cb(null, uniqueName);
-  }
+  filename: (req, file, cb) => cb(null, safeFileName(file.originalname))
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  fileFilter: contentFileFilter,
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 }
+});
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireAdmin);
 
 /**
  * GET /api/admin/contents
@@ -28,9 +30,9 @@ router.use(authenticate, requireAdmin);
  */
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, keyword, type, status } = req.query;
+    const { page = 1, pageSize = 10, keyword, type, status, category } = req.query;
     const result = await ContentService.list({
-      page: Number(page), pageSize: Number(pageSize), keyword, type, status
+      page: Number(page), pageSize: Number(pageSize), keyword, type, status, category
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
@@ -112,10 +114,15 @@ router.delete('/:id', async (req, res) => {
  * POST /api/admin/contents/upload
  * 上传封面图或视频文件
  */
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return ResponseHelper.badRequest(res, err.message || '文件上传失败');
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) return ResponseHelper.badRequest(res, '请选择文件');
-    const url = `/uploads/${req.file.filename}`;
+    const url = `/uploads/content/${req.file.filename}`;
     return ResponseHelper.success(res, { url, filename: req.file.filename });
   } catch (err) {
     return ResponseHelper.error(res);

@@ -4,11 +4,16 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 const UserService = require('../../services/userService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { sheetFileFilter } = require('../../utils/uploadSecurity');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: sheetFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 }
+});
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireAdmin);
 
 function normalizeImportedRole(role) {
   const raw = String(role || 'member').trim();
@@ -46,7 +51,12 @@ router.get('/', async (req, res) => {
  * POST /api/admin/users/import
  * 批量导入（Excel/CSV）
  */
-router.post('/import', upload.single('file'), async (req, res) => {
+router.post('/import', (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return ResponseHelper.badRequest(res, err.message || '文件上传失败');
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) return ResponseHelper.badRequest(res, '请上传文件');
 
