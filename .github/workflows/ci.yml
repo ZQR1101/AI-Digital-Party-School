@@ -13,6 +13,27 @@ jobs:
     defaults:
       run:
         working-directory: server
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_pwd
+          MYSQL_DATABASE: party_school
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot -pci_root_pwd"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ci_root_pwd
+      DB_NAME: party_school
+      JWT_SECRET: ci-only-test-secret-not-for-production
+      SEED_PASSWORD: ci-seed-password-2026
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +42,8 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
       - run: npm ci
+      - name: 执行幂等数据库迁移
+        run: node init-db.js
       - name: 运行后端测试
         run: npm test
       - name: 依赖安全检查（高危及以上不阻断，仅提示）

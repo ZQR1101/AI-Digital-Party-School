@@ -9,6 +9,14 @@ const LearningProfileService = require('./learningProfileService');
 
 const KNOWLEDGE_DIR = path.resolve(__dirname, '../../knowledge');
 const RELEVANCE_THRESHOLD = 0.28;
+// 本地回退向量是哈希非语义，分数整体偏低（实测有效问题 0.26~0.28、无关问题 ≤0.20），
+// 若沿用语义阈值会把正常个性化问题全部拒答；回退模式下调阈值仅影响本地降级环境，
+// 且该模式下答案为摘录式兜底，不存在模型幻觉风险。
+const FALLBACK_RELEVANCE_THRESHOLD = 0.24;
+
+function currentRelevanceThreshold() {
+  return EmbeddingClient.isApiConfigured() ? RELEVANCE_THRESHOLD : FALLBACK_RELEVANCE_THRESHOLD;
+}
 
 class RagService {
   static isInitialized = false;
@@ -109,7 +117,7 @@ class RagService {
     const results = await this.hybridSearch(question, { topK });
 
     // 防模型幻觉门禁：如果知识库未检索到足够相关内容，明确告知用户，不编造答案
-    const isRelevant = results.length > 0 && results[0].relevanceScore >= RELEVANCE_THRESHOLD;
+    const isRelevant = results.length > 0 && results[0].relevanceScore >= currentRelevanceThreshold();
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       return {
@@ -192,7 +200,7 @@ class RagService {
     const results = await this.hybridSearch(searchQuery, { topK: 4 });
 
     // 相关性拒答门禁：与知识问答一致，检索结果不达标时不得生成带来源的"专业建议"
-    const isRelevant = results.length > 0 && results[0].relevanceScore >= RELEVANCE_THRESHOLD;
+    const isRelevant = results.length > 0 && results[0].relevanceScore >= currentRelevanceThreshold();
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       const weakHint = weakCategories.length

@@ -286,3 +286,10 @@ INSERT IGNORE INTO users (id, username, password, realName, role, organizationId
 (2, 'zhangsan', '__SEED_PASSWORD_HASH__', '张三', 'secretary', 4, 1),
 (3, 'lisi', '__SEED_PASSWORD_HASH__', '李四', 'member', 4, 1),
 (4, 'wangwu', '__SEED_PASSWORD_HASH__', '王五', 'member', 5, 1);
+
+-- 公共学习内容种子（幂等：仅在新库插入，已有同 id 数据不受影响）
+INSERT IGNORE INTO contents (id, title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy) VALUES
+(1, '三会一课制度要点', 'article', NULL, '<p>“三会一课”指定期召开支部党员大会、支部委员会会议、党小组会，按时上好党课。支部党员大会一般每季度召开一次，支部委员会会议一般每月召开一次，党小组会一般每月召开一至两次，党课每季度至少一次。</p>', '“三会一课”是党的组织生活的基本制度：支部党员大会每季度一次，支委会每月一次，党小组会每月一至两次，党课每季度至少一次。', '组织生活,三会一课,基本制度', 1, 'published', 1),
+(2, '学习完成率统计口径说明', 'article', NULL, '<p>学习完成率的计算口径为：已完成学习任务人次除以应完成学习任务人次，再乘以 100%。应完成人次按任务下发组织的在册正式党员数统计，停用账号不计入。</p>', '学习完成率 = 已完成学习任务人次 ÷ 应完成学习任务人次 × 100%，停用账号不计入应完成人次。', '统计,学习制度,完成率', 1, 'published', 1),
+(3, '重温入党誓词（示范视频）', 'video', NULL, '/uploads/content/seed-oath.mp4', '重温入党誓词示范视频，用于组织生活与党员教育。', '入党誓词,组织生活,视频', 1, 'published', 1),
+(4, '党员组织关系转接流程', 'article', NULL, '<p>党员组织关系转接遵循“应转尽转”原则：凭《中国共产党党员组织关系介绍信》办理，转出地党组织开具介绍信，接收地党组织核对党员信息并回执确认，全程通过全国党员信息系统线上流转。</p>', '党员组织关系转接凭介绍信办理，转出开具、接收回执，全国党员信息系统线上流转。', '组织关系,党员管理,流程', 1, 'published', 1);
