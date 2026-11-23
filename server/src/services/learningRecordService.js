@@ -2,7 +2,7 @@ const db = require('../config/db');
 const OrganizationService = require('./organizationService');
 const {
   requiredStudySeconds, shouldComplete, validateReportedSeconds,
-  creditableSeconds, MIN_COMPLETION_SECONDS,
+  creditableSeconds, deltaCapSeconds, MIN_COMPLETION_SECONDS,
 } = require('./studyDuration');
 
 function recordError(statusCode, message) {
@@ -11,13 +11,13 @@ function recordError(statusCode, message) {
 
 class LearningRecordService {
   /**
-   * 提交学习记录。
+   * 提交学习记录（事务 + 行锁）。
    * 真实性校验：
    *  1) 任务必须存在、已发布，且下发给当前用户所属组织或其上级组织；
    *  2) 上报秒数必须为合法有限数；
-   *  3) 可计入时长以服务端两次心跳之间的【真实经过时间】为上限（creditableSeconds），
-   *     客户端绝对值不可信：首次上报最多计入 60s，之后按 lastActiveAt 计算经过时间；
-   *  4) 完成还需满足最小服务端累计时长，防止 1 秒即标记学完。
+   *  3) 学习会话由服务端建立（sessionStartedAt），累计计入时长严格受
+   *     「服务端会话总经过时间 + 一次性宽限」约束——连续快速请求无法重复领取宽限；
+   *  4) 并发心跳用 SELECT ... FOR UPDATE 行锁串行化，防止计时状态互相覆盖。
    */
   static async submit(userId, { taskId, studySeconds, completed }) {
     if (!Number.isInteger(taskId) || taskId <= 0) throw recordError(400, '任务编号无效');
@@ -42,66 +42,85 @@ class LearningRecordService {
       throw recordError(403, '该任务未下发给当前用户所在组织');
     }
 
-    const [existing] = await db.query(
-      'SELECT id, status, studySeconds, lastActiveAt FROM learning_records WHERE userId = ? AND taskId = ?',
-      [userId, taskId]
-    );
-
-    const prev = Number(existing[0]?.studySeconds) || 0;
     const requiredSeconds = requiredStudySeconds(task);
     // 数值合法性校验（非法输入抛 400）
     const incoming = validateReportedSeconds({ reported: studySeconds, contentType: task.contentType });
-    // 客户端计数可能回退（换设备/重开页面），增量取非负；服务端绝对值只增不减
-    const delta = Math.max(0, incoming - prev);
+    const cap = deltaCapSeconds({ contentType: task.contentType, requiredSeconds });
 
-    const lastActiveAt = existing[0]?.lastActiveAt ? new Date(existing[0].lastActiveAt) : null;
-    const isFirstReport = existing.length === 0 || !lastActiveAt;
-    const serverElapsedSeconds = lastActiveAt ? Math.floor((Date.now() - lastActiveAt.getTime()) / 1000) : null;
-    const credit = creditableSeconds({
-      requestedDelta: delta,
-      serverElapsedSeconds,
-      isFirstReport,
-      contentType: task.contentType,
-      requiredSeconds,
-    });
-    const seconds = prev + credit;
-    const now = new Date();
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      // 行锁串行化并发心跳：读-算-写在同一事务内完成
+      const [existing] = await conn.query(
+        'SELECT id, status, studySeconds, lastActiveAt, sessionStartedAt FROM learning_records WHERE userId = ? AND taskId = ? FOR UPDATE',
+        [userId, taskId]
+      );
+      const row = existing[0] || null;
 
-    const videoEnded = task.contentType === 'video' && completed;
-    const alreadyDone = existing[0]?.status === 'completed';
-    // 完成门槛：累计时长需达到 min(required, MIN_COMPLETION_SECONDS) 以上（video 无字数基准时取 MIN）
-    const completionFloor = task.contentType === 'video'
-      ? MIN_COMPLETION_SECONDS
-      : Math.max(requiredSeconds, MIN_COMPLETION_SECONDS);
-    const done = alreadyDone
-      || (seconds >= completionFloor && shouldComplete({
-        ...task,
+      const now = Date.now();
+      const prev = Number(row?.studySeconds) || 0;
+      // 会话基线：优先已有 sessionStartedAt；旧行缺失则回溯到最近心跳（保证连续性）；
+      // 全新记录由服务端此刻建立会话
+      const sessionStartMs = row?.sessionStartedAt
+        ? new Date(row.sessionStartedAt).getTime()
+        : (row?.lastActiveAt ? new Date(row.lastActiveAt).getTime() : now);
+      const sessionElapsedSeconds = Math.max(0, Math.floor((now - sessionStartMs) / 1000));
+
+      // 客户端计数可能回退（换设备/重开页面），增量取非负；累计值只增不减
+      const delta = Math.max(0, incoming - prev);
+      const credit = creditableSeconds({
+        requestedDelta: delta,
+        prevSeconds: prev,
+        sessionElapsedSeconds,
+        deltaCapSeconds: cap,
+      });
+      const seconds = prev + credit;
+
+      const videoEnded = task.contentType === 'video' && completed;
+      const alreadyDone = row?.status === 'completed';
+      // 完成门槛：累计时长需达到 min(required, MIN_COMPLETION_SECONDS) 以上（video 无字数基准时取 MIN）
+      const completionFloor = task.contentType === 'video'
+        ? MIN_COMPLETION_SECONDS
+        : Math.max(requiredSeconds, MIN_COMPLETION_SECONDS);
+      const done = alreadyDone
+        || (seconds >= completionFloor && shouldComplete({
+          ...task,
+          studySeconds: seconds,
+          requiredSeconds,
+          videoEnded,
+        }))
+        || (Boolean(completed) && task.contentType !== 'video' && seconds >= completionFloor);
+      const nowDate = new Date();
+      const newStatus = done ? 'completed' : (seconds > 0 ? 'inProgress' : 'pending');
+      const completedAt = done ? nowDate : null;
+      const sessionStartedAt = new Date(sessionStartMs);
+
+      if (row) {
+        await conn.query(
+          'UPDATE learning_records SET studySeconds = ?, lastActiveAt = ?, sessionStartedAt = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
+          [seconds, nowDate, sessionStartedAt, newStatus, completedAt, row.id]
+        );
+      } else {
+        await conn.query(
+          'INSERT INTO learning_records (userId, taskId, studySeconds, lastActiveAt, sessionStartedAt, status, completedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [userId, taskId, seconds, nowDate, sessionStartedAt, newStatus, completedAt]
+        );
+      }
+      await conn.commit();
+
+      return {
         studySeconds: seconds,
+        creditedSeconds: credit,
+        status: newStatus,
         requiredSeconds,
-        videoEnded,
-      }))
-      || (Boolean(completed) && task.contentType !== 'video' && seconds >= completionFloor);
-    const newStatus = done ? 'completed' : (seconds > 0 ? 'inProgress' : 'pending');
-    const completedAt = done ? new Date() : null;
-
-    if (existing.length > 0) {
-      await db.query(
-        'UPDATE learning_records SET studySeconds = ?, lastActiveAt = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
-        [seconds, now, newStatus, completedAt, existing[0].id]
-      );
-    } else {
-      await db.query(
-        'INSERT INTO learning_records (userId, taskId, studySeconds, lastActiveAt, status, completedAt) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, taskId, seconds, now, newStatus, completedAt]
-      );
+        progress: done ? 100 : Math.min(99, requiredSeconds ? Math.round(seconds / requiredSeconds * 100) : 0),
+      };
+    } catch (err) {
+      await conn.rollback().catch(() => {});
+      throw err;
+    } finally {
+      conn.release();
     }
-    return {
-      studySeconds: seconds,
-      creditedSeconds: credit,
-      status: newStatus,
-      requiredSeconds,
-      progress: done ? 100 : Math.min(99, requiredSeconds ? Math.round(seconds / requiredSeconds * 100) : 0),
-    };
   }
 
   static async getCompletionStats(organizationId) {

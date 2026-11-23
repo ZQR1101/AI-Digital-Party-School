@@ -67,32 +67,40 @@ function validateReportedSeconds({ reported, contentType }) {
   return incoming;
 }
 
-// 心跳宽限：前端每 3 秒保存一次，网络抖动/页面切后台后回来仍可正常计入
-const HEARTBEAT_GRACE_SECONDS = 30;
-// 首次上报宽限：打开页面到首次心跳的正常间隔内允许计入的秒数
-const FIRST_REPORT_ALLOWANCE = 60;
+// 一次性会话宽限：服务端建立学习会话时发放一次，之后不再重复领取。
+// 累计计入时长恒受「服务端会话总经过时间 + 本宽限」约束，
+// 连续快速心跳无法通过重复请求反复领取宽限时间。
+const ONE_TIME_ALLOWANCE = 60;
 // 完成所需的最小服务端累计时长：防止 1 秒即标记完成（哪怕客户端报 completed）
 const MIN_COMPLETION_SECONDS = 10;
 
+/** 单次心跳的计入上限（防止会话中断后长时间挂起、一次性补记大量时长）：文章为应学时长+60s（至少 120s），视频 30 分钟 */
+function deltaCapSeconds({ contentType, requiredSeconds = 0 }) {
+  if (contentType === 'video') return 30 * 60;
+  const required = Number(requiredSeconds) > 0 ? Number(requiredSeconds) : 0;
+  return Math.max(120, required + 60);
+}
+
 /**
- * 计算本次可计入的学习秒数（真实性核心）：
- * 客户端上报的绝对值不可信，服务端以两次心跳之间的【真实经过时间】为上限。
- * - 首次上报（无服务端基线）：最多计入 FIRST_REPORT_ALLOWANCE 秒；
- * - 有基线：最多计入 min(经过时间 + 心跳宽限, 单次上限)；
- * - 超出部分静默丢弃（不拒单、不作弊计入）。
+ * 计算本次可计入的学习秒数（真实性核心，累计约束模型）：
+ *   累计计入时长 ≤ 服务端会话总经过时间 + 一次性宽限
+ * 会话由服务端建立（sessionStartedAt），每次心跳以「已计入累计值 prevSeconds」和
+ * 「会话经过时间」共同约束，超出部分静默丢弃。
+ * 客户端上报绝对值不可信，仅通过增量（requestedDelta）表达本次想多记多少。
  */
-function creditableSeconds({ requestedDelta, serverElapsedSeconds, isFirstReport, contentType, requiredSeconds = 0 }) {
+function creditableSeconds({ requestedDelta, prevSeconds = 0, sessionElapsedSeconds, deltaCapSeconds: cap }) {
   const delta = Math.max(0, Math.floor(Number(requestedDelta) || 0));
   if (delta === 0) return 0;
 
-  const allowance = isFirstReport || !Number.isFinite(Number(serverElapsedSeconds))
-    ? FIRST_REPORT_ALLOWANCE
-    : Math.floor(Number(serverElapsedSeconds)) + HEARTBEAT_GRACE_SECONDS;
+  const prev = Math.max(0, Math.floor(Number(prevSeconds) || 0));
+  // 会话经过时间缺失或非法时按 0 处理：仅一次性宽限可用
+  const elapsedRaw = Number(sessionElapsedSeconds);
+  const elapsed = Number.isFinite(elapsedRaw) && elapsedRaw > 0 ? Math.floor(elapsedRaw) : 0;
 
-  // 单次计入上限：文章不超过应学时长+60s（至少 120s），视频不超过 30 分钟
-  const required = Number(requiredSeconds) > 0 ? Number(requiredSeconds) : 0;
-  const deltaCap = contentType === 'video' ? 30 * 60 : Math.max(120, required + 60);
-  return Math.min(delta, allowance, deltaCap);
+  const ceiling = elapsed + ONE_TIME_ALLOWANCE;
+  const capValue = Number(cap) > 0 ? Math.floor(Number(cap)) : Infinity;
+  const target = Math.min(prev + delta, ceiling, prev + capValue);
+  return Math.max(0, target - prev);
 }
 
 module.exports = {
@@ -103,8 +111,8 @@ module.exports = {
   shouldComplete,
   validateReportedSeconds,
   creditableSeconds,
-  HEARTBEAT_GRACE_SECONDS,
-  FIRST_REPORT_ALLOWANCE,
+  deltaCapSeconds,
+  ONE_TIME_ALLOWANCE,
   MIN_COMPLETION_SECONDS,
   CHARS_PER_MINUTE,
 };

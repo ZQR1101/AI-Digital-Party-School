@@ -60,6 +60,8 @@ async function init() {
     // 旧库列补齐：learning_records.lastActiveAt（CREATE TABLE IF NOT EXISTS 不会改已有表）
     await ensureColumn(conn, 'learning_records', 'lastActiveAt',
       "ALTER TABLE party_school.learning_records ADD COLUMN lastActiveAt DATETIME NULL COMMENT '最近一次学习心跳时间' AFTER studySeconds");
+    await ensureColumn(conn, 'learning_records', 'sessionStartedAt',
+      "ALTER TABLE party_school.learning_records ADD COLUMN sessionStartedAt DATETIME NULL COMMENT '学习会话开始时间(服务端建立)' AFTER lastActiveAt");
 
     const [orgs] = await conn.query('SELECT id, name, type, parentId FROM party_school.organizations ORDER BY id');
     console.log(`\n组织数据（${orgs.length} 条）：`);
