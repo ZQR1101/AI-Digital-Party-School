@@ -19,6 +19,7 @@ const filters = reactive({ keyword: '', status: '' })
 const appliedFilters = reactive({ keyword: '', status: '' })
 const form = reactive({ id: null, title: '', contentId: '', organizationIds: [], includeChildren: true, deadline: '', reminder: true })
 const rows = ref([])
+const total = ref(0)
 const contentOptions = ref([])
 const organizationOptions = ref([])
 
@@ -59,10 +60,7 @@ const filteredRows = computed(() => rows.value.filter((row) => {
     && (!appliedFilters.status || row.status === appliedFilters.status)
 }))
 
-const pagedRows = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredRows.value.slice(start, start + pageSize.value)
-})
+const pagedRows = computed(() => filteredRows.value)
 
 const articleContents = computed(() => contentOptions.value.filter((item) => item.type === 'article'))
 const videoContents = computed(() => contentOptions.value.filter((item) => item.type === 'video'))
@@ -77,8 +75,11 @@ const insightText = computed(() => {
 async function loadTasks() {
   loading.value = true
   try {
-    const result = await request.get('/admin/tasks', { params: { page: 1, pageSize: 200, keyword: filters.keyword } })
+    const result = await request.get('/admin/tasks', {
+      params: { page: currentPage.value, pageSize: pageSize.value, keyword: appliedFilters.keyword }
+    })
     rows.value = (result.list || []).map(normalizeTask)
+    total.value = Number(result.total || 0)
   } catch (error) {
     ElMessage.error(error.message || '学习任务加载失败')
   } finally {
@@ -318,7 +319,7 @@ onMounted(async () => {
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination-row"><span>共 {{ filteredRows.length }} 条数据</span><el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" background layout="prev, pager, next, sizes" :page-sizes="[10, 20, 50]" :total="filteredRows.length" /></div>
+      <div class="pagination-row"><span>共 {{ total }} 条数据</span><el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" background layout="prev, pager, next, sizes" :page-sizes="[10, 20, 50]" :total="total" @current-change="loadTasks" @size-change="loadTasks" /></div>
     </article>
 
     <article class="ai-insight">

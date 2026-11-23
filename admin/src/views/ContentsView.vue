@@ -24,6 +24,7 @@ const filters = reactive({ keyword: '', type: '', category: '', status: '' })
 const form = reactive({ id: null, title: '', type: 'article', category: '理论学习', tags: [], isPublic: true, summary: '', body: '', videoUrl: '', coverUrl: '', status: 'published' })
 
 const rows = ref([])
+const total = ref(0)
 const categoryOptions = ['理论学习', '政策解读', '业务培训', '纪律教育']
 
 function parseTags(value) {
@@ -51,8 +52,18 @@ function normalizeRow(row) {
 async function loadContents() {
   loading.value = true
   try {
-    const result = await request.get('/admin/contents', { params: { page: 1, pageSize: 100 } })
+    const result = await request.get('/admin/contents', {
+      params: {
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        keyword: appliedFilters.keyword,
+        type: appliedFilters.type,
+        status: appliedFilters.status,
+        category: appliedFilters.category
+      }
+    })
     rows.value = (result.list || []).map(normalizeRow)
+    total.value = Number(result.total || 0)
   } catch (error) {
     ElMessage.error(error.message || '学习内容加载失败')
   } finally {
@@ -60,18 +71,9 @@ async function loadContents() {
   }
 }
 
-const filteredRows = computed(() => rows.value.filter((row) => {
-  const keyword = appliedFilters.keyword.trim().toLowerCase()
-  return (!keyword || row.title.toLowerCase().includes(keyword) || row.tags.some((tag) => tag.includes(keyword)))
-    && (!appliedFilters.type || row.type === appliedFilters.type)
-    && (!appliedFilters.category || row.category === appliedFilters.category)
-    && (!appliedFilters.status || row.status === appliedFilters.status)
-}))
-
-const pagedRows = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredRows.value.slice(start, start + pageSize.value)
-})
+// 服务端完成分页与全部筛选，前端直接展示
+const pagedRows = computed(() => rows.value)
+const filteredRows = pagedRows
 
 const latestUpdatedAt = computed(() => {
   const timestamps = rows.value
@@ -90,13 +92,14 @@ const statusMeta = {
 function runSearch() {
   Object.assign(appliedFilters, filters)
   currentPage.value = 1
-  ElMessage.success(`已筛选出 ${filteredRows.value.length} 条内容`)
+  loadContents()
 }
 
 function resetFilters() {
   Object.assign(filters, { keyword: '', type: '', category: '', status: '' })
   Object.assign(appliedFilters, filters)
   currentPage.value = 1
+  loadContents()
 }
 
 function resetForm() {
@@ -330,7 +333,7 @@ onMounted(loadContents)
 
     <article class="table-card surface-card">
       <div class="table-caption">
-        <div><strong>内容资源库</strong><span>当前共 {{ filteredRows.length }} 条学习内容</span></div>
+        <div><strong>内容资源库</strong><span>当前共 {{ total }} 条学习内容</span></div>
         <span class="update-hint">{{ latestUpdatedAt }}</span>
       </div>
       <el-table v-loading="loading" :data="pagedRows" class="content-table">
@@ -359,8 +362,8 @@ onMounted(loadContents)
         </el-table-column>
       </el-table>
       <div class="pagination-row">
-        <span>共 {{ filteredRows.length }} 条数据</span>
-        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" background layout="prev, pager, next, sizes" :page-sizes="[10, 20, 50]" :total="filteredRows.length" />
+        <span>共 {{ total }} 条数据</span>
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" background layout="prev, pager, next, sizes" :page-sizes="[10, 20, 50]" :total="total" @current-change="loadContents" @size-change="loadContents" />
       </div>
     </article>
 

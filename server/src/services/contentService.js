@@ -2,12 +2,19 @@ const db = require('../config/db');
 const { withPlayableVideo } = require('../utils/playableVideo');
 
 class ContentService {
-  static async list({ page = 1, pageSize = 10, keyword, type, status }) {
+  static async list({ page = 1, pageSize = 10, keyword, type, status, category }) {
     let sql = `SELECT c.*, u.realName as creatorName FROM contents c LEFT JOIN users u ON c.createdBy = u.id WHERE 1=1`;
     const params = [];
-    if (keyword) { sql += ' AND c.title LIKE ?'; params.push(`%${keyword}%`); }
+    if (keyword) { sql += ' AND (c.title LIKE ? OR c.summary LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`); }
     if (type) { sql += ' AND c.type = ?'; params.push(type); }
-    if (status) { sql += ' AND c.status = ?'; params.push(status); }
+    // 前端将 offlined 展示为 offShelf，这里兼容两种取值
+    if (status) {
+      const normalized = status === 'offShelf' ? 'offlined' : status;
+      sql += ' AND c.status = ?';
+      params.push(normalized);
+    }
+    // category 存于 tags 字段（逗号分隔）
+    if (category) { sql += ' AND c.tags LIKE ?'; params.push(`%${category}%`); }
 
     const [countRows] = await db.query(`SELECT COUNT(*) as total FROM (${sql}) t`, params);
     sql += ' ORDER BY c.id DESC LIMIT ? OFFSET ?';
