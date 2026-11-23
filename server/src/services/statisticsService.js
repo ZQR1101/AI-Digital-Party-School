@@ -138,14 +138,14 @@ class StatisticsService {
       : 'SELECT id, name FROM organizations WHERE parentId IS NULL';
     const params = parentOrgId ? [Number(parentOrgId)] : [];
     const [orgs] = await db.query(sql, params);
-    // 组织快照只取一次，各子组织的后代集合在本快照上计算（消除逐个全表查询的 N+1）
+    // 组织快照只取一次，各子组织的后代集合在本快照上计算（消除逐个全表查询的 N+1）；
+    // 各子组织概览相互独立，并行计算（Promise.all 保持结果顺序）
     const [orgRows] = await db.query('SELECT id, parentId FROM organizations');
-    const stats = [];
-    for (const org of orgs) {
+    const stats = await Promise.all(orgs.map(async (org) => {
       const orgIds = OrganizationService.descendantIdsFromRows(org.id, orgRows);
-      const overview = await this.getOverview(orgIds);
-      stats.push({ organizationId: org.id, organizationName: org.name, ...overview });
-    }
+      const overview = await this.getOverview(orgIds, undefined, orgRows);
+      return { organizationId: org.id, organizationName: org.name, ...overview };
+    }));
     return stats;
   }
 

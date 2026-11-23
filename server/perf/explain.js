@@ -83,25 +83,6 @@ async function main() {
             WHERE 1=1 AND t.organizationId IN (${inList})
             ORDER BY t.id DESC LIMIT 10 OFFSET 0`,
     },
-    '任务完成率聚合(queryTaskCompletion)': {
-      // 注：生产实现使用 FROM (SELECT.. UNION ALL ..) 派生表，EXPLAIN ANALYZE 不支持该形态；
-      // 此处用 WITH RECURSIVE 生成语义等价的对集（memberOrg × 祖先或自身），执行计划形态一致。
-      sql: `WITH RECURSIVE pairs AS (
-              SELECT o.id AS memberOrgId, o.id AS taskOrgId FROM organizations o WHERE o.id IN (${inList})
-              UNION ALL
-              SELECT p.memberOrgId, o.id FROM pairs p JOIN organizations o ON o.parentId = p.taskOrgId
-            )
-            SELECT u.id AS userId, lt.contentId, lt.title,
-                   DATE_FORMAT(DATE_ADD(lt.createdAt, INTERVAL 8 HOUR), '%Y-%m') AS month,
-                   CASE WHEN lr.status = 'completed' AND COALESCE(lr.completedAt, lr.updatedAt) < '${now}'
-                        THEN 1 ELSE 0 END AS completed
-            FROM pairs os
-            JOIN users u ON u.organizationId = os.memberOrgId AND u.role = 'member' AND u.status = 1
-            JOIN learning_tasks lt ON lt.organizationId = os.taskOrgId AND lt.status = 'published'
-            LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = u.id
-            WHERE lt.createdAt >= '${sixMonthsAgo}' AND lt.createdAt < '${now}'
-            ORDER BY u.id, (lt.organizationId = u.organizationId) DESC, lt.id DESC`,
-    },
     '统计-总学习时长(范围汇总)': {
       sql: `SELECT COALESCE(SUM(lr.studySeconds), 0) AS totalSeconds
             FROM learning_records lr
@@ -173,6 +154,74 @@ async function main() {
       console.log(`EXPLAIN 失败: ${err.message}`);
       chunks.push(`${header}${sql}\n\nEXPLAIN 失败: ${err.message}\n`);
     }
+  }
+
+  // ---------------- 任务完成率聚合：直接分析实际生产 SQL ----------------
+  // 生产实现（taskCompletionStatistics.queryTaskCompletion）在 JS 中构造
+  // (memberOrgId, taskOrgId) 对集——memberOrg 为范围内组织，taskOrg 为其祖先或自身，
+  // 拼成 UNION ALL 派生表后与 users/learning_tasks/learning_records 连接。
+  // EXPLAIN ANALYZE 不支持 FROM (UNION ALL..) 派生表形态，因此分两步：
+  //   a) 对实际 SQL 整体执行 EXPLAIN FORMAT=TREE（优化器视角与生产完全一致）；
+  //   b) 将同一对集物化进临时表，对同一主查询执行 EXPLAIN ANALYZE 取真实耗时
+  //      （派生表执行时同样会被物化，主查询计划形态一致）。
+  {
+    const header = '\n========== 任务完成率聚合(queryTaskCompletion 实际 SQL) ==========\n';
+    console.log(header);
+    const chunkLines = [header];
+    try {
+      // 与生产 ancestorIdsFromRows 相同的对集构造：范围组织 × 祖先或自身
+      const [orgRows] = await conn.query('SELECT id, parentId FROM organizations');
+      const parentById = new Map(orgRows.map(r => [Number(r.id), r.parentId == null ? null : Number(r.parentId)]));
+      const ancestorsOf = (orgId) => {
+        const ids = [];
+        let cur = Number(orgId);
+        const seen = new Set();
+        while (cur && !seen.has(cur)) {
+          seen.add(cur);
+          ids.push(cur);
+          cur = parentById.has(cur) ? parentById.get(cur) : null;
+        }
+        return ids;
+      };
+      const pairs = [];
+      for (const orgId of orgIds) {
+        for (const ancestorId of ancestorsOf(orgId)) pairs.push([Number(orgId), ancestorId]);
+      }
+      const pairsSql = pairs.map(([m, t]) => `SELECT ${m} AS memberOrgId, ${t} AS taskOrgId`).join('\n          UNION ALL ');
+      const buildMainSql = (fromSource) => `SELECT u.id AS userId, lt.contentId, lt.title,
+                   DATE_FORMAT(DATE_ADD(lt.createdAt, INTERVAL 8 HOUR), '%Y-%m') AS month,
+                   CASE WHEN lr.status = 'completed' AND COALESCE(lr.completedAt, lr.updatedAt) < '${now}'
+                        THEN 1 ELSE 0 END AS completed
+            FROM ${fromSource}
+            JOIN users u ON u.organizationId = os.memberOrgId AND u.role = 'member' AND u.status = 1
+            JOIN learning_tasks lt ON lt.organizationId = os.taskOrgId AND lt.status = 'published'
+            LEFT JOIN learning_records lr ON lr.taskId = lt.id AND lr.userId = u.id
+            WHERE lt.createdAt >= '${sixMonthsAgo}' AND lt.createdAt < '${now}'
+            ORDER BY u.id, (lt.organizationId = u.organizationId) DESC, lt.id DESC`;
+      const actualSql = buildMainSql(`(${pairsSql}) os`);
+
+      // a) 实际 SQL 的执行计划（优化器视角）
+      chunkLines.push(`-- 实际生产 SQL（UNION ALL 对集 ${pairs.length} 对）:\n${actualSql}\n`);
+      const [treeRows] = await conn.query(`EXPLAIN FORMAT=TREE ${actualSql}`);
+      const tree = treeRows.map(r => Object.values(r)[0]).join('\n');
+      console.log(tree);
+      chunkLines.push(`-- EXPLAIN FORMAT=TREE（实际 SQL，无执行）:\n${tree}\n`);
+
+      // b) 对集物化到临时表后，同一主查询的真实执行耗时
+      await conn.query(`CREATE TEMPORARY TABLE tmp_completion_pairs AS ${pairsSql}`);
+      try {
+        const [rows] = await conn.query(`EXPLAIN ANALYZE ${buildMainSql('tmp_completion_pairs AS os')}`);
+        const lines = rows.map(r => Object.values(r).join('\t'));
+        console.log(lines.join('\n'));
+        chunkLines.push(`-- EXPLAIN ANALYZE（对集已物化到临时表 tmp_completion_pairs，同一主查询真实执行）:\n${lines.join('\n')}\n`);
+      } finally {
+        await conn.query('DROP TEMPORARY TABLE IF EXISTS tmp_completion_pairs');
+      }
+    } catch (err) {
+      console.log(`EXPLAIN 失败: ${err.message}`);
+      chunkLines.push(`EXPLAIN 失败: ${err.message}\n`);
+    }
+    chunks.push(chunkLines.join('\n'));
   }
 
   const outDir = path.join(__dirname, 'results');
