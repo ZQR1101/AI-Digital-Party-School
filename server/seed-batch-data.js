@@ -6,7 +6,14 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-const PASSWORD_HASH = '$2a$10$ALaZI5L.ywOltKqgdKHSXOrtTQbhFQUbQ4tszGFZavdaCIzHDdQFO'; // admin123
+// 演示账号初始密码来自环境变量，不再在代码中写入明文/固定哈希。
+// 首次运行请设置 DEMO_PASSWORD（生产环境务必使用强随机口令）。
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
+if (!DEMO_PASSWORD) {
+  console.error('[seed] 请先在 server/.env 配置 DEMO_PASSWORD（演示账号初始密码）后再执行');
+  process.exit(1);
+}
+const PASSWORD_HASH = require('bcryptjs').hashSync(DEMO_PASSWORD, 10);
 
 const LONG_VIDEOS = [
   { url: '/uploads/demo-lecture.mp4', minutes: 10 },
@@ -342,7 +349,7 @@ async function main() {
   byOrg.forEach((row) => console.log(`  ${row.name}: ${row.members} 人`));
   console.log('已发布试卷');
   paperSizes.forEach((row) => console.log(`  ${row.title}: ${row.questionCount} 题`));
-  console.log('\n演示账号密码均为 admin123，党员示例：member001 / admin123');
+  console.log(`\n演示账号初始密码取自 DEMO_PASSWORD，党员示例：member001 / ${DEMO_PASSWORD}`);
 
   await db.end();
 }

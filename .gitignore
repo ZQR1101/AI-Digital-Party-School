@@ -3,3 +3,15 @@ dist/
 *.log
 *.local
 .env
+
+# 本地开发工具凭据（含主机/账号/密码，禁止入库）
+.vscode/sftp.json
+
+# 一次性调试脚本（曾硬编码数据库账号密码）
+server/check-db.js
+server/check-pwd.js
+server/debug-auth.js
+server/debug-sql.js
+server/fix-pwd-hash.js
+server/fix-pwd.js
+server/test-connection.js

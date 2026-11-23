@@ -1,0 +1,17 @@
+{
+  "name": "团队项目",
+  "host": "请填写服务器地址",
+  "port": 22,
+  "username": "请填写用户名",
+  "password": "请填写密码（不要提交真实凭据）",
+  "protocol": "sftp",
+  "remotePath": "/home/project",
+  "uploadOnSave": false,
+  "downloadOnOpen": false,
+  "ignore": [
+    ".vscode",
+    "node_modules",
+    ".git",
+    ".env"
+  ]
+}
