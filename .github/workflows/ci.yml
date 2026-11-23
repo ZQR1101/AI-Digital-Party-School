@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  server-tests:
+    name: 后端测试 + 安全扫描
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - name: 运行后端测试
+        run: npm test
+      - name: 依赖安全检查（高危及以上不阻断，仅提示）
+        run: npm audit --audit-level=high || true
+
+  admin-build:
+    name: 管理后台构建 + 测试
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  mobile-build:
+    name: 党员端构建 + 测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  secret-scan:
+    name: 凭据安全扫描
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 检查常见明文凭据是否被提交
+        run: |
+          if grep -rInE '(password|secret|token)[[:space:]]*[:=][[:space:]]*["'"'"'][0-9A-Za-z_-]{6,}' \
+              --include='*.js' --include='*.json' --include='*.env' \
+              --exclude-dir=node_modules --exclude-dir=dist . ; then
+            echo "检测到疑似明文凭据，请检查上述文件"
+            exit 1
+          fi
