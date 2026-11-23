@@ -126,6 +126,7 @@ import Icon from './components/Icon.vue'
 import HScroll from './components/HScroll.vue'
 import { getMyRecommendations, sendRecommendationFeedback } from './api/recommendations'
 import { getMyTasks } from './api/tasks'
+import { getHomeSummary } from './api/report'
 import { getRecCacheVersion, readRecCache, writeRecCache } from './api/recCache'
 import { applyTaskProgress, onTaskProgress } from './api/taskProgressCache'
 
@@ -145,8 +146,8 @@ const storedUser = JSON.parse(localStorage.getItem('mobileUser') || '{}')
 const userName = storedUser.realName || storedUser.username || '学员'
 const hour = new Date().getHours()
 const greeting = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好'
-const streak = 12
-const weekHours = computed(() => (tasks.value.filter(item => item.status === 'completed').length * 0.8 + 2.1).toFixed(1))
+const streak = ref(0)
+const weekHours = ref('0.0')
 const pendingCount = computed(() => tasks.value.filter(item => item.status !== 'completed').length)
 const visibleItems = computed(() => pool.value.filter(item => !dismissed.value.has(item.contentId)).slice(0, 6))
 let recommendationVersion = getRecCacheVersion()
@@ -211,16 +212,28 @@ async function loadTasks() {
   }
 }
 
+async function loadSummary() {
+  try {
+    const summary = await getHomeSummary()
+    streak.value = summary.streak || 0
+    weekHours.value = Number(summary.weekHours || 0).toFixed(1)
+  } catch (err) {
+    // 统计失败不阻断首页主流程，保持 0 而不是伪造数据
+    streak.value = 0
+    weekHours.value = '0.0'
+  }
+}
+
 async function load() {
   const cached = readRecCache()
   if (cached) {
     data.value = cached
     pool.value = cached.recommendations || []
     loading.value = false
-    await Promise.all([loadRecommendations(false), loadTasks()])
+    await Promise.all([loadRecommendations(false), loadTasks(), loadSummary()])
     return
   }
-  await Promise.all([loadRecommendations(true), loadTasks()])
+  await Promise.all([loadRecommendations(true), loadTasks(), loadSummary()])
 }
 
 function patchTask(detail) {
@@ -245,6 +258,7 @@ onActivated(() => {
   }
   if (loading.value) return
   loadTasks()
+  loadSummary()
 })
 onBeforeUnmount(() => stopProgress?.())
 
