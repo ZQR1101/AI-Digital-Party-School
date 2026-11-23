@@ -28,9 +28,20 @@ class UserService {
     return rows[0] || null;
   }
 
+  static defaultPassword() {
+    const pwd = process.env.DEFAULT_USER_PASSWORD;
+    if (!pwd || pwd.length < 10) {
+      throw Object.assign(
+        new Error('未配置安全的默认账号口令（DEFAULT_USER_PASSWORD，至少 10 位）'),
+        { statusCode: 500 }
+      );
+    }
+    return pwd;
+  }
+
   static async create(data) {
     const { username, password, realName, role, organizationId, phone, email } = data;
-    const hashedPassword = await bcrypt.hash(password || '123456', 10);
+    const hashedPassword = await bcrypt.hash(password || this.defaultPassword(), 10);
     const [result] = await db.query(
       'INSERT INTO users (username, password, realName, role, organizationId, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [username, hashedPassword, realName, role || 'member', organizationId || null, phone || null, email || null]
@@ -68,7 +79,7 @@ class UserService {
       try {
         if (!u.username || !u.realName) { results.fail++; results.errors.push(`缺少必填字段: ${JSON.stringify(u)}`); continue; }
         await this.create({
-          username: u.username, password: u.password || '123456',
+          username: u.username, password: u.password || this.defaultPassword(),
           realName: u.realName, role: u.role || 'member',
           organizationId: u.organizationId || null, phone: u.phone, email: u.email
         });

@@ -48,11 +48,54 @@ function shouldComplete({ contentType, type, studySeconds, requiredSeconds, vide
   return seconds >= required;
 }
 
+/**
+ * 学习时长上报的服务端校验。
+ * 客户端上报的秒数不可信，这里限制单次增量与累计上限，避免"一次请求刷满时长"。
+ * 返回规范化后的秒数；非法输入直接抛出（携带 statusCode 便于路由返回 400）。
+ */
+function validateReportedSeconds({ reported, previous = 0, requiredSeconds = 0, contentType }) {
+  const value = Number(reported);
+  if (!Number.isFinite(value) || value < 0) {
+    throw Object.assign(new Error('学习时长参数无效'), { statusCode: 400 });
+  }
+  const prev = Number.isFinite(Number(previous)) && Number(previous) > 0 ? Number(previous) : 0;
+  const incoming = Math.floor(value);
+
+  // 绝对上限：单次上报不得超过 2 小时；视频按更长宽限（防止长讲座误判）
+  const absoluteCap = contentType === 'video' ? 4 * 60 * 60 : 2 * 60 * 60;
+  if (incoming > absoluteCap) {
+    throw Object.assign(new Error('学习时长超出合理范围'), { statusCode: 400 });
+  }
+
+  // 累计不得超过应学时长的一定倍数。
+  // 文章按应学时长的 3 倍封顶（至少 5 分钟宽限），防止一次请求刷满；
+  // 视频没有字数基准，给到绝对上限。
+  const required = Number(requiredSeconds) > 0 ? Number(requiredSeconds) : 0;
+  const cumulativeCap = contentType === 'video'
+    ? absoluteCap
+    : Math.max(300, required * 3);
+  if (incoming > cumulativeCap) {
+    throw Object.assign(new Error('学习时长超出合理范围'), { statusCode: 400 });
+  }
+
+  // 单次增量上限：文章不得超过应学时长 + 60 秒宽限；视频不超过 30 分钟。
+  // 只要服务端已有记录，增量就必须合理，避免一次请求直接标记完成。
+  const deltaCap = contentType === 'video' ? 30 * 60 : Math.max(120, required + 60);
+  const delta = incoming - prev;
+  if (prev > 0 && delta > deltaCap) {
+    throw Object.assign(new Error('学习时长增量异常'), { statusCode: 400 });
+  }
+
+  // 取历史最大值，禁止客户端回退已记录时长
+  return Math.max(prev, incoming);
+}
+
 module.exports = {
   stripHtml,
   countStudyChars,
   requiredStudySeconds,
   memberProgress,
   shouldComplete,
+  validateReportedSeconds,
   CHARS_PER_MINUTE,
 };

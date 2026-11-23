@@ -15,7 +15,16 @@ router.post('/login', async (req, res) => {
       return ResponseHelper.badRequest(res, '用户名和密码不能为空');
     }
 
-    const result = await AuthService.login(username, password);
+    const ip = req.ip || req.socket?.remoteAddress || '';
+    const result = await AuthService.login(username, password, ip);
+    if (result && result.locked) {
+      const minutes = Math.max(1, Math.ceil((result.retryAfterMs || 0) / 60000));
+      return res.status(429).json({
+        code: 429,
+        message: `登录失败次数过多，请 ${minutes} 分钟后再试`,
+        data: null
+      });
+    }
     if (!result) {
       return ResponseHelper.unauthorized(res, '用户名或密码错误');
     }
