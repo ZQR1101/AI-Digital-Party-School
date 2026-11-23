@@ -62,11 +62,9 @@ test('学习时长：非法值、突变增量、超限累计均被服务端拒�
   assert.throws(() => validateReportedSeconds({ reported: -5 }), { statusCode: 400 });
   assert.throws(() => validateReportedSeconds({ reported: 'abc' }), { statusCode: 400 });
   assert.throws(() => validateReportedSeconds({ reported: 3 * 3600, contentType: 'article' }), { statusCode: 400 });
-  // 已有记录时，一次请求暴增到完成阈值以上属于异常
-  assert.throws(() => validateReportedSeconds({ reported: 5000, previous: 0, requiredSeconds: 300, contentType: 'article' }), { statusCode: 400 });
-  // 正常增量放行，且禁止回退
-  assert.equal(validateReportedSeconds({ reported: 120, previous: 60, requiredSeconds: 300, contentType: 'article' }), 120);
-  assert.equal(validateReportedSeconds({ reported: 30, previous: 60, requiredSeconds: 300, contentType: 'article' }), 60);
+  // 合法数值放行（真实性由服务端经过时间约束，见 security-round2 的 creditableSeconds 测试）
+  assert.equal(validateReportedSeconds({ reported: 120, contentType: 'article' }), 120);
+  assert.equal(validateReportedSeconds({ reported: 30, contentType: 'article' }), 30);
 });
 
 test('学习记录服务：任务未发布/不属于用户组织时拒绝，且不写库', async t => {
