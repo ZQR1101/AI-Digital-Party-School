@@ -1,8 +1,8 @@
 const db = require('../config/db');
 const OrganizationService = require('./organizationService');
 const {
-  requiredStudySeconds, shouldComplete, validateReportedSeconds,
-  creditableSeconds, deltaCapSeconds, MIN_COMPLETION_SECONDS,
+  requiredStudySeconds, videoRequiredSeconds, shouldComplete, validateReportedSeconds,
+  creditableSeconds, deltaCapSeconds, MIN_COMPLETION_SECONDS, SESSION_IDLE_TIMEOUT_SECONDS,
 } = require('./studyDuration');
 
 function recordError(statusCode, message) {
@@ -23,7 +23,7 @@ class LearningRecordService {
     if (!Number.isInteger(taskId) || taskId <= 0) throw recordError(400, '任务编号无效');
 
     const [tasks] = await db.query(
-      `SELECT t.organizationId, t.status AS taskStatus, c.type AS contentType, c.title, c.summary, c.bodyOrVideoUrl
+      `SELECT t.organizationId, t.status AS taskStatus, c.type AS contentType, c.durationSeconds, c.title, c.summary, c.bodyOrVideoUrl
        FROM learning_tasks t
        JOIN contents c ON t.contentId = c.id
        WHERE t.id = ?`,
@@ -42,7 +42,10 @@ class LearningRecordService {
       throw recordError(403, '该任务未下发给当前用户所在组织');
     }
 
-    const requiredSeconds = requiredStudySeconds(task);
+    // 应学/应看时长：文章按字数核算，视频按真实视频时长核算（未知时长走保守回退）
+    const requiredSeconds = task.contentType === 'video'
+      ? videoRequiredSeconds(task)
+      : requiredStudySeconds(task);
     // 数值合法性校验（非法输入抛 400）
     const incoming = validateReportedSeconds({ reported: studySeconds, contentType: task.contentType });
     const cap = deltaCapSeconds({ contentType: task.contentType, requiredSeconds });
@@ -52,18 +55,29 @@ class LearningRecordService {
       await conn.beginTransaction();
       // 行锁串行化并发心跳：读-算-写在同一事务内完成
       const [existing] = await conn.query(
-        'SELECT id, status, studySeconds, lastActiveAt, sessionStartedAt FROM learning_records WHERE userId = ? AND taskId = ? FOR UPDATE',
+        'SELECT id, status, studySeconds, lastActiveAt, sessionStartedAt, sessionBaseSeconds FROM learning_records WHERE userId = ? AND taskId = ? FOR UPDATE',
         [userId, taskId]
       );
       const row = existing[0] || null;
 
       const now = Date.now();
       const prev = Number(row?.studySeconds) || 0;
-      // 会话基线：优先已有 sessionStartedAt；旧行缺失则回溯到最近心跳（保证连续性）；
-      // 全新记录由服务端此刻建立会话
-      const sessionStartMs = row?.sessionStartedAt
+      // 会话闲置超时：超过 SESSION_IDLE_TIMEOUT_SECONDS 无有效心跳即视为离开，
+      // 重新提交时建立新会话（保留已获合法累计时长，离线墙钟时间不计入新上限）
+      const lastActiveMs = row?.lastActiveAt ? new Date(row.lastActiveAt).getTime() : null;
+      const idleSeconds = lastActiveMs ? Math.floor((now - lastActiveMs) / 1000) : Infinity;
+      const sessionExpired = idleSeconds > SESSION_IDLE_TIMEOUT_SECONDS;
+      // 会话判定：
+      //  - 有效会话（未超时且有 sessionStartedAt）：沿用原基线与开始时间；
+      //  - 旧行缺失会话列：回溯到最近心跳重建（基线取当前累计，保证连续性）；
+      //  - 全新记录/超时：此刻建立新会话，基线快照为当前合法累计。
+      const hasLiveSession = Boolean(row) && !sessionExpired && row.sessionStartedAt != null;
+      const sessionStartMs = hasLiveSession
         ? new Date(row.sessionStartedAt).getTime()
-        : (row?.lastActiveAt ? new Date(row.lastActiveAt).getTime() : now);
+        : (!row || sessionExpired ? now : (lastActiveMs ?? now));
+      const sessionBaseSeconds = hasLiveSession
+        ? Math.max(0, Math.floor(Number(row.sessionBaseSeconds) || 0))
+        : prev;
       const sessionElapsedSeconds = Math.max(0, Math.floor((now - sessionStartMs) / 1000));
 
       // 客户端计数可能回退（换设备/重开页面），增量取非负；累计值只增不减
@@ -71,6 +85,7 @@ class LearningRecordService {
       const credit = creditableSeconds({
         requestedDelta: delta,
         prevSeconds: prev,
+        sessionBaseSeconds,
         sessionElapsedSeconds,
         deltaCapSeconds: cap,
       });
@@ -78,10 +93,8 @@ class LearningRecordService {
 
       const videoEnded = task.contentType === 'video' && completed;
       const alreadyDone = row?.status === 'completed';
-      // 完成门槛：累计时长需达到 min(required, MIN_COMPLETION_SECONDS) 以上（video 无字数基准时取 MIN）
-      const completionFloor = task.contentType === 'video'
-        ? MIN_COMPLETION_SECONDS
-        : Math.max(requiredSeconds, MIN_COMPLETION_SECONDS);
+      // 完成门槛：文章按应学时长、视频按应看时长（真实视频时长核算），且均不低于最小服务端累计时长
+      const completionFloor = Math.max(requiredSeconds, MIN_COMPLETION_SECONDS);
       const done = alreadyDone
         || (seconds >= completionFloor && shouldComplete({
           ...task,
@@ -97,13 +110,13 @@ class LearningRecordService {
 
       if (row) {
         await conn.query(
-          'UPDATE learning_records SET studySeconds = ?, lastActiveAt = ?, sessionStartedAt = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
-          [seconds, nowDate, sessionStartedAt, newStatus, completedAt, row.id]
+          'UPDATE learning_records SET studySeconds = ?, lastActiveAt = ?, sessionStartedAt = ?, sessionBaseSeconds = ?, status = ?, completedAt = COALESCE(?, completedAt) WHERE id = ?',
+          [seconds, nowDate, sessionStartedAt, sessionBaseSeconds, newStatus, completedAt, row.id]
         );
       } else {
         await conn.query(
-          'INSERT INTO learning_records (userId, taskId, studySeconds, lastActiveAt, sessionStartedAt, status, completedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [userId, taskId, seconds, nowDate, sessionStartedAt, newStatus, completedAt]
+          'INSERT INTO learning_records (userId, taskId, studySeconds, lastActiveAt, sessionStartedAt, sessionBaseSeconds, status, completedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [userId, taskId, seconds, nowDate, sessionStartedAt, sessionBaseSeconds, newStatus, completedAt]
         );
       }
       await conn.commit();

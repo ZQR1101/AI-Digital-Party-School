@@ -88,17 +88,19 @@ test('任务路由与列表必须接入范围校验', () => {
 
 // ---------------- 2) 学习时长真实性：累计时长受服务端会话总经过时间约束 ----------------
 
-test('一次性宽限 + 会话累计约束：快速连续请求无法重复领取宽限', () => {
+test('一次性宽限 + 会话记账：会话内快速连续请求无法重复领取宽限，跨会话合法累计叠加', () => {
   const { creditableSeconds, ONE_TIME_ALLOWANCE } = require('../src/services/studyDuration');
-  // 会话刚建立（经过 0s）：首次上报 300s 只计入一次性宽限 60s
-  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 0, sessionElapsedSeconds: 0 }), ONE_TIME_ALLOWANCE);
-  // 紧接着 1s 后再次上报 300s：累计上限 1+60=61，已计入 60 -> 只加 1s
-  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 60, sessionElapsedSeconds: 1 }), 1);
-  // 连续快速请求：每次最多加真实经过的秒数，宽限不再重复发放
-  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 61, sessionElapsedSeconds: 2 }), 1);
-  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 62, sessionElapsedSeconds: 3 }), 1);
+  // 会话刚建立（基线 0，经过 0s）：首次上报 300s 只计入一次性宽限 60s
+  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 0, sessionBaseSeconds: 0, sessionElapsedSeconds: 0 }), ONE_TIME_ALLOWANCE);
+  // 紧接着 1s 后再次上报：本会话上限 0+1+60=61，已计入 60 -> 只加 1s（宽限不可重复领取）
+  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 60, sessionBaseSeconds: 0, sessionElapsedSeconds: 1 }), 1);
+  assert.equal(creditableSeconds({ requestedDelta: 300, prevSeconds: 61, sessionBaseSeconds: 0, sessionElapsedSeconds: 2 }), 1);
   // 真实学习 297s 后（elapsed=300, prev=63）：计入到 360 上限内 -> 加 297
-  assert.equal(creditableSeconds({ requestedDelta: 297, prevSeconds: 63, sessionElapsedSeconds: 300 }), 297);
+  assert.equal(creditableSeconds({ requestedDelta: 297, prevSeconds: 63, sessionBaseSeconds: 0, sessionElapsedSeconds: 300 }), 297);
+  // 隔天新会话（基线快照为昨日累计 100）：新宽限 60s 可用，昨日累计不被清零也不卡死
+  assert.equal(creditableSeconds({ requestedDelta: 100, prevSeconds: 100, sessionBaseSeconds: 100, sessionElapsedSeconds: 0 }), 60);
+  // 新会话学习 100s 后：可计入至 100+100+60 上限
+  assert.equal(creditableSeconds({ requestedDelta: 100, prevSeconds: 160, sessionBaseSeconds: 100, sessionElapsedSeconds: 100 }), 100);
 });
 
 test('单次计入受 deltaCap 限制（视频 30 分钟、文章应学+60s），非法增量安全处理', () => {
@@ -135,12 +137,12 @@ function mockTaskQueries(t, state, taskRow) {
     if (sql.includes('FROM learning_records WHERE')) return [state.rows];
     if (/^UPDATE learning_records/.test(sql)) {
       state.writes.push(params);
-      state.rows = [{ id: 1, status: params[3], studySeconds: params[0], lastActiveAt: params[1], sessionStartedAt: params[2] }];
+      state.rows = [{ id: 1, status: params[4], studySeconds: params[0], lastActiveAt: params[1], sessionStartedAt: params[2], sessionBaseSeconds: params[3] }];
       return [{ affectedRows: 1 }];
     }
     if (/^INSERT INTO learning_records/.test(sql)) {
       state.writes.push(params);
-      state.rows = [{ id: 1, status: params[5], studySeconds: params[2], lastActiveAt: params[3], sessionStartedAt: params[4] }];
+      state.rows = [{ id: 1, status: params[6], studySeconds: params[2], lastActiveAt: params[3], sessionStartedAt: params[4], sessionBaseSeconds: params[5] }];
       return [{ insertId: 1 }];
     }
     throw new Error('意外 SQL: ' + sql.slice(0, 60));
@@ -166,9 +168,80 @@ test('提交学习记录：首次刷满只计宽限，快速二连发不再领�
 test('视频任务：首次上报 1 秒 + completed=true，不能标记学完', async t => {
   const LearningRecordService = require('../src/services/learningRecordService');
   const state2 = { rows: [], writes: [] };
-  mockTaskQueries(t, state2, { organizationId: 4, taskStatus: 'published', contentType: 'video', title: 'v', summary: '', bodyOrVideoUrl: '/v.mp4' });
+  mockTaskQueries(t, state2, { organizationId: 4, taskStatus: 'published', contentType: 'video', durationSeconds: null, title: 'v', summary: '', bodyOrVideoUrl: '/v.mp4' });
   const video = await LearningRecordService.submit(3, { taskId: 6, studySeconds: 1, completed: true });
   assert.notEqual(video.status, 'completed', '视频 1 秒不允许标记学完');
+});
+
+test('视频完成门槛关联真实时长：10 分钟视频首次报 60s+completed 不能完成', async t => {
+  const { videoRequiredSeconds } = require('../src/services/studyDuration');
+  assert.equal(videoRequiredSeconds({ durationSeconds: 600 }), 540);
+  assert.equal(videoRequiredSeconds({ durationSeconds: null }), 60, '未知时长走保守回退');
+
+  const LearningRecordService = require('../src/services/learningRecordService');
+  const state = { rows: [], writes: [] };
+  mockTaskQueries(t, state, { organizationId: 4, taskStatus: 'published', contentType: 'video', durationSeconds: 600, title: 'v', summary: '', bodyOrVideoUrl: '/v.mp4' });
+  const first = await LearningRecordService.submit(3, { taskId: 7, studySeconds: 60, completed: true });
+  assert.notEqual(first.status, 'completed', '首次请求伪造 completed 不能完成 10 分钟视频');
+  assert.equal(first.creditedSeconds, 60);
+
+  // 短视频（30s）真实看完：计入达标后可正常完成
+  const state3 = { rows: [], writes: [] };
+  db.getConnection.mock.restore();
+  db.query.mock.restore();
+  mockTaskQueries(t, state3, { organizationId: 4, taskStatus: 'published', contentType: 'video', durationSeconds: 30, title: 'v', summary: '', bodyOrVideoUrl: '/v.mp4' });
+  const done = await LearningRecordService.submit(3, { taskId: 8, studySeconds: 60, completed: true });
+  assert.equal(done.status, 'completed', '短视频看完后应正常完成');
+});
+
+test('会话闲置超时：隔天回来建立新会话，离线墙钟时间不计入上限', async t => {
+  const { SESSION_IDLE_TIMEOUT_SECONDS } = require('../src/services/studyDuration');
+  assert.equal(SESSION_IDLE_TIMEOUT_SECONDS, 300);
+  const LearningRecordService = require('../src/services/learningRecordService');
+  const HOUR = 3600 * 1000;
+  const state = {
+    rows: [{
+      id: 9,
+      status: 'inProgress',
+      studySeconds: 120,
+      lastActiveAt: new Date(Date.now() - HOUR),          // 1 小时前最后心跳
+      sessionStartedAt: new Date(Date.now() - 24 * HOUR), // 昨天建立的会话
+    }],
+    writes: [],
+  };
+  mockTaskQueries(t, state, { organizationId: 4, taskStatus: 'published', contentType: 'article', title: 'x', summary: '', bodyOrVideoUrl: 'x'.repeat(2000) });
+
+  const result = await LearningRecordService.submit(3, { taskId: 5, studySeconds: 300, completed: false });
+  // 新会话：离线的 1 小时不可计入，仅发放一次性宽限 60s
+  assert.equal(result.creditedSeconds, 60, '闲置超时后应建立新会话，只发一次性宽限');
+  assert.equal(result.studySeconds, 180, '已获合法累计时长应保留');
+  assert.notEqual(result.status, 'completed');
+  // sessionStartedAt 已重置为当前时间（UPDATE params[2]）
+  const writtenStart = new Date(state.writes[0][2]).getTime();
+  assert.ok(Math.abs(Date.now() - writtenStart) < 5000, '新会话开始时间应为提交时刻');
+});
+
+test('旧数据无 sessionStartedAt 时回溯最近心跳重建会话（每行一次性）', async t => {
+  const LearningRecordService = require('../src/services/learningRecordService');
+  const state = {
+    rows: [{
+      id: 10,
+      status: 'inProgress',
+      studySeconds: 60,
+      lastActiveAt: new Date(Date.now() - 10 * 1000), // 10 秒前心跳
+      sessionStartedAt: null,                          // 旧数据无会话列
+      sessionBaseSeconds: null,
+    }],
+    writes: [],
+  };
+  mockTaskQueries(t, state, { organizationId: 4, taskStatus: 'published', contentType: 'article', title: 'x', summary: '', bodyOrVideoUrl: 'x'.repeat(2000) });
+
+  const result = await LearningRecordService.submit(3, { taskId: 5, studySeconds: 300, completed: false });
+  // 重建会话：基线=60、起点=10s 前心跳，上限 60+10+60=130 -> 计入 70（重建宽限仅此一次）
+  assert.equal(result.creditedSeconds, 70);
+  assert.equal(result.studySeconds, 130);
+  // 重建后基线与开始时间已持久化，之后走正常会话判定
+  assert.equal(state.writes[0][3], 60);
 });
 
 // ---------------- 3) 上传文件魔数校验 ----------------
