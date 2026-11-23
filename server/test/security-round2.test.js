@@ -57,6 +57,24 @@ test('admin 不受组织范围限制；未归属组织的书记无法执行管�
   );
 });
 
+test('P0: 组织 ID 失效（后代为空）时不得解释为无限制', async t => {
+  // 书记的组织 ID 已失效：组织表里查不到，getDescendantIds 返回空数组
+  t.mock.method(db, 'query', async () => [[{ id: 1, parentId: null }]]);
+  const ghostSecretary = { userId: 7, role: 'secretary', organizationId: 7 };
+  await assert.rejects(
+    () => OrgScopeService.getScopedOrgIds(ghostSecretary),
+    (err) => err.statusCode === 403
+  );
+
+  // 纵深防御：即使空数组传到列表服务，也必须返回空列表而不是全量
+  const TaskService = require('../src/services/taskService');
+  t.mock.method(db, 'query', async () => {
+    throw new Error('空范围不应触发任何 SQL 查询');
+  });
+  const result = await TaskService.list({ page: 1, pageSize: 10, organizationIds: [] });
+  assert.deepEqual(result, { total: 0, list: [] }, '空组织范围被解释成了无限制');
+});
+
 test('任务路由与列表必须接入范围校验', () => {
   const fs = require('node:fs');
   const routeSource = fs.readFileSync(require.resolve('../src/routes/admin/tasks'), 'utf8');
@@ -68,23 +86,75 @@ test('任务路由与列表必须接入范围校验', () => {
   assert.match(serviceSource, /t\.organizationId IN/, '任务列表服务未支持组织范围过滤');
 });
 
-// ---------------- 2) 首次学习时长上报 ----------------
+// ---------------- 2) 学习时长真实性：服务端经过时间约束 ----------------
 
-test('首次上报同样受单次增量上限约束', () => {
-  // 首次上报允许的正常范围（不超过应学时长+60s 或 120s 下限）
-  assert.equal(validateReportedSeconds({ reported: 100, previous: 0, requiredSeconds: 300, contentType: 'article' }), 100);
-  assert.equal(validateReportedSeconds({ reported: 360, previous: 0, requiredSeconds: 300, contentType: 'article' }), 360);
-  // 首次即暴增：超过 deltaCap(360) 直接拒绝
-  assert.throws(
-    () => validateReportedSeconds({ reported: 500, previous: 0, requiredSeconds: 300, contentType: 'article' }),
-    { statusCode: 400 }
-  );
-  // 视频首次上报 30 分钟以内放行，超过拒绝
-  assert.equal(validateReportedSeconds({ reported: 1800, previous: 0, contentType: 'video' }), 1800);
-  assert.throws(
-    () => validateReportedSeconds({ reported: 1900, previous: 0, contentType: 'video' }),
-    { statusCode: 400 }
-  );
+test('首次上报最多计入 60 秒，无论客户端报多少', () => {
+  const { creditableSeconds } = require('../src/services/studyDuration');
+  // 首次上报 100s -> 只计入 60s
+  assert.equal(creditableSeconds({ requestedDelta: 100, isFirstReport: true }), 60);
+  // 首次直接报满 300s（required=300）-> 仍只计入 60s，无法刷满
+  assert.equal(creditableSeconds({ requestedDelta: 300, isFirstReport: true, contentType: 'article', requiredSeconds: 300 }), 60);
+  // 首次上报 3s（正常心跳）-> 全额计入
+  assert.equal(creditableSeconds({ requestedDelta: 3, isFirstReport: true }), 3);
+});
+
+test('有服务端基线后，可计入时长受真实经过时间限制', () => {
+  const { creditableSeconds } = require('../src/services/studyDuration');
+  // 服务端只经过 10 秒，客户端却报增量 300 -> 只计入 40s（10+30 宽限）
+  assert.equal(creditableSeconds({ requestedDelta: 300, serverElapsedSeconds: 10, contentType: 'article', requiredSeconds: 300 }), 40);
+  // 服务端经过 600 秒，报 300 -> 全额计入（不超 deltaCap 360）
+  assert.equal(creditableSeconds({ requestedDelta: 300, serverElapsedSeconds: 600, contentType: 'article', requiredSeconds: 300 }), 300);
+  // 视频单次计入上限 30 分钟
+  assert.equal(creditableSeconds({ requestedDelta: 1900, serverElapsedSeconds: 3600, contentType: 'video' }), 1800);
+  // 负数/NaN 增量安全处理
+  assert.equal(creditableSeconds({ requestedDelta: -5, isFirstReport: true }), 0);
+  assert.equal(creditableSeconds({ requestedDelta: 'abc', isFirstReport: true }), 0);
+});
+
+test('提交学习记录：首次刷满被拒计入，视频 1 秒不能标记学完', async t => {
+  const LearningRecordService = require('../src/services/learningRecordService');
+  const state = { rows: [], writes: [] };
+  t.mock.method(db, 'query', async (sql, params) => {
+    if (sql.includes('FROM learning_tasks')) {
+      return [[{ organizationId: 4, taskStatus: 'published', contentType: 'article', title: 'x', summary: '', bodyOrVideoUrl: 'x'.repeat(2000) }]];
+    }
+    if (sql.includes('FROM users WHERE id')) return [[{ organizationId: 4 }]];
+    if (sql.includes('SELECT id, parentId FROM organizations')) return [[{ id: 4, parentId: null }]];
+    if (sql.includes('FROM learning_records WHERE')) return [state.rows];
+    if (/^UPDATE learning_records/.test(sql)) {
+      state.writes.push({ sql, params });
+      state.rows = [{ id: 1, status: params[2], studySeconds: params[0], lastActiveAt: params[1] }];
+      return [{ affectedRows: 1 }];
+    }
+    if (/^INSERT INTO learning_records/.test(sql)) {
+      state.writes.push({ sql, params });
+      state.rows = [{ id: 1, status: params[4], studySeconds: params[2], lastActiveAt: params[3] }];
+      return [{ insertId: 1 }];
+    }
+    throw new Error('意外 SQL: ' + sql.slice(0, 60));
+  });
+
+  // 首次直接上报 300s（应学约 400s）：只计入 60s，不得完成
+  const first = await LearningRecordService.submit(3, { taskId: 5, studySeconds: 300, completed: true });
+  assert.equal(first.creditedSeconds, 60);
+  assert.notEqual(first.status, 'completed', '首次上报不允许直接学完');
+
+  // 视频任务：首次上报 1 秒 + completed=true，不能标记学完
+  db.query.mock.restore();
+  const state2 = { rows: [], writes: [] };
+  t.mock.method(db, 'query', async (sql, params) => {
+    if (sql.includes('FROM learning_tasks')) {
+      return [[{ organizationId: 4, taskStatus: 'published', contentType: 'video', title: 'v', summary: '', bodyOrVideoUrl: '/v.mp4' }]];
+    }
+    if (sql.includes('FROM users WHERE id')) return [[{ organizationId: 4 }]];
+    if (sql.includes('SELECT id, parentId FROM organizations')) return [[{ id: 4, parentId: null }]];
+    if (sql.includes('FROM learning_records WHERE')) return [state2.rows];
+    if (/^UPDATE learning_records/.test(sql)) { state2.writes.push(params); state2.rows = [{ id: 1, status: params[2], studySeconds: params[0], lastActiveAt: params[1] }]; return [{ affectedRows: 1 }]; }
+    if (/^INSERT INTO learning_records/.test(sql)) { state2.writes.push(params); state2.rows = [{ id: 1, status: params[4], studySeconds: params[2], lastActiveAt: params[3] }]; return [{ insertId: 1 }]; }
+    throw new Error('意外 SQL: ' + sql.slice(0, 60));
+  });
+  const video = await LearningRecordService.submit(3, { taskId: 6, studySeconds: 1, completed: true });
+  assert.notEqual(video.status, 'completed', '视频 1 秒不允许标记学完');
 });
 
 // ---------------- 3) 上传文件魔数校验 ----------------
@@ -184,4 +254,34 @@ test('内容服务入库前对文章正文做清洗（video 不动）', async t 
     bodyOrVideoUrl: '/uploads/content/a.mp4?width=16&height=9',
   });
   assert.equal(captured[1].params[3], '/uploads/content/a.mp4?width=16&height=9');
+});
+
+// ---------------- 5) 表格导入：exceljs/CSV 替代 SheetJS ----------------
+
+test('表格解析：exceljs 读取 xlsx、内置解析 csv（含引号转义）', async () => {
+  const ExcelJS = require('exceljs');
+  const { parseSheetRows, parseCsvRows } = require('../src/utils/sheetImport');
+
+  // xlsx：exceljs 生成 -> parseSheetRows 读取
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('人员');
+  ws.addRow(['用户名', '姓名', '角色', '组织ID']);
+  ws.addRow(['lisi', '李四', '党员', 4]);
+  const xlsxBuffer = Buffer.from(await wb.xlsx.writeBuffer());
+  const rows = await parseSheetRows(xlsxBuffer, 'members.xlsx');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]['用户名'], 'lisi');
+  assert.equal(rows[0]['姓名'], '李四');
+
+  // csv：BOM、引号内逗号与转义引号
+  const csv = '\uFEFFusername,realName,role\n"wang,""wu"",x",王五,党员\n';
+  const csvRows = parseCsvRows(Buffer.from(csv));
+  assert.equal(csvRows.length, 1);
+  assert.equal(csvRows[0].username, 'wang,"wu",x');
+  assert.equal(csvRows[0].realName, '王五');
+
+  // 路由已切换到 exceljs，xlsx 库彻底移除
+  const routeSource = require('fs').readFileSync(require.resolve('../src/routes/admin/users'), 'utf8');
+  assert.doesNotMatch(routeSource, /require\('xlsx'\)/, '路由仍引用已弃用的 xlsx 库');
+  assert.match(routeSource, /parseSheetRows/, '路由未接入统一表格解析');
 });
