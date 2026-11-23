@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const StatisticsService = require('../../services/statisticsService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser } = require('../../middleware/auth');
 const { loadActiveActor, resolveOrganizationScope } = require('../../services/organizationAccess');
 
-router.use(authenticate);
+router.use(authenticate, loadCurrentUser);
 
 /**
  * GET /api/admin/statistics

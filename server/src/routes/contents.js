@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const ContentService = require('../services/contentService');
 const ResponseHelper = require('../utils/response');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, loadCurrentUser } = require('../middleware/auth');
 
-router.use(authenticate);
+router.use(authenticate, loadCurrentUser);
 
 /**
  * GET /api/contents

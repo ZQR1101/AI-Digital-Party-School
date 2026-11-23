@@ -11,6 +11,14 @@ function numericId(value) {
 }
 
 async function loadActiveActor(principal) {
+  // loadCurrentUser 已加载实时身份（含 status 字段）时直接复用，避免重复查询。
+  // 二者的语义保持一致：无效登录 401，账号不存在或停用 403。
+  if (principal && principal.status !== undefined) {
+    if (Number(principal.status) !== 1) throw accessError(403, '账号不存在或已停用');
+    const userId = numericId(principal.userId);
+    if (!userId) throw accessError(401, '登录状态无效，请重新登录');
+    return { userId, role: principal.role, organizationId: principal.organizationId };
+  }
   const userId = numericId(principal?.userId);
   if (!userId) throw accessError(401, '登录状态无效，请重新登录');
   const [[row]] = await db.query(

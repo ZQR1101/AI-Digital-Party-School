@@ -53,7 +53,11 @@ test('HTTP 问数与看板使用数据库当前角色和组织，越权与降级
     const sql = typeof query === 'string' ? query : query.sql;
     statements.push(sql);
     if (sql.includes('users WHERE id = ?')) {
-      const current = { 8: secretary, 9: { userId: 9, role: 'member', organizationId: 2 } }[params[0]];
+      // loadCurrentUser 实时加载：需要 status/username 字段（loadActiveActor 复用其结果，不再二次查库）
+      const current = {
+        8: { ...secretary, username: 'zs', status: 1 },
+        9: { userId: 9, role: 'member', organizationId: 2, username: 'demoted', status: 1 },
+      }[params[0]];
       return [current ? [current] : []];
     }
     if (sql === 'SELECT id, name, parentId FROM organizations') return [organizations];
@@ -101,12 +105,16 @@ test('HTTP 问数与看板使用数据库当前角色和组织，越权与降级
   const legacyReport = await request('/api/reports/me', 8);
   assert.equal(legacyReport.status, 200);
   assert.equal((await legacyReport.json()).data.score, 76);
-  const [denied, , , fallback] = entries;
+  // 进入 AI 层的请求才写审计：id=9 降级角色被拒、id=10 查无此人在 auth 层即被拦截（无 AI 审计）
+  const [denied, chatDenied, fallback] = entries;
   assert.equal(denied[0], 8);
   assert.equal(denied[1], 'secretary');
   assert.equal(denied[8], forbiddenQuery.headers.get('x-request-id'));
   assert.equal(denied[16], 'forbidden');
   assert.equal(denied[3], 'query');
+  assert.equal(chatDenied[0], 9);
+  assert.equal(chatDenied[1], 'member', '降级后的实时角色应写入审计');
+  assert.equal(chatDenied[16], 'forbidden');
   assert.equal(fallback[8], legacyReport.headers.get('x-request-id'));
   assert.deepEqual(fallback.slice(10), [12, 'mock-model', 4, 2, 6, 1, 'invalid_output', 'invalid_output']);
   assert.ok(!JSON.stringify(entries).includes('第二党支部本月学习完成率'));

@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, loadCurrentUser } = require('../middleware/auth');
 const { accessError, requireStatisticsRole } = require('../services/organizationAccess');
 const OrganizationQueryService = require('../services/organizationQueryService');
 const RecommendationService = require('../services/recommendationService');
@@ -9,7 +9,7 @@ const { METRICS } = require('../ai/queryParser');
 const RagService = require('../services/ragService');
 
 const router = express.Router();
-router.use(authenticate);
+router.use(authenticate, loadCurrentUser);
 
 const organization = 'organization_query';
 const recommendation = 'learning_recommendation';

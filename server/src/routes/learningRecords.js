@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const LearningRecordService = require('../services/learningRecordService');
 const ResponseHelper = require('../utils/response');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, loadCurrentUser } = require('../middleware/auth');
 
 /**
  * POST /api/learning-records
  * 提交学习时长、完成状态
  */
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, loadCurrentUser, async (req, res) => {
   try {
     const { taskId, studySeconds, completed } = req.body;
 

@@ -1,11 +1,11 @@
 const express = require('express');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, loadCurrentUser, authorize } = require('../middleware/auth');
 const AssessmentService = require('../services/assessmentService');
 const ResponseHelper = require('../utils/response');
 const assessmentErrors = require('./assessmentErrors');
 
 const router = express.Router();
-router.use(authenticate, authorize('member'));
+router.use(authenticate, loadCurrentUser, authorize('member'));
 
 router.get('/', async (req, res, next) => {
   try {
