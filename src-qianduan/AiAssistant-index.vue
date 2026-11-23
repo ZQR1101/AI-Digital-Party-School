@@ -26,7 +26,7 @@
         <p v-if="mode === 'knowledge'">我会从党校知识库中检索资料，并附上来源，让每个答案都有据可查。</p>
         <p v-else>我会结合你的学习画像，找出薄弱知识点，推荐针对性学习材料。</p>
         <div class="quick-questions">
-          <button v-for="q in quickQuestions" :key="q" type="button" @click="send(q)">{{ q }}</button>
+          <button v-for="q in currentQuickQuestions" :key="q" type="button" @click="send(q)">{{ q }}</button>
         </div>
       </section>
 
@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import BottomNav from './components/BottomNav.vue'
 import Icon from './components/Icon.vue'
 import { askKnowledge, askPersonalized } from './api/aiAssistant'
@@ -115,6 +115,8 @@ const quickQuestions = {
     '我应该重点学习什么？'
   ]
 }
+
+const currentQuickQuestions = computed(() => quickQuestions[mode.value] || [])
 
 function switchMode(next) {
   if (mode.value === next) return
