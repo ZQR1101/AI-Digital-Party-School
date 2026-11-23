@@ -95,13 +95,15 @@ AI_API_KEY=你的AI平台Key
 AI_MODEL=deepseek-chat
 AI_TOOL_MODE=function          # 组织问数：function=原生 Function Calling / prompt=提示词JSON
 
-# RAG 真实语义检索（可选，SiliconFlow；不配置则降级为本地关键词算法）
-EMBEDDING_API_URL=https://api.siliconflow.cn/v1/embeddings
-EMBEDDING_API_KEY=你的SiliconFlowKey
-EMBEDDING_MODEL=BAAI/bge-m3
-RERANKER_API_URL=https://api.siliconflow.cn/v1/rerank
-RERANKER_API_KEY=你的SiliconFlowKey
-RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+# RAG 真实语义检索（可选，阿里云百炼/通义千问；不配置则降级为本地关键词算法）
+# Key 申请：https://bailian.console.aliyun.com/ ，也可用标准变量 DASHSCOPE_API_KEY
+EMBEDDING_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
+EMBEDDING_API_KEY=你的百炼Key
+EMBEDDING_MODEL=text-embedding-v4
+EMBEDDING_BATCH=10
+RERANKER_API_URL=https://dashscope.aliyuncs.com/compatible-api/v1/reranks
+RERANKER_API_KEY=你的百炼Key
+RERANKER_MODEL=qwen3-rerank
 ```
 
 > API Key 仅保存在本地 `server/.env` 中，该文件已被 `.gitignore` 排除，不会提交到仓库。完整配置项见 `server/.env.example`。运行 `cd server && node rag-diagnose.js` 可查看 RAG 实际使用的检索后端。

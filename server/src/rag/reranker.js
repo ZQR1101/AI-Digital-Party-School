@@ -2,14 +2,17 @@ const axios = require('axios');
 const { tokenize } = require('./bm25');
 
 /**
- * Reranker —— 真实语义重排客户端（SiliconFlow / OpenAI 兼容 rerank 接口）。
+ * Reranker —— 真实语义重排客户端（默认面向阿里云百炼 DashScope 的 OpenAI 兼容 rerank 接口）。
  *
  * 配置：
- *   RERANKER_API_URL   兼容 /v1/rerank 的端点；未配置则使用本地关键词重排。
- *   RERANKER_API_KEY   该服务专用 Key；缺省回退到 AI_API_KEY / EMBEDDING_API_KEY。
- *   RERANKER_MODEL     模型名，默认 BAAI/bge-reranker-v2-m3。
+ *   RERANKER_API_URL   rerank 端点；未配置则使用本地关键词重排。
+ *                      百炼示例：https://dashscope.aliyuncs.com/compatible-api/v1/reranks
+ *   RERANKER_API_KEY   该服务专用 Key；缺省依次回退 DASHSCOPE_API_KEY、EMBEDDING_API_KEY、AI_API_KEY。
+ *   RERANKER_MODEL     模型名，默认 qwen3-rerank（百炼 Qwen3 重排系列）。
  *   RERANKER_TIMEOUT_MS 请求超时，默认 8000ms。
  *
+ * 说明：百炼兼容端点为 /compatible-api/v1/reranks（复数），响应 results[].{index, relevance_score}，
+ *       与 SiliconFlow 的 /v1/rerank 结构一致，故解析逻辑通用。
  * 调用失败时降级为本地精准关键词重排，并通过 lastBackend 暴露实际后端。
  */
 class Reranker {
@@ -19,6 +22,7 @@ class Reranker {
 
   static get apiKey() {
     return process.env.RERANKER_API_KEY
+      || process.env.DASHSCOPE_API_KEY
       || process.env.EMBEDDING_API_KEY
       || process.env.AI_API_KEY
       || '';
@@ -31,7 +35,7 @@ class Reranker {
   static getBackendInfo() {
     return {
       configured: this.isApiConfigured(),
-      model: process.env.RERANKER_MODEL || 'BAAI/bge-reranker-v2-m3',
+      model: process.env.RERANKER_MODEL || 'qwen3-rerank',
       ...(this.lastBackend || {})
     };
   }
@@ -46,7 +50,7 @@ class Reranker {
         const response = await axios.post(
           process.env.RERANKER_API_URL,
           {
-            model: process.env.RERANKER_MODEL || 'BAAI/bge-reranker-v2-m3',
+            model: process.env.RERANKER_MODEL || 'qwen3-rerank',
             query,
             documents: candidates.map(c => `${c.chunk.title}\n${c.chunk.content}`),
             top_n: Math.min(topK, candidates.length)

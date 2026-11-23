@@ -86,22 +86,26 @@
   → LLM 生成(带来源引用) → 答案 + 引用
 ```
 
-### 真实语义检索配置（SiliconFlow，OpenAI 兼容）
+### 真实语义检索配置（阿里云百炼 DashScope / 通义千问，OpenAI 兼容）
 
 在 `server/.env` 配置（详见 `.env.example`）：
 
 ```ini
-EMBEDDING_API_URL=https://api.siliconflow.cn/v1/embeddings
-EMBEDDING_API_KEY=你的Key
-EMBEDDING_MODEL=BAAI/bge-m3
+EMBEDDING_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
+EMBEDDING_API_KEY=你的百炼Key
+EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIM=1024
+EMBEDDING_BATCH=10
 
-RERANKER_API_URL=https://api.siliconflow.cn/v1/rerank
-RERANKER_API_KEY=你的Key
-RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+# 注意是 compatible-api 且 reranks 为复数
+RERANKER_API_URL=https://dashscope.aliyuncs.com/compatible-api/v1/reranks
+RERANKER_API_KEY=你的百炼Key
+RERANKER_MODEL=qwen3-rerank
 ```
 
-- Key 申请：https://cloud.siliconflow.cn/account/ak
+- Key 申请：https://bailian.console.aliyun.com/ → 账号管理 → API-KEY 管理（Key 形如 `sk-xxx`）。也可用标准变量 `DASHSCOPE_API_KEY`，代码会自动读取。
+- 可用模型：Embedding 推荐 `text-embedding-v4`（或 `text-embedding-v3`）；Reranker 推荐 `qwen3-rerank`（`gte-rerank` 系列已下线，勿用）。
+- 百炼 Embedding 单批上限 10 行，故 `EMBEDDING_BATCH` 默认 10，勿调大以免 400 报错。
 - 未配置时自动降级为本地哈希向量 + 关键词重排（**非语义**），通过 `node rag-diagnose.js` 可查看实际后端；加 `--live` 做真实调用验证。
 - 运行时可调用 `RagService.getBackendStatus()` 获取 `embedding.semantic` / `reranker.semantic`，确认真实模型是否生效。
 - Qdrant 为可选：配置 `QDRANT_URL` 或 `QDRANT_ENABLED=true` 启用；否则使用内置内存向量索引。测试环境一律禁用外部服务。

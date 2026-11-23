@@ -1,21 +1,22 @@
 {
-  "generatedAt": "2026-11-22T14:41:41.237Z",
+  "generatedAt": "2026-11-23T01:32:36.685Z",
   "evalCount": 19,
   "k": 3,
   "chunkCount": 50,
   "backend": {
     "embedding": {
-      "configured": false,
-      "model": "BAAI/bge-m3",
+      "configured": true,
+      "model": "qwen3.7-text-embedding-flash",
       "dim": 1024,
-      "backend": "local-hash",
-      "semantic": false
+      "backend": "api",
+      "semantic": true
     },
     "reranker": {
-      "configured": false,
-      "model": "BAAI/bge-reranker-v2-m3",
-      "backend": "local-keyword",
-      "semantic": false
+      "configured": true,
+      "model": "qwen3.7-text-rerank",
+      "backend": "api",
+      "semantic": true,
+      "scored": 3
     }
   },
   "summary": {
@@ -25,14 +26,14 @@
       "mrr": 0.9737
     },
     "vector": {
-      "hitAtK": 0.8947,
-      "recallAtK": 0.8947,
-      "mrr": 0.8333
+      "hitAtK": 1,
+      "recallAtK": 1,
+      "mrr": 1
     },
     "hybrid": {
-      "hitAtK": 0.9474,
-      "recallAtK": 0.9474,
-      "mrr": 0.9211
+      "hitAtK": 1,
+      "recallAtK": 1,
+      "mrr": 1
     }
   },
   "details": [
@@ -194,9 +195,9 @@
         "rr": 1
       },
       "vector": {
-        "hit": 0,
-        "recall": 0,
-        "rr": 0
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
       },
       "hybrid": {
         "hit": 1,
@@ -259,7 +260,7 @@
       "vector": {
         "hit": 1,
         "recall": 1,
-        "rr": 0.5
+        "rr": 1
       },
       "hybrid": {
         "hit": 1,
@@ -385,12 +386,12 @@
       "vector": {
         "hit": 1,
         "recall": 1,
-        "rr": 0.3333333333333333
+        "rr": 1
       },
       "hybrid": {
         "hit": 1,
         "recall": 1,
-        "rr": 0.5
+        "rr": 1
       }
     },
     {
@@ -425,14 +426,14 @@
         "rr": 1
       },
       "vector": {
-        "hit": 0,
-        "recall": 0,
-        "rr": 0
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
       },
       "hybrid": {
-        "hit": 0,
-        "recall": 0,
-        "rr": 0
+        "hit": 1,
+        "recall": 1,
+        "rr": 1
       }
     }
   ]

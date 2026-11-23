@@ -28,14 +28,14 @@ function printConfig() {
 
   console.log('【Embedding】');
   console.log('  API 端点   :', process.env.EMBEDDING_API_URL || '(未配置 → 本地哈希降级)');
-  console.log('  专用 Key   :', mask(process.env.EMBEDDING_API_KEY || process.env.AI_API_KEY));
-  console.log('  模型       :', e.model || process.env.EMBEDDING_MODEL || 'BAAI/bge-m3');
+  console.log('  专用 Key   :', mask(process.env.EMBEDDING_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.AI_API_KEY));
+  console.log('  模型       :', e.model || process.env.EMBEDDING_MODEL || 'text-embedding-v4');
   console.log('  目标维度   :', e.dim || 1024);
 
   console.log('\n【Reranker】');
   console.log('  API 端点   :', process.env.RERANKER_API_URL || '(未配置 → 本地关键词降级)');
-  console.log('  专用 Key   :', mask(process.env.RERANKER_API_KEY || process.env.EMBEDDING_API_KEY || process.env.AI_API_KEY));
-  console.log('  模型       :', r.model || 'BAAI/bge-reranker-v2-m3');
+  console.log('  专用 Key   :', mask(process.env.RERANKER_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.EMBEDDING_API_KEY || process.env.AI_API_KEY));
+  console.log('  模型       :', r.model || 'qwen3-rerank');
 
   const realConfigured = EmbeddingClient.isApiConfigured() && Reranker.isApiConfigured();
   console.log('\n结论:', realConfigured

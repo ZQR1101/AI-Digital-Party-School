@@ -60,24 +60,25 @@ async function qdrantRequest(method, url, data, timeoutMs = 600) {
 }
 
 /**
- * EmbeddingClient —— 真实语义向量客户端（OpenAI / SiliconFlow 兼容）。
+ * EmbeddingClient —— 真实语义向量客户端（OpenAI 兼容；默认面向阿里云百炼 DashScope）。
  *
  * 配置优先级：
  *   EMBEDDING_API_URL  OpenAI 兼容的 embeddings 端点；未配置则判定为“未接入真实模型”。
- *   EMBEDDING_API_KEY  该服务专用 Key；缺省回退到 AI_API_KEY。
- *   EMBEDDING_MODEL    模型名，默认 BAAI/bge-m3。
- *   EMBEDDING_DIM      向量维度，默认 1024（BGE-M3）；真实返回维度会自动覆盖。
- *   EMBEDDING_BATCH    单次请求文本数，默认 32。
+ *                      百炼示例：https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
+ *   EMBEDDING_API_KEY  该服务专用 Key；缺省依次回退 DASHSCOPE_API_KEY、AI_API_KEY。
+ *   EMBEDDING_MODEL    模型名，默认 text-embedding-v4（百炼 Qwen3-Embedding 系列）。
+ *   EMBEDDING_DIM      向量维度，默认 1024；真实返回维度会自动覆盖。
+ *   EMBEDDING_BATCH    单次请求文本数，默认 10（百炼 text-embedding-v3/v4 单批上限 10 行）。
  *   EMBEDDING_TIMEOUT_MS 请求超时，默认 8000ms。
  *
  * 未配置或调用失败时降级为本地哈希特征向量（关键词级，非语义），
- * 并通过 lastBackendsnapshot 暴露当前实际使用的后端，便于评测与排障。
+ * 并通过 lastBackend 暴露当前实际使用的后端，便于评测与排障。
  */
 class EmbeddingClient {
   static _envSnapshot() {
     return {
       configured: Boolean(process.env.EMBEDDING_API_URL),
-      model: process.env.EMBEDDING_MODEL || 'BAAI/bge-m3',
+      model: process.env.EMBEDDING_MODEL || 'text-embedding-v4',
       dim: Number(process.env.EMBEDDING_DIM || DEFAULT_VECTOR_DIM)
     };
   }
@@ -91,7 +92,10 @@ class EmbeddingClient {
   }
 
   static get apiKey() {
-    return process.env.EMBEDDING_API_KEY || process.env.AI_API_KEY || '';
+    return process.env.EMBEDDING_API_KEY
+      || process.env.DASHSCOPE_API_KEY
+      || process.env.AI_API_KEY
+      || '';
   }
 
   static get timeoutMs() {
@@ -99,7 +103,8 @@ class EmbeddingClient {
   }
 
   static get batchSize() {
-    return Math.max(1, Number(process.env.EMBEDDING_BATCH || 32));
+    // 百炼 text-embedding-v3/v4 单批最多 10 行，默认取 10 以兼容
+    return Math.max(1, Number(process.env.EMBEDDING_BATCH || 10));
   }
 
   static async embedTexts(texts) {
@@ -120,7 +125,7 @@ class EmbeddingClient {
         const response = await axios.post(
           process.env.EMBEDDING_API_URL,
           {
-            model: process.env.EMBEDDING_MODEL || 'BAAI/bge-m3',
+            model: process.env.EMBEDDING_MODEL || 'text-embedding-v4',
             input: slice,
             encoding_format: 'float'
           },
