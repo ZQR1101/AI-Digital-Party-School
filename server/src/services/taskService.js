@@ -42,7 +42,9 @@ class TaskService {
     const scopedIds = Array.isArray(organizationIds)
       ? [...new Set(organizationIds.map(Number).filter(Boolean))]
       : null;
-    if (scopedIds && scopedIds.length) {
+    if (scopedIds) {
+      // 明确三态：null=不限制；非空数组=限定范围；空数组=无任何可见范围，直接返回空
+      if (!scopedIds.length) return { total: 0, list: [] };
       sql += ` AND t.organizationId IN (${scopedIds.map(() => '?').join(',')})`;
       params.push(...scopedIds);
     }

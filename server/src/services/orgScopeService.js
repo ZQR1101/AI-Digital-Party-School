@@ -1,9 +1,11 @@
 const OrganizationService = require('./organizationService');
 
 /**
- * 组织数据范围授权：
- * - admin：不限制（返回 null）
- * - 其他管理角色（如支部书记）：仅可操作本组织及其下级组织的数据
+ * 组织数据范围授权。三种语义必须严格区分：
+ * - null        ：admin，不限制组织
+ * - 非空数组    ：限定为这些组织（本组织及下级）
+ * - 空数组      ：账号组织已失效/无任何可见范围，调用方必须视为"无权查看任何数据"，
+ *                 绝不能当作"不限制"处理
  */
 async function getScopedOrgIds(actor) {
   if (!actor || !actor.userId) {
@@ -13,7 +15,12 @@ async function getScopedOrgIds(actor) {
   if (actor.organizationId == null || actor.organizationId === '') {
     throw Object.assign(new Error('当前账号未归属任何组织，无法执行管理操作'), { statusCode: 403 });
   }
-  return OrganizationService.getDescendantIds(actor.organizationId);
+  const scope = await OrganizationService.getDescendantIds(actor.organizationId);
+  // 组织已被删除或 ID 失效时，getDescendantIds 返回空数组：无任何可见范围
+  if (!scope.length) {
+    throw Object.assign(new Error('当前账号所属组织已失效，无法执行管理操作'), { statusCode: 403 });
+  }
+  return scope;
 }
 
 /**
