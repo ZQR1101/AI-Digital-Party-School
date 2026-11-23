@@ -19,7 +19,7 @@ class RagService {
   static async init(force = false) {
     if (this.isInitialized && !force) return;
 
-    this.chunks = DocumentParser.loadFromDirectory(KNOWLEDGE_DIR);
+    this.chunks = await DocumentParser.loadFromDirectoryAsync(KNOWLEDGE_DIR);
     this.bm25.index(this.chunks);
     await this.vectorStore.index(this.chunks);
     this.isInitialized = true;
@@ -72,6 +72,21 @@ class RagService {
   }
 
   /**
+   * 校验模型回答中的引用编号：仅保留指向实际检索来源的 [n]，
+   * 防止模型编造 [7]、[0] 等不存在来源造成误导。
+   */
+  static sanitizeCitations(answer, validCount) {
+    const invalid = [];
+    const cleaned = String(answer || '').replace(/\[(\d+)\]/g, (match, digits) => {
+      const n = Number(digits);
+      if (n >= 1 && n <= validCount) return match;
+      invalid.push(n);
+      return '';
+    });
+    return { answer: cleaned, invalidCitations: [...new Set(invalid)] };
+  }
+
+  /**
    * 保持旧接口完全向下兼容
    */
   static async search(query, topK = 3) {
@@ -118,6 +133,13 @@ class RagService {
       trace.ragAiError = err.message;
     }
 
+    // 模型可能生成越界引用编号，按实际来源数量校验后再返回
+    if (generatedAnswer) {
+      const sanitized = this.sanitizeCitations(generatedAnswer, results.length);
+      generatedAnswer = sanitized.answer;
+      if (sanitized.invalidCitations.length) trace.invalidCitations = sanitized.invalidCitations;
+    }
+
     // 确定性事实兜底（当大模型服务不可用时，基于重排第一条及相关条款生成结构化摘要）
     const answer = generatedAnswer || this.buildFallbackAnswer(results, question);
 
@@ -152,6 +174,15 @@ class RagService {
     const profile = await LearningProfileService.getProfile(actor.userId);
     const weakCategories = profile.weakCategories || [];
     const weakTopicNames = weakCategories.map(w => w.category);
+    const profileSummary = {
+      userName: profile.userName,
+      completionRate: profile.completionRate,
+      weakCategories: weakCategories.slice(0, 3)
+    };
+    const suggestions = weakCategories.slice(0, 3).map(w => ({
+      title: `强化 ${w.category} 学习`,
+      content: `当前错题率为 ${w.wrongRate}%，建议结合知识库专题资料进行专项强化复习。`
+    }));
 
     // 2. 根据学员画像薄弱点检索针对性学习材料
     const searchQuery = weakTopicNames.length
@@ -159,6 +190,27 @@ class RagService {
       : question;
 
     const results = await this.hybridSearch(searchQuery, { topK: 4 });
+
+    // 相关性拒答门禁：与知识问答一致，检索结果不达标时不得生成带来源的"专业建议"
+    const isRelevant = results.length > 0 && results[0].relevanceScore >= RELEVANCE_THRESHOLD;
+    if (!isRelevant) {
+      trace.ragOutcome = 'no_relevant_knowledge';
+      const weakHint = weakCategories.length
+        ? `从学习记录看，您在【${weakCategories.slice(0, 3).map(w => w.category).join('】、【')}】等知识点上错题率偏高，建议先梳理基础概念。`
+        : '从学习记录看，您近期暂未出现明显薄弱知识点，建议保持当前学习节奏。';
+      return {
+        scene: 'learning_evaluation',
+        question,
+        answer: `${weakHint}\n\n党校知识库中暂未收录与该问题直接相关的学习资料，无法给出有据可查的具体建议。请查阅权威党务文献或向所在党组织管理员咨询。`,
+        profileSummary,
+        sources: [],
+        suggestions,
+        isGrounded: false,
+        relevantCount: 0,
+        generatedAt: new Date().toISOString()
+      };
+    }
+
     const context = results.map((r, i) => `[${i + 1}] 《${r.chunk.source}》- ${r.chunk.title}\n${r.chunk.content}`).join('\n\n');
 
     const profileFacts = {
@@ -185,17 +237,20 @@ class RagService {
       trace.personalizedRagAiError = err.message;
     }
 
+    // 同样校验模型生成的引用编号，只保留真实存在的来源编号
+    if (generatedAnswer) {
+      const sanitized = this.sanitizeCitations(generatedAnswer, results.length);
+      generatedAnswer = sanitized.answer;
+      if (sanitized.invalidCitations.length) trace.invalidCitations = sanitized.invalidCitations;
+    }
+
     const answer = generatedAnswer || this.buildFallbackPersonalizedAnswer(profile, results, question);
 
     return {
       scene: 'learning_evaluation',
       question,
       answer,
-      profileSummary: {
-        userName: profile.userName,
-        completionRate: profile.completionRate,
-        weakCategories: weakCategories.slice(0, 3)
-      },
+      profileSummary,
       sources: results.map((r, i) => ({
         id: i + 1,
         title: r.chunk.title,
@@ -203,10 +258,9 @@ class RagService {
         excerpt: r.chunk.content.slice(0, 160).replace(/\n/g, ' ') + '...',
         relevanceScore: r.relevanceScore
       })),
-      suggestions: weakCategories.slice(0, 3).map(w => ({
-        title: `强化 ${w.category} 学习`,
-        content: `当前错题率为 ${w.wrongRate}%，建议结合知识库专题资料进行专项强化复习。`
-      })),
+      suggestions,
+      isGrounded: true,
+      relevantCount: results.length,
       generatedAt: new Date().toISOString()
     };
   }

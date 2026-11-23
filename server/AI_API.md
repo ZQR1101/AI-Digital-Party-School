@@ -83,8 +83,14 @@
   ├─ BM25 关键词检索
   └─ 向量语义检索
   → RRF 倒数排名融合 → Reranker 重排 → Top-K
-  → LLM 生成(带来源引用) → 答案 + 引用
+  → 相关性门禁(不达标直接拒答) → LLM 生成(带来源引用)
+  → 引用编号校验(剔除越界 [n]) → 答案 + 引用
 ```
+
+知识库目录 `server/knowledge/` 支持 `.md`、`.markdown`、`.txt`、`.pdf`、`.docx`：
+- PDF 依赖 `pdf-parse` 2.x（需 Node.js ≥ 22.3），仅提取文本层；扫描件需先 OCR。
+- Word 依赖 `mammoth`，仅支持 `.docx`（OOXML），旧版 `.doc` 不支持。
+- 解析失败的文件会记录告警并跳过，不影响其余知识文档加载。
 
 ### 真实语义检索配置（阿里云百炼 DashScope / 通义千问，OpenAI 兼容）
 
@@ -106,6 +112,7 @@ RERANKER_MODEL=qwen3-rerank
 - Key 申请：https://bailian.console.aliyun.com/ → 账号管理 → API-KEY 管理（Key 形如 `sk-xxx`）。也可用标准变量 `DASHSCOPE_API_KEY`，代码会自动读取。
 - 可用模型：Embedding 推荐 `text-embedding-v4`（或 `text-embedding-v3`）；Reranker 推荐 `qwen3-rerank`（`gte-rerank` 系列已下线，勿用）。
 - 百炼 Embedding 单批上限 10 行，故 `EMBEDDING_BATCH` 默认 10，勿调大以免 400 报错。
+- 配置检测同时校验 URL 与可用 Key；只填 URL 未填 Key 时直接走本地降级，不再发起必然失败的请求。
 - 未配置时自动降级为本地哈希向量 + 关键词重排（**非语义**），通过 `node rag-diagnose.js` 可查看实际后端；加 `--live` 做真实调用验证。
 - 运行时可调用 `RagService.getBackendStatus()` 获取 `embedding.semantic` / `reranker.semantic`，确认真实模型是否生效。
 - Qdrant 为可选：配置 `QDRANT_URL` 或 `QDRANT_ENABLED=true` 启用；否则使用内置内存向量索引。测试环境一律禁用外部服务。
