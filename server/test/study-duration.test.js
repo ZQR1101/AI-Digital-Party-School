@@ -18,12 +18,19 @@ test('按正文字数核算必学时长，300 字对应 1 分钟', () => {
   assert.equal(requiredStudySeconds({ contentType: 'video', bodyOrVideoUrl: 'http://x' }), 0);
 });
 
-test('文章不能靠客户端 completed 标记完成', () => {
+test('文章不能靠客户端 completed 标记完成，视频需计入时长达到应看时长', () => {
   const required = requiredStudySeconds({ bodyOrVideoUrl: '党'.repeat(1500) });
   assert.equal(shouldComplete({ contentType: 'article', studySeconds: 10, requiredSeconds: required, videoEnded: false }), false);
   assert.equal(shouldComplete({ contentType: 'article', studySeconds: required, requiredSeconds: required }), true);
-  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 12, videoEnded: true }), true);
+  // 视频按时长核算：未知时长回退 60s，12s 即使播放结束也不能完成
+  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 12, videoEnded: true }), false);
   assert.equal(shouldComplete({ contentType: 'video', studySeconds: 12, videoEnded: false }), false);
+  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 60, videoEnded: true }), true);
+  // 有真实时长时按 90% 核算：10 分钟视频需 540s
+  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 539, videoEnded: true, durationSeconds: 600 }), false);
+  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 540, videoEnded: true, durationSeconds: 600 }), true);
+  // completed 布尔值单独不能完成：未播放结束不计
+  assert.equal(shouldComplete({ contentType: 'video', studySeconds: 600, videoEnded: false, durationSeconds: 600 }), false);
 });
 
 test('进度按应学时长比例计算', () => {

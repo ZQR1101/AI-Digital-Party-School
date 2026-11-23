@@ -71,17 +71,25 @@ class ContentService {
     return sanitizeHtml(body);
   }
 
+  /** 视频时长秒数校验：1 秒 ~ 4 小时的整数，非法/非视频类型返回 null */
+  static normalizeDurationSeconds(type, value) {
+    if (type !== 'video') return null;
+    const n = Math.floor(Number(value));
+    if (!Number.isFinite(n) || n <= 0 || n > 4 * 60 * 60) return null;
+    return n;
+  }
+
   static async create(data) {
-    const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy } = data;
+    const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy, durationSeconds } = data;
     const [result] = await db.query(
-      'INSERT INTO contents (title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, type, coverUrl || null, this.safeBody(type, bodyOrVideoUrl), summary || null, tags || null, isPublic ? 1 : 0, status || 'draft', createdBy || null]
+      'INSERT INTO contents (title, type, coverUrl, bodyOrVideoUrl, durationSeconds, summary, tags, isPublic, status, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, type, coverUrl || null, this.safeBody(type, bodyOrVideoUrl), this.normalizeDurationSeconds(type, durationSeconds), summary || null, tags || null, isPublic ? 1 : 0, status || 'draft', createdBy || null]
     );
     return result.insertId;
   }
 
   static async update(id, data) {
-    const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status } = data;
+    const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, durationSeconds } = data;
     const sets = [], params = [];
     // 更新时如未指定类型，取现有类型决定是否清洗正文
     let effectiveType = type;
@@ -93,6 +101,10 @@ class ContentService {
     if (type !== undefined) { sets.push('type=?'); params.push(type); }
     if (coverUrl !== undefined) { sets.push('coverUrl=?'); params.push(coverUrl); }
     if (bodyOrVideoUrl !== undefined) { sets.push('bodyOrVideoUrl=?'); params.push(this.safeBody(effectiveType, bodyOrVideoUrl)); }
+    if (durationSeconds !== undefined) {
+      const dur = this.normalizeDurationSeconds(effectiveType, durationSeconds);
+      if (dur !== null) { sets.push('durationSeconds=?'); params.push(dur); }
+    }
     if (summary !== undefined) { sets.push('summary=?'); params.push(summary); }
     if (tags !== undefined) { sets.push('tags=?'); params.push(tags); }
     if (isPublic !== undefined) { sets.push('isPublic=?'); params.push(isPublic ? 1 : 0); }

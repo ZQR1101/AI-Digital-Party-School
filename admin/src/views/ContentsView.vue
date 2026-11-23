@@ -21,7 +21,7 @@ const videoUploading = ref(false)
 const draftSavedAt = ref('')
 const appliedFilters = reactive({ keyword: '', type: '', category: '', status: '' })
 const filters = reactive({ keyword: '', type: '', category: '', status: '' })
-const form = reactive({ id: null, title: '', type: 'article', category: '理论学习', tags: [], isPublic: true, summary: '', body: '', videoUrl: '', coverUrl: '', status: 'published' })
+const form = reactive({ id: null, title: '', type: 'article', category: '理论学习', tags: [], isPublic: true, summary: '', body: '', videoUrl: '', videoDuration: null, coverUrl: '', status: 'published' })
 
 const rows = ref([])
 const total = ref(0)
@@ -43,6 +43,7 @@ function normalizeRow(row) {
     status: row.status === 'offlined' ? 'offShelf' : row.status,
     body: row.type === 'article' ? row.bodyOrVideoUrl || '' : '',
     videoUrl: row.type === 'video' ? row.bodyOrVideoUrl || '' : '',
+    videoDuration: row.durationSeconds ?? null,
     coverUrl: row.coverUrl || '',
     updatedAtRaw: row.updatedAt,
     updatedAt: formatBeijingDateTime(row.updatedAt),
@@ -103,7 +104,13 @@ function resetFilters() {
 }
 
 function resetForm() {
-  Object.assign(form, { id: null, title: '', type: 'article', category: '理论学习', tags: [], isPublic: true, summary: '', body: '', videoUrl: '', coverUrl: '', status: 'published' })
+  Object.assign(form, { id: null, title: '', type: 'article', category: '理论学习', tags: [], isPublic: true, summary: '', body: '', videoUrl: '', videoDuration: null, coverUrl: '', status: 'published' })
+}
+
+/** 读取视频元数据时长（秒），作为服务端视频完成门槛的核算依据 */
+function onVideoMeta(event) {
+  const duration = Math.floor(Number(event.target?.duration))
+  form.videoDuration = Number.isFinite(duration) && duration > 0 ? duration : null
 }
 
 function hasDraftContent(value) {
@@ -244,6 +251,7 @@ async function saveContent() {
     isPublic: form.isPublic,
     status: form.status === 'offShelf' ? 'offlined' : form.status,
     bodyOrVideoUrl: form.type === 'article' ? form.body.trim() : form.videoUrl.trim(),
+    durationSeconds: form.type === 'video' ? form.videoDuration : undefined,
     coverUrl: form.coverUrl || null,
   }
   try {
@@ -384,7 +392,7 @@ onMounted(loadContents)
         <el-form-item v-if="form.type === 'article'" label="文章正文" required><el-input v-model="form.body" type="textarea" :rows="6" placeholder="请输入文章正文（演示版使用纯文本编辑器）" /></el-form-item>
         <el-form-item v-else label="视频内容" required>
           <div class="video-upload-area">
-            <video v-if="form.videoUrl" class="video-preview" controls :src="form.videoUrl">当前浏览器不支持视频播放。</video>
+            <video v-if="form.videoUrl" class="video-preview" controls :src="form.videoUrl" @loadedmetadata="onVideoMeta">当前浏览器不支持视频播放。</video>
             <el-upload action="#" accept="video/mp4,video/webm,video/ogg,video/quicktime" :auto-upload="false" :show-file-list="false" :disabled="videoUploading" @change="handleVideoChange">
               <el-button :loading="videoUploading">{{ form.videoUrl ? '更换视频文件' : '上传视频文件' }}</el-button>
             </el-upload>

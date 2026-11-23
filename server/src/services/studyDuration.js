@@ -29,6 +29,21 @@ function requiredStudySeconds(content = {}) {
   return Math.min(MAX_SECONDS, Math.max(MIN_SECONDS, seconds || MIN_SECONDS));
 }
 
+// 视频应看时长按真实视频时长核算；时长未知时采用保守回退值，
+// 避免客户端仅凭 completed 布尔值 + 少量计入秒数就伪造完成。
+const VIDEO_FALLBACK_REQUIRED_SECONDS = 60;
+const VIDEO_REQUIRED_RATIO = 0.9;
+
+function videoRequiredSeconds(content = {}) {
+  const duration = Math.floor(Number(content.durationSeconds));
+  if (!Number.isFinite(duration) || duration <= 0) return VIDEO_FALLBACK_REQUIRED_SECONDS;
+  return Math.max(10, Math.ceil(duration * VIDEO_REQUIRED_RATIO));
+}
+
+// 会话闲置超时：超过该时长没有有效心跳即视为离开，
+// 重新提交时服务端建立新会话（保留已获合法累计时长，离线墙钟时间不计入上限）
+const SESSION_IDLE_TIMEOUT_SECONDS = 5 * 60;
+
 function memberProgress(status, studySeconds, requiredSeconds) {
   if (status === 'completed') return 100;
   const seconds = Number(studySeconds) || 0;
@@ -38,10 +53,17 @@ function memberProgress(status, studySeconds, requiredSeconds) {
   return Math.min(99, Math.round((seconds / 900) * 100));
 }
 
-function shouldComplete({ contentType, type, studySeconds, requiredSeconds, videoEnded, title, summary, bodyOrVideoUrl }) {
+function shouldComplete({ contentType, type, studySeconds, requiredSeconds, videoEnded, title, summary, bodyOrVideoUrl, durationSeconds }) {
   const kind = contentType || type;
   const seconds = Number(studySeconds) || 0;
-  if (kind === 'video') return Boolean(videoEnded) && seconds > 0;
+  if (kind === 'video') {
+    // 视频完成 = 播放结束（客户端事件） + 计入时长达到应看时长（按视频时长核算），
+    // 二者缺一不可：completed 布尔值单独不能完成，计入秒数单独也不能
+    const required = Number(requiredSeconds) > 0
+      ? Number(requiredSeconds)
+      : videoRequiredSeconds({ durationSeconds });
+    return Boolean(videoEnded) && seconds >= required;
+  }
   const required = Number(requiredSeconds) > 0
     ? Number(requiredSeconds)
     : requiredStudySeconds({ contentType: kind, type: kind, title, summary, bodyOrVideoUrl });
@@ -82,22 +104,25 @@ function deltaCapSeconds({ contentType, requiredSeconds = 0 }) {
 }
 
 /**
- * 计算本次可计入的学习秒数（真实性核心，累计约束模型）：
- *   累计计入时长 ≤ 服务端会话总经过时间 + 一次性宽限
- * 会话由服务端建立（sessionStartedAt），每次心跳以「已计入累计值 prevSeconds」和
- * 「会话经过时间」共同约束，超出部分静默丢弃。
- * 客户端上报绝对值不可信，仅通过增量（requestedDelta）表达本次想多记多少。
+ * 计算本次可计入的学习秒数（真实性核心，按会话记账的累计约束模型）：
+ *   本会话内累计计入 ≤ 本会话服务端经过时间 + 一次性宽限
+ * - sessionBaseSeconds：本会话开始时的合法累计基线（会话建立/重建时快照），
+ *   跨会话的合法累计自然叠加，不会因会话重建被清零或卡死；
+ * - 每个会话的宽限只发放一次，会话内连续快速请求只能计入真实经过的秒数；
+ * - 超出部分静默丢弃。会话由服务端建立，闲置超时后重建（见 SESSION_IDLE_TIMEOUT_SECONDS）。
  */
-function creditableSeconds({ requestedDelta, prevSeconds = 0, sessionElapsedSeconds, deltaCapSeconds: cap }) {
+function creditableSeconds({ requestedDelta, prevSeconds = 0, sessionBaseSeconds = 0, sessionElapsedSeconds, deltaCapSeconds: cap }) {
   const delta = Math.max(0, Math.floor(Number(requestedDelta) || 0));
   if (delta === 0) return 0;
 
   const prev = Math.max(0, Math.floor(Number(prevSeconds) || 0));
+  const base = Math.max(0, Math.floor(Number(sessionBaseSeconds) || 0));
   // 会话经过时间缺失或非法时按 0 处理：仅一次性宽限可用
   const elapsedRaw = Number(sessionElapsedSeconds);
   const elapsed = Number.isFinite(elapsedRaw) && elapsedRaw > 0 ? Math.floor(elapsedRaw) : 0;
 
-  const ceiling = elapsed + ONE_TIME_ALLOWANCE;
+  // 本会话的计入上限：会话基线 + 会话经过时间 + 一次性宽限
+  const ceiling = base + elapsed + ONE_TIME_ALLOWANCE;
   const capValue = Number(cap) > 0 ? Math.floor(Number(cap)) : Infinity;
   const target = Math.min(prev + delta, ceiling, prev + capValue);
   return Math.max(0, target - prev);
@@ -107,6 +132,7 @@ module.exports = {
   stripHtml,
   countStudyChars,
   requiredStudySeconds,
+  videoRequiredSeconds,
   memberProgress,
   shouldComplete,
   validateReportedSeconds,
@@ -114,5 +140,7 @@ module.exports = {
   deltaCapSeconds,
   ONE_TIME_ALLOWANCE,
   MIN_COMPLETION_SECONDS,
+  SESSION_IDLE_TIMEOUT_SECONDS,
+  VIDEO_FALLBACK_REQUIRED_SECONDS,
   CHARS_PER_MINUTE,
 };
