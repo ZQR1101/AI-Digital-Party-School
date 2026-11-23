@@ -11,7 +11,6 @@ const assert = require('node:assert/strict');
 // ─── 测试环境隔离（阻止 Qdrant/LLM 网络连接）─────────────────────────────────
 process.env.NODE_ENV = 'test';
 process.env.QDRANT_ENABLED = 'false';
-// 不设置 EMBEDDING_API_URL / RERANKER_API_URL / AI_API_KEY，确保走 local fallback
 
 // ─── 模块导入 ─────────────────────────────────────────────────────────────────
 const path = require('path');
@@ -21,6 +20,13 @@ const { VectorStore, EmbeddingClient } = require('../src/rag/vectorStore');
 const { reciprocalRankFusion } = require('../src/rag/fusion');
 const Reranker = require('../src/rag/reranker');
 const RagService = require('../src/services/ragService');
+
+// 导入链中的 db.js/ragService 会调用 dotenv.config() 重新加载 .env，
+// 因此必须在所有 require 之后清除外部检索后端配置，确保走 local fallback。
+for (const key of ['EMBEDDING_API_URL', 'RERANKER_API_URL', 'EMBEDDING_API_KEY',
+  'RERANKER_API_KEY', 'DASHSCOPE_API_KEY', 'AI_API_KEY']) {
+  delete process.env[key];
+}
 
 const KNOWLEDGE_DIR = path.resolve(__dirname, '../knowledge');
 

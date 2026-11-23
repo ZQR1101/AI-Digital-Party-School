@@ -9,6 +9,13 @@ const assert = require('node:assert/strict');
 
 const RagService = require('../src/services/ragService');
 
+// CI 门禁须可复现、不依赖外部 API：导入后再清除 dotenv 注入的检索后端配置，
+// 确保评测走本地 fallback（本地后端下这些 query 的 Top-4 命中断言同样通过）。
+for (const key of ['EMBEDDING_API_URL', 'RERANKER_API_URL', 'EMBEDDING_API_KEY',
+  'RERANKER_API_KEY', 'DASHSCOPE_API_KEY', 'AI_API_KEY']) {
+  delete process.env[key];
+}
+
 const CASES = [
   { query: '支部每年开的那次组织生活 和领导干部的批评会是不是一回事', source: '党组织生活制度规范.md' },
   { query: '刚入党还没转正的预备党员算不算有党龄 这个年限从哪天起算', source: '党员组织关系与党籍管理.md' },
