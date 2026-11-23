@@ -1,6 +1,7 @@
 -- ============================================================
--- 基于AI的数智党校学习系统 - 数据库初始化脚本
--- 版本: 1.1
+-- 幂等数据库迁移脚本（禁止 DROP 现有表，重复执行安全）
+-- 重复执行安全：CREATE TABLE IF NOT EXISTS + INSERT IGNORE
+-- 初始账号密码通过 SEED_PASSWORD 环境变量注入，未在代码中写死
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS party_school DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -9,15 +10,14 @@ USE party_school;
 -- 关闭外键检查，避免删表顺序问题
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS assessment_attempts;
-DROP TABLE IF EXISTS assessments;
+
 
 -- ----------------------------
 -- 1. 组织架构表
 -- type: committee(党委) / generalBranch(党总支) / branch(党支部) / group(党小组)
 -- ----------------------------
-DROP TABLE IF EXISTS organizations;
-CREATE TABLE organizations (
+
+CREATE TABLE IF NOT EXISTS organizations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL COMMENT '组织名称',
   type VARCHAR(20) NOT NULL COMMENT '组织类型: committee/generalBranch/branch/group',
@@ -32,8 +32,8 @@ CREATE TABLE organizations (
 -- 2. 用户表
 -- role: member(党员) / secretary(支部书记) / admin(系统管理员)
 -- ----------------------------
-DROP TABLE IF EXISTS users;
-CREATE TABLE users (
+
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE COMMENT '登录账号',
   password VARCHAR(255) NOT NULL COMMENT '密码哈希',
@@ -53,8 +53,8 @@ CREATE TABLE users (
 -- type: article(文章) / video(视频)
 -- status: draft(草稿) / published(已发布) / offlined(已下架)
 -- ----------------------------
-DROP TABLE IF EXISTS contents;
-CREATE TABLE contents (
+
+CREATE TABLE IF NOT EXISTS contents (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(200) NOT NULL COMMENT '标题',
   type VARCHAR(20) NOT NULL COMMENT '类型: article/video',
@@ -74,8 +74,8 @@ CREATE TABLE contents (
 -- 4. 学习任务表
 -- status: draft(草稿) / published(已发布) / closed(已关闭)
 -- ----------------------------
-DROP TABLE IF EXISTS learning_tasks;
-CREATE TABLE learning_tasks (
+
+CREATE TABLE IF NOT EXISTS learning_tasks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(200) NOT NULL COMMENT '任务标题',
   contentId INT NOT NULL COMMENT '关联学习内容ID',
@@ -95,8 +95,8 @@ CREATE TABLE learning_tasks (
 -- 5. 学习记录表
 -- status: inProgress(学习中) / completed(已完成)
 -- ----------------------------
-DROP TABLE IF EXISTS learning_records;
-CREATE TABLE learning_records (
+
+CREATE TABLE IF NOT EXISTS learning_records (
   id INT AUTO_INCREMENT PRIMARY KEY,
   userId INT NOT NULL COMMENT '用户ID',
   taskId INT NOT NULL COMMENT '任务ID',
@@ -116,8 +116,8 @@ CREATE TABLE learning_records (
 -- options: JSON数组格式，如 ["A.选项1","B.选项2","C.选项3","D.选项4"]
 -- answer: 单选如 "A"，多选如 "A,C"，判断如 "true"/"false"
 -- ----------------------------
-DROP TABLE IF EXISTS questions;
-CREATE TABLE questions (
+
+CREATE TABLE IF NOT EXISTS questions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   type VARCHAR(20) NOT NULL COMMENT '题型: single/multiple/judge',
   title TEXT NOT NULL COMMENT '题目内容',
@@ -136,8 +136,8 @@ CREATE TABLE questions (
 -- ----------------------------
 -- 7. 考试/测验记录表
 -- ----------------------------
-DROP TABLE IF EXISTS exam_records;
-CREATE TABLE exam_records (
+
+CREATE TABLE IF NOT EXISTS exam_records (
   id INT AUTO_INCREMENT PRIMARY KEY,
   userId INT NOT NULL COMMENT '用户ID',
   taskId INT NOT NULL COMMENT '关联任务ID',
@@ -153,8 +153,8 @@ CREATE TABLE exam_records (
 -- ----------------------------
 -- 8. 试卷表（扩展）
 -- ----------------------------
-DROP TABLE IF EXISTS papers;
-CREATE TABLE papers (
+
+CREATE TABLE IF NOT EXISTS papers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(200) NOT NULL COMMENT '试卷标题',
   category VARCHAR(100) NULL COMMENT '试卷分类',
@@ -172,8 +172,8 @@ CREATE TABLE papers (
 -- ----------------------------
 -- 9. 试卷-题目关联表
 -- ----------------------------
-DROP TABLE IF EXISTS paper_questions;
-CREATE TABLE paper_questions (
+
+CREATE TABLE IF NOT EXISTS paper_questions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   paperId INT NOT NULL,
   questionId INT NOT NULL,
@@ -184,7 +184,7 @@ CREATE TABLE paper_questions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='试卷题目关联表';
 
 -- 试卷下发和交卷记录（结构需与 assessment_upgrade.sql 一致）
-CREATE TABLE assessments (
+CREATE TABLE IF NOT EXISTS assessments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   paperId INT NOT NULL,
   organizationId INT NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE assessments (
   FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已下发测评';
 
-CREATE TABLE assessment_attempts (
+CREATE TABLE IF NOT EXISTS assessment_attempts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   assessmentId INT NOT NULL,
   userId INT NOT NULL,
@@ -221,8 +221,8 @@ CREATE TABLE assessment_attempts (
 -- ----------------------------
 -- 10. AI推荐反馈与审计
 -- ----------------------------
-DROP TABLE IF EXISTS recommendation_feedback;
-CREATE TABLE recommendation_feedback (
+
+CREATE TABLE IF NOT EXISTS recommendation_feedback (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   userId INT NOT NULL,
   contentId INT NOT NULL,
@@ -233,8 +233,8 @@ CREATE TABLE recommendation_feedback (
   FOREIGN KEY (contentId) REFERENCES contents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI推荐反馈';
 
-DROP TABLE IF EXISTS ai_audit_logs;
-CREATE TABLE ai_audit_logs (
+
+CREATE TABLE IF NOT EXISTS ai_audit_logs (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   operatorId INT NULL,
   operatorRole VARCHAR(20) NULL,
@@ -266,7 +266,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ----------------------------
 -- 初始化数据：组织架构
 -- ----------------------------
-INSERT INTO organizations (id, name, type, parentId) VALUES
+INSERT IGNORE INTO organizations (id, name, type, parentId) VALUES
 (1, '学校党委', 'committee', NULL),
 (2, '信息工程学院党委', 'committee', 1),
 (3, '软件工程系党总支', 'generalBranch', 2),
@@ -279,10 +279,10 @@ INSERT INTO organizations (id, name, type, parentId) VALUES
 (10, '行政第一党支部', 'branch', 9);
 
 -- ----------------------------
--- 初始化数据：管理员账号 (密码: admin123)
+-- 初始化数据：账号密码由 SEED_PASSWORD 环境变量注入
 -- ----------------------------
-INSERT INTO users (id, username, password, realName, role, organizationId, status) VALUES
-(1, 'admin', '$2a$10$ALaZI5L.ywOltKqgdKHSXOrtTQbhFQUbQ4tszGFZavdaCIzHDdQFO', '系统管理员', 'admin', 1, 1),
-(2, 'zhangsan', '$2a$10$ALaZI5L.ywOltKqgdKHSXOrtTQbhFQUbQ4tszGFZavdaCIzHDdQFO', '张三', 'secretary', 4, 1),
-(3, 'lisi', '$2a$10$ALaZI5L.ywOltKqgdKHSXOrtTQbhFQUbQ4tszGFZavdaCIzHDdQFO', '李四', 'member', 4, 1),
-(4, 'wangwu', '$2a$10$ALaZI5L.ywOltKqgdKHSXOrtTQbhFQUbQ4tszGFZavdaCIzHDdQFO', '王五', 'member', 5, 1);
+INSERT IGNORE INTO users (id, username, password, realName, role, organizationId, status) VALUES
+(1, 'admin', '__SEED_PASSWORD_HASH__', '系统管理员', 'admin', 1, 1),
+(2, 'zhangsan', '__SEED_PASSWORD_HASH__', '张三', 'secretary', 4, 1),
+(3, 'lisi', '__SEED_PASSWORD_HASH__', '李四', 'member', 4, 1),
+(4, 'wangwu', '__SEED_PASSWORD_HASH__', '王五', 'member', 5, 1);
