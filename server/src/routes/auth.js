@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AuthService = require('../services/authService');
 const ResponseHelper = require('../utils/response');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, loadCurrentUser } = require('../middleware/auth');
 
 /**
  * POST /api/auth/login
@@ -39,8 +39,10 @@ router.post('/login', async (req, res) => {
 /**
  * GET /api/users/me
  * 获取当前登录用户信息与角色
+ * 挂载 loadCurrentUser：停用/删除账号即使持有旧 token 也返回 403，
+ * 且返回的身份信息以数据库实时数据为准。
  */
-router.get('/users/me', authenticate, async (req, res) => {
+router.get('/users/me', authenticate, loadCurrentUser, async (req, res) => {
   try {
     const user = await AuthService.getUserInfo(req.user.userId);
     if (!user) {

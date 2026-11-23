@@ -48,6 +48,63 @@ function signToken(payload, options = {}) {
   return jwt.sign(payload, process.env.JWT_SECRET, options);
 }
 
+/** 从 router 栈中提取指定 method+path 的完整中间件链（含此前累积的 router.use 前缀） */
+function findRouteChain(router, method, path) {
+  let useChain = [];
+  for (const layer of router.stack) {
+    if (!layer.route) {
+      useChain.push(layer.handle);
+      continue;
+    }
+    const methods = layer.route.methods || {};
+    if (layer.route.path === path && methods[method]) {
+      return [...useChain, ...layer.route.stack.map((s) => s.handle)];
+    }
+  }
+  return null;
+}
+
+// ---------------- 1.5) /api/users/me 实时身份校验（真实路由链路） ----------------
+
+test('停用账号访问 GET /api/users/me 返回 403，不泄露用户信息', async t => {
+  const authRouter = require('../src/routes/auth');
+  const chain = findRouteChain(authRouter, 'get', '/users/me');
+  assert.ok(chain, '路由表中应存在 GET /users/me');
+  assert.ok(chain.includes(authenticate), '/users/me 应挂载 authenticate');
+  assert.ok(chain.includes(loadCurrentUser), '/users/me 应挂载 loadCurrentUser（实时账号状态校验）');
+
+  const calls = [];
+  t.mock.method(db, 'query', async (sql) => {
+    calls.push(sql.slice(0, 40));
+    return [[{ userId: 3, username: 'lisi', role: 'member', organizationId: 4, status: 0 }]];
+  });
+  const token = signToken({ userId: 3, username: 'lisi', role: 'member' });
+  const req = { method: 'GET', headers: { authorization: `Bearer ${token}` } };
+  const res = await runChain(chain, req);
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.code, 403);
+  assert.match(res.body.message, /停用|不存在/);
+  assert.equal(calls.length, 1, '应在校验用户表后立即拒绝，不再执行用户信息查询');
+});
+
+test('正常账号访问 /api/users/me 返回数据库实时身份（覆盖 JWT 过期角色）', async t => {
+  const authRouter = require('../src/routes/auth');
+  const chain = findRouteChain(authRouter, 'get', '/users/me');
+  t.mock.method(db, 'query', async (sql) => {
+    if (/FROM users WHERE id/i.test(sql)) {
+      return [[{ userId: 3, username: 'lisi', role: 'member', organizationId: 4, status: 1 }]];
+    }
+    return [[{ id: 3, username: 'lisi', realName: '李四', role: 'member', organizationId: 4, organizationName: '第一党支部' }]];
+  });
+  // JWT 签发时 role=admin，数据库已降级为 member
+  const token = signToken({ userId: 3, username: 'lisi', role: 'admin' });
+  const req = { method: 'GET', headers: { authorization: `Bearer ${token}` } };
+  const res = await runChain(chain, req);
+  assert.equal(res.body.code, 0, '正常账号应完整走通链路返回用户信息');
+  assert.equal(res.body.data.role, 'member', '返回的角色应是数据库实时角色');
+  assert.equal(res.body.data.username, 'lisi');
+});
+
 // ---------------- 1) 过期 Token / 未登录 ----------------
 
 test('过期 Token 返回 401，不再进入业务处理', async () => {
@@ -143,9 +200,30 @@ test('loadActiveActor 对停用的已加载身份同样拒绝（403），未加�
   );
 });
 
-// ---------------- 6) 结构回归：所有受保护路由均已挂载实时身份校验 ----------------
+// ---------------- 6) 结构回归：认证中间件不允许整体或局部遗漏 ----------------
 
-test('所有需要登录的业务路由都挂载了 loadCurrentUser（authenticate 之后）', () => {
+/** 将 router 栈解析为 [{ path, method, chain }]，router.use 按顺序合并进每条路由 */
+function buildRouteChains(router) {
+  const chains = [];
+  let useChain = [];
+  for (const layer of router.stack) {
+    if (!layer.route) {
+      useChain.push(layer.handle);
+      continue;
+    }
+    const methods = Object.keys(layer.route.methods || {});
+    for (const method of methods) {
+      chains.push({
+        method,
+        path: layer.route.path,
+        chain: [...useChain, ...layer.route.stack.map((s) => s.handle)],
+      });
+    }
+  }
+  return chains;
+}
+
+test('所有受保护业务路由的每一条路由都必须挂载 authenticate + loadCurrentUser（顺序正确）', () => {
   const protectedRouters = {
     'tasks': require('../src/routes/tasks'),
     'learningRecords': require('../src/routes/learningRecords'),
@@ -164,39 +242,55 @@ test('所有需要登录的业务路由都挂载了 loadCurrentUser（authentica
     'admin/assessments': require('../src/routes/admin/assessments'),
   };
 
+  let totalRoutes = 0;
   for (const [name, router] of Object.entries(protectedRouters)) {
-    const layers = router.stack.map((l) => ({
-      isUse: !l.route,
-      path: l.route ? l.route.path : (l.regexp?.source || ''),
-      handle: l.handle,
-    }));
-
-    // use 级中间件（router.use）按顺序累积，合并进每条路由的链
-    let useChain = [];
-    const routeChains = [];
-    for (const layer of layers) {
-      if (layer.isUse) {
-        useChain.push(layer.handle);
-      } else {
-        routeChains.push({ path: layer.path, chain: [...useChain, ...(layer.handle.stack || []).map((s) => s.handle)] });
-      }
-    }
-
-    assert.ok(
-      routeChains.length > 0,
-      `${name}: 未找到任何路由`
-    );
-    for (const { path, chain } of routeChains) {
+    const chains = buildRouteChains(router);
+    assert.ok(chains.length > 0, `${name}: 未找到任何路由（路由文件可能被清空或改写）`);
+    totalRoutes += chains.length;
+    for (const { method, path, chain } of chains) {
       const authIdx = chain.indexOf(authenticate);
-      if (authIdx === -1) continue; // 该路由不要求登录（如 auth 相关）
+      assert.ok(
+        authIdx !== -1,
+        `${name} ${method.toUpperCase()} ${path}: 缺少 authenticate（认证中间件遗漏）`
+      );
       assert.ok(
         chain.includes(loadCurrentUser),
-        `${name} ${path}: 挂载了 authenticate 但缺少 loadCurrentUser（实时账号状态/角色校验）`
+        `${name} ${method.toUpperCase()} ${path}: 缺少 loadCurrentUser（实时账号状态/角色校验遗漏）`
       );
       assert.ok(
         chain.indexOf(loadCurrentUser) > authIdx,
-        `${name} ${path}: loadCurrentUser 必须在 authenticate 之后`
+        `${name} ${method.toUpperCase()} ${path}: loadCurrentUser 必须在 authenticate 之后`
       );
     }
+  }
+
+  // 防止路由整体丢失（如路由文件被意外清空后测试静默通过）
+  assert.ok(
+    totalRoutes >= 40,
+    `受保护路由总数异常偏少（${totalRoutes} 条），可能发生了路由整体丢失`
+  );
+});
+
+test('auth 路由器：仅 /login 公开，其余路由（如 /users/me）必须完整受保护', () => {
+  const authRouter = require('../src/routes/auth');
+  const chains = buildRouteChains(authRouter);
+  assert.ok(chains.length > 0, 'auth 路由器不应为空');
+
+  const PUBLIC_ROUTES = new Set(['post /login']); // 唯一允许匿名访问的入口
+  for (const { method, path, chain } of chains) {
+    const key = `${method} ${path}`;
+    if (PUBLIC_ROUTES.has(key)) {
+      assert.ok(
+        !chain.includes(authenticate),
+        `${key}: 公开路由不应挂载 authenticate`
+      );
+      continue;
+    }
+    const authIdx = chain.indexOf(authenticate);
+    assert.ok(authIdx !== -1, `auth ${key}: 非 /login 路由必须挂载 authenticate`);
+    assert.ok(
+      chain.includes(loadCurrentUser) && chain.indexOf(loadCurrentUser) > authIdx,
+      `auth ${key}: 必须挂载 loadCurrentUser 且位于 authenticate 之后`
+    );
   }
 });
