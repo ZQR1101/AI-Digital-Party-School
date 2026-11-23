@@ -46,7 +46,9 @@ jobs:
         run: node init-db.js
       - name: 运行后端测试
         run: npm test
-      - name: 依赖安全检查（高危及以上不阻断，仅提示）
+      - name: 生产依赖安全门禁（高危及以上阻断合并）
+        run: npm audit --omit=dev --audit-level=high
+      - name: 全量依赖风险报告（含开发依赖，仅提示不阻断）
         run: npm audit --audit-level=high || true
 
   admin-build:
@@ -64,6 +66,10 @@ jobs:
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: 生产依赖安全门禁（高危及以上阻断合并）
+        run: npm audit --omit=dev --audit-level=high
+      - name: 全量依赖风险报告（含开发依赖，仅提示不阻断）
+        run: npm audit --audit-level=high || true
       - run: npm run build
 
   mobile-build:
@@ -78,6 +84,10 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm test
+      - name: 生产依赖安全门禁（高危及以上阻断合并）
+        run: npm audit --omit=dev --audit-level=high
+      - name: 全量依赖风险报告（含开发依赖，仅提示不阻断）
+        run: npm audit --audit-level=high || true
       - run: npm run build
 
   secret-scan:
