@@ -77,7 +77,7 @@ async function qdrantRequest(method, url, data, timeoutMs = 600) {
 class EmbeddingClient {
   static _envSnapshot() {
     return {
-      configured: Boolean(process.env.EMBEDDING_API_URL),
+      configured: Boolean(process.env.EMBEDDING_API_URL && this.apiKey),
       model: process.env.EMBEDDING_MODEL || 'text-embedding-v4',
       dim: Number(process.env.EMBEDDING_DIM || DEFAULT_VECTOR_DIM)
     };
@@ -88,7 +88,8 @@ class EmbeddingClient {
   }
 
   static isApiConfigured() {
-    return Boolean(process.env.EMBEDDING_API_URL);
+    // 仅配置 URL 而未配置任何可用 Key 时，API 调用必然失败，直接走本地降级
+    return Boolean(process.env.EMBEDDING_API_URL && this.apiKey);
   }
 
   static get apiKey() {

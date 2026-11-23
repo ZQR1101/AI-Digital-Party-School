@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// PDF / Word 解析为可选依赖：缺失时仅跳过对应文件，不影响 Markdown/TXT 知识库
+let PDFParse = null;
+let mammoth = null;
+try { ({ PDFParse } = require('pdf-parse')); } catch { /* PDF 依赖未安装 */ }
+try { mammoth = require('mammoth'); } catch { /* Word 依赖未安装 */ }
+
 function cleanText(text) {
   return String(text || '')
     .replace(/\r\n/g, '\n')
@@ -128,9 +134,64 @@ class DocumentParser {
           const content = fs.readFileSync(fullPath, 'utf8');
           chunks.push(...this.parsePlainText(content, file));
         }
-        // Future extensions (.pdf, .docx) parsed through stream text extractors
+        // PDF / Word 走异步 loadFromDirectoryAsync，保留此同步接口向下兼容
       } catch (err) {
         console.warn(`[DocumentParser] 读取文件失败: ${file}`, err.message);
+      }
+    }
+
+    return chunks;
+  }
+
+  /**
+   * 从 PDF 中提取纯文本，并复用 Markdown/TXT 的分块与元数据逻辑。
+   * 扫描件（无文本层）会抛出明确错误，由调用方记录告警后跳过。
+   */
+  static async parsePdf(fullPath) {
+    if (!PDFParse) throw new Error('缺少 pdf-parse 依赖，无法解析 PDF');
+    const parser = new PDFParse({ data: fs.readFileSync(fullPath) });
+    let text = '';
+    try {
+      const result = await parser.getText();
+      text = String(result?.text || '');
+    } finally {
+      await parser.destroy();
+    }
+    // pdf-parse 会追加 "-- 1 of N --" 页码脚注，不纳入知识库正文
+    text = text.split('\n').filter(line => !/^\s*--\s*\d+\s+of\s+\d+\s*--\s*$/.test(line)).join('\n');
+    if (!text.trim()) throw new Error('PDF 未提取到文本层（扫描件需先 OCR）');
+    return this.parsePlainText(text, path.basename(fullPath));
+  }
+
+  /**
+   * 从 .docx 中提取纯文本（mammoth 仅支持 OOXML 格式，不支持旧版 .doc）。
+   */
+  static async parseDocx(fullPath) {
+    if (!mammoth) throw new Error('缺少 mammoth 依赖，无法解析 Word 文档');
+    const result = await mammoth.extractRawText({ path: fullPath });
+    const text = String(result?.value || '');
+    if (!text.trim()) throw new Error('Word 文档未提取到文本');
+    return this.parsePlainText(text, path.basename(fullPath));
+  }
+
+  /**
+   * 异步加载目录：在同步文本文件基础上追加 PDF / .docx 知识文档。
+   */
+  static async loadFromDirectoryAsync(dirPath) {
+    const chunks = this.loadFromDirectory(dirPath);
+    if (!fs.existsSync(dirPath)) return chunks;
+
+    for (const file of fs.readdirSync(dirPath)) {
+      const ext = path.extname(file).toLowerCase();
+      if (!['.pdf', '.docx'].includes(ext)) continue;
+      const fullPath = path.join(dirPath, file);
+      if (!fs.statSync(fullPath).isFile()) continue;
+
+      try {
+        if (ext === '.pdf') chunks.push(...await this.parsePdf(fullPath));
+        else chunks.push(...await this.parseDocx(fullPath));
+      } catch (err) {
+        console.warn(`[DocumentParser] 解析文件失败: ${file}`, err.message);
       }
     }
 

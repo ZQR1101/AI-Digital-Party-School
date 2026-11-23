@@ -17,7 +17,8 @@ const { tokenize } = require('./bm25');
  */
 class Reranker {
   static isApiConfigured() {
-    return Boolean(process.env.RERANKER_API_URL);
+    // URL 与 Key 必须同时具备才算接入真实重排服务，避免无 Key 时空转请求
+    return Boolean(process.env.RERANKER_API_URL && this.apiKey);
   }
 
   static get apiKey() {
