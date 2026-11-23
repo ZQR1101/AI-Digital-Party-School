@@ -4,7 +4,7 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 const UserService = require('../../services/userService');
 const ResponseHelper = require('../../utils/response');
-const { sheetFileFilter } = require('../../utils/uploadSecurity');
+const { sheetFileFilter, assertFileSignature } = require('../../utils/uploadSecurity');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 const upload = multer({
@@ -59,6 +59,13 @@ router.post('/import', (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) return ResponseHelper.badRequest(res, '请上传文件');
+    // 魔数校验：拒绝把脚本/可执行文件伪装成表格上传
+    try {
+      assertFileSignature(req.file.buffer, req.file.originalname);
+    } catch (sigErr) {
+      const statusCode = sigErr && sigErr.statusCode ? sigErr.statusCode : 400;
+      return ResponseHelper.error(res, sigErr.message || '文件内容校验失败', statusCode, statusCode);
+    }
 
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];

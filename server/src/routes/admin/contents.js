@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const ContentService = require('../../services/contentService');
 const ResponseHelper = require('../../utils/response');
-const { contentFileFilter, safeFileName } = require('../../utils/uploadSecurity');
+const { contentFileFilter, safeFileName, assertFileSignature } = require('../../utils/uploadSecurity');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 // 文件上传：类型白名单 + 随机文件名 + 独立存储目录（与静态资源隔离）
@@ -122,6 +122,18 @@ router.post('/upload', (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) return ResponseHelper.badRequest(res, '请选择文件');
+    // 魔数校验：MIME/扩展名可被伪造，落盘后用文件头二进制签名做最终裁决
+    try {
+      const fd = fs.openSync(req.file.path, 'r');
+      const head = Buffer.alloc(16);
+      const read = fs.readSync(fd, head, 0, 16, 0);
+      fs.closeSync(fd);
+      assertFileSignature(head.subarray(0, read), req.file.originalname);
+    } catch (sigErr) {
+      fs.unlink(req.file.path, () => {});
+      const statusCode = sigErr && sigErr.statusCode ? sigErr.statusCode : 400;
+      return ResponseHelper.error(res, sigErr.message || '文件内容校验失败', statusCode, statusCode);
+    }
     const url = `/uploads/content/${req.file.filename}`;
     return ResponseHelper.success(res, { url, filename: req.file.filename });
   } catch (err) {

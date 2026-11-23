@@ -79,10 +79,11 @@ function validateReportedSeconds({ reported, previous = 0, requiredSeconds = 0, 
   }
 
   // 单次增量上限：文章不得超过应学时长 + 60 秒宽限；视频不超过 30 分钟。
-  // 只要服务端已有记录，增量就必须合理，避免一次请求直接标记完成。
+  // 首次上报同样受限——前端每 3 秒增量保存一次，正常学习不会出现首次即暴增；
+  // 否则攻击者可在无历史记录时一次请求把时长刷到接近完成阈值。
   const deltaCap = contentType === 'video' ? 30 * 60 : Math.max(120, required + 60);
   const delta = incoming - prev;
-  if (prev > 0 && delta > deltaCap) {
+  if (delta > deltaCap) {
     throw Object.assign(new Error('学习时长增量异常'), { statusCode: 400 });
   }
 

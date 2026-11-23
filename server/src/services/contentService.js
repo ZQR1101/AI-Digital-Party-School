@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { withPlayableVideo } = require('../utils/playableVideo');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 class ContentService {
   static async list({ page = 1, pageSize = 10, keyword, type, status, category }) {
@@ -60,11 +61,21 @@ class ContentService {
     return { total: countRows[0].total, list: rows };
   }
 
+  /**
+   * 正文安全清洗：article 正文以 v-html 渲染，入库前必须做白名单清洗防存储型 XSS。
+   * video 类型存的是 URL，不走 HTML 清洗。
+   */
+  static safeBody(type, body) {
+    if (body === undefined || body === null) return body;
+    if (String(type) === 'video') return body;
+    return sanitizeHtml(body);
+  }
+
   static async create(data) {
     const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy } = data;
     const [result] = await db.query(
       'INSERT INTO contents (title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, type, coverUrl || null, bodyOrVideoUrl || null, summary || null, tags || null, isPublic ? 1 : 0, status || 'draft', createdBy || null]
+      [title, type, coverUrl || null, this.safeBody(type, bodyOrVideoUrl), summary || null, tags || null, isPublic ? 1 : 0, status || 'draft', createdBy || null]
     );
     return result.insertId;
   }
@@ -72,10 +83,16 @@ class ContentService {
   static async update(id, data) {
     const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status } = data;
     const sets = [], params = [];
+    // 更新时如未指定类型，取现有类型决定是否清洗正文
+    let effectiveType = type;
+    if (bodyOrVideoUrl !== undefined && effectiveType === undefined) {
+      const [rows] = await db.query('SELECT type FROM contents WHERE id=?', [id]);
+      effectiveType = rows[0] ? rows[0].type : undefined;
+    }
     if (title !== undefined) { sets.push('title=?'); params.push(title); }
     if (type !== undefined) { sets.push('type=?'); params.push(type); }
     if (coverUrl !== undefined) { sets.push('coverUrl=?'); params.push(coverUrl); }
-    if (bodyOrVideoUrl !== undefined) { sets.push('bodyOrVideoUrl=?'); params.push(bodyOrVideoUrl); }
+    if (bodyOrVideoUrl !== undefined) { sets.push('bodyOrVideoUrl=?'); params.push(this.safeBody(effectiveType, bodyOrVideoUrl)); }
     if (summary !== undefined) { sets.push('summary=?'); params.push(summary); }
     if (tags !== undefined) { sets.push('tags=?'); params.push(tags); }
     if (isPublic !== undefined) { sets.push('isPublic=?'); params.push(isPublic ? 1 : 0); }
