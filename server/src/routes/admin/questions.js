@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const QuestionService = require('../../services/questionService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireAdmin);
 
 /**
  * GET /api/admin/questions

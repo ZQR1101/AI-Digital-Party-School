@@ -4,9 +4,9 @@ const TaskService = require('../../services/taskService');
 const ContentService = require('../../services/contentService');
 const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireManager);
 
 function normalizeDeadline(value) {
   if (!value) return null;

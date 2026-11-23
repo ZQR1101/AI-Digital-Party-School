@@ -1,11 +1,11 @@
 const express = require('express');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 const AssessmentService = require('../../services/assessmentService');
 const ResponseHelper = require('../../utils/response');
 const assessmentErrors = require('../assessmentErrors');
 
 const router = express.Router();
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireManager);
 
 router.post('/', async (req, res, next) => {
   try {

@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 // 所有接口都需要认证 + 管理员权限
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireAdmin);
 
 /**
  * GET /api/admin/organizations

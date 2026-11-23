@@ -1,10 +1,10 @@
 const express = require('express');
 const PaperService = require('../../services/paperService');
 const ResponseHelper = require('../../utils/response');
-const { authenticate, requireAdmin } = require('../../middleware/auth');
+const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
 const router = express.Router();
-router.use(authenticate, requireAdmin);
+router.use(authenticate, loadCurrentUser, requireAdmin);
 
 router.get('/', async (req, res) => {
   try {

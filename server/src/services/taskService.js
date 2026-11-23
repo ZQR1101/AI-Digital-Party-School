@@ -81,6 +81,16 @@ class TaskService {
   static async getByIdForUser(id, userId) {
     const task = await this.getById(id, { withCompletion: false });
     if (!task) return null;
+
+    // 组织授权：仅允许查看下发给本人所属组织或其上级组织、且已发布的任务。
+    // 与 getUserTasks 的可见范围保持一致，防止通过直接猜 taskId 越权读取。
+    if (task.status !== 'published') return null;
+    const [users] = await db.query('SELECT organizationId FROM users WHERE id = ?', [userId]);
+    const userOrgId = users[0]?.organizationId;
+    if (!userOrgId) return null;
+    const permitted = await OrganizationService.getAncestorIds(userOrgId);
+    if (!permitted.map(Number).includes(Number(task.organizationId))) return null;
+
     const [records] = await db.query(
       'SELECT studySeconds, status FROM learning_records WHERE userId = ? AND taskId = ?',
       [userId, id]
