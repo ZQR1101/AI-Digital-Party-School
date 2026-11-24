@@ -339,4 +339,25 @@ test('部署产物：compose 持久化卷/健康依赖序，server 镜像非 roo
   assert.ok(deployDoc.includes('mysqldump'), '部署文档必须包含备份方式');
   assert.ok(deployDoc.includes('mysql_data'), '部署文档必须说明数据持久化');
   assert.ok(deployDoc.includes('/health/ready'), '部署文档必须说明健康检查');
+  // 文档必须给出 Embedding / Reranker 的完整 URL 配置示例
+  assert.ok(deployDoc.includes('EMBEDDING_API_URL='), '部署文档必须包含 EMBEDDING_API_URL 示例');
+  assert.ok(deployDoc.includes('RERANKER_API_URL='), '部署文档必须包含 RERANKER_API_URL 示例');
+});
+
+test('部署产物：Docker 集成测试脚本与 CI 接入齐备且强制清理临时卷', () => {
+  const itScript = fs.readFileSync(path.join(ROOT, 'deploy/docker-integration-test.sh'), 'utf8');
+  // 隔离：独立 compose 项目名 + 独立容器名覆盖 + 端口错开
+  assert.ok(itScript.includes('docker compose -p $PROJECT'), '集成测试必须使用独立 compose 项目名隔离');
+  assert.ok(itScript.includes('deploy/docker-compose.it.yml'), '集成测试必须加载容器名覆盖文件');
+  assert.ok(itScript.includes('18080'), '集成测试端口必须与默认部署 8080 错开');
+  // 覆盖文件：容器名带运行标识，避免与已有部署固定容器名冲突
+  const itOverride = fs.readFileSync(path.join(ROOT, 'deploy/docker-compose.it.yml'), 'utf8');
+  assert.ok(itOverride.includes('party-it-${IT_RUN_ID'), '覆盖文件容器名必须带运行标识');
+  // 清理：必须 down -v 且断言无遗留卷
+  assert.ok(itScript.includes('down -v'), '集成测试必须 down -v 清理临时卷');
+  assert.ok(/LEFT_VOLUMES/.test(itScript) && /fail\s+"遗留临时卷/.test(itScript.replace(/\n\s*/g, ' ')), '必须断言无遗留临时卷');
+  // CI：docker-integration job 存在且跑该脚本
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  assert.ok(ci.includes('docker-integration:'), 'CI 必须包含 docker-integration job');
+  assert.ok(ci.includes('bash deploy/docker-integration-test.sh'), 'CI 必须执行集成测试脚本');
 });

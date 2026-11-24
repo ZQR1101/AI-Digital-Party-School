@@ -44,9 +44,20 @@ LOG_LEVEL=info
 AI_API_URL=https://api.deepseek.com/v1/chat/completions
 AI_API_KEY=
 AI_MODEL=deepseek-chat
-# RAG 语义检索（阿里云百炼，Key 形如 sk-xxx）
-EMBEDDING_API_KEY=
-RERANKER_API_KEY=
+
+# RAG 语义检索（阿里云百炼为例，Key 形如 sk-xxx）
+# Embedding：OpenAI 兼容模式的 embeddings 端点（百炼 Qwen3-Embedding 系列）
+EMBEDDING_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
+EMBEDDING_API_KEY=sk-xxxxxxxxxxxxxxxx
+EMBEDDING_MODEL=text-embedding-v4
+EMBEDDING_DIM=1024
+EMBEDDING_BATCH=10
+
+# Reranker：百炼原生 rerank 端点（请求体 model/query/documents/top_n）
+RERANKER_API_URL=https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
+RERANKER_API_KEY=sk-xxxxxxxxxxxxxxxx
+RERANKER_MODEL=qwen3-rerank
+
 # 向量数据库（可选）
 QDRANT_URL=
 ```
@@ -84,6 +95,19 @@ curl http://localhost:8080/api/health/ready    # 就绪探针（含 DB 检查）
 docker compose up -d --build      # 代码更新后重建（数据保留）
 docker compose down               # 停止并删除容器，数据卷保留
 docker compose down -v            # ⚠️ 连同数据卷一并删除（数据库清空，慎用）
+```
+
+### 4. Docker 集成测试
+
+`deploy/docker-integration-test.sh` 以**完全隔离**的方式验证真实容器构建与运行（CI 的 `docker-integration` job 每次推送自动执行）：
+
+- **隔离保证**：独立 compose 项目名（`-p it-<时间戳>-<随机>`）→ 命名卷/网络全部独立；`deploy/docker-compose.it.yml` 将容器名覆盖为带运行标识的唯一名；端口错开为 18080/18081（可用 `IT_ADMIN_PORT`/`IT_MEMBER_PORT` 覆盖）。**不会触碰任何已有部署的数据卷**。
+- **验证项**：① 镜像真实构建与全栈启动；② admin/member 两个前端的 `/api/health` 就绪探针与静态首页；③ 指标隔离——`/api/metrics` 经 Nginx 必须 404、仅容器网络内部可采集；④ 持久化——写入数据库标记行与 `uploads` 标记文件后 `down`（保留卷）重建容器，数据必须存活；⑤ 清理——结束时 `down -v` 移除全部临时卷并断言无遗留。
+
+本地执行：
+
+```bash
+bash deploy/docker-integration-test.sh
 ```
 
 ## 三、MySQL 数据持久化与备份

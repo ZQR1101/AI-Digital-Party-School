@@ -1,0 +1,20 @@
+# Docker 集成测试专用覆盖文件
+#
+# 配合 deploy/docker-integration-test.sh 使用：
+#   docker compose -p <独立项目名> -f docker-compose.yml -f deploy/docker-compose.it.yml up
+#
+# 隔离保证：
+#   1. -p 指定独立项目名 → 命名卷/网络均带独立前缀，与默认部署（ai_party_school_*）完全隔离；
+#   2. 覆盖 container_name 为带运行标识的唯一名，避免与已有部署或并发测试的固定容器名冲突；
+#   3. 端口通过 ADMIN_PORT/MEMBER_PORT 环境变量错开（默认部署 8080/8081，测试用 18080/18081）。
+services:
+  mysql:
+    container_name: party-it-${IT_RUN_ID:-local}-mysql
+  db-init:
+    container_name: party-it-${IT_RUN_ID:-local}-db-init
+  server:
+    container_name: party-it-${IT_RUN_ID:-local}-server
+  admin:
+    container_name: party-it-${IT_RUN_ID:-local}-admin
+  member:
+    container_name: party-it-${IT_RUN_ID:-local}-member

@@ -90,6 +90,20 @@ jobs:
         run: npm audit --audit-level=high || true
       - run: npm run build
 
+  docker-integration:
+    name: Docker 集成测试（构建/健康/隔离/持久化）
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IT_DB_PASSWORD: it-only-root-pwd-2026
+      IT_SEED_PASSWORD: it-seed-pwd-2026-strong
+      IT_JWT_SECRET: it-only-jwt-secret-not-for-production
+      IT_RUN_ID: ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 运行 Docker 集成测试（独立项目名+临时卷，结束自动清理）
+        run: bash deploy/docker-integration-test.sh
+
   secret-scan:
     name: 凭据安全扫描
     runs-on: ubuntu-latest
