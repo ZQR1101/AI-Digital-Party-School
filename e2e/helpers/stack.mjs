@@ -5,6 +5,10 @@ import { COMPOSE_ARGS, COMPOSE_ENV, RUN_ID, ADMIN_BASE, MEMBER_BASE } from './en
 
 const PROJECT_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
+// 最近一次探针失败原因（probe 内写入，供超时报错定位；必须声明在模块层，
+// 因为 probe 是独立函数，声明在 waitReady 内会触发 ReferenceError——CI 冷启动必现）
+let lastErr = '';
+
 function compose(args) {
   execFileSync('docker', ['compose', ...COMPOSE_ARGS, ...args], {
     cwd: PROJECT_ROOT,
@@ -29,7 +33,7 @@ export async function stackDownKeepVolumes() {
 async function waitReady(timeoutMs = 420000) {
   const deadline = Date.now() + timeoutMs;
   process.stdout.write(`[e2e] 等待测试栈就绪（RUN_ID=${RUN_ID}）…\n`);
-  let lastErr = '';
+  lastErr = '';
   while (Date.now() < deadline) {
     const [adminOk, memberOk] = await Promise.all([probe(ADMIN_BASE), probe(MEMBER_BASE)]);
     if (adminOk && memberOk) {
