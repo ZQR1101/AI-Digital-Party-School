@@ -68,6 +68,60 @@ test.describe('角色权限（后端强制，而非仅前端隐藏）', () => {
   });
 });
 
+test.describe('组织管理写权限（真实 HTTP 层，书记只读、写操作仅管理员）', () => {
+  test('书记对组织新增/修改/删除全部 403，且数据库状态不变', async ({ page }) => {
+    await adminLogin(page, ACCOUNTS.secretary.username);
+
+    const countBefore = await queryOne('SELECT COUNT(*) AS c FROM organizations');
+    const target = await queryOne('SELECT id, name FROM organizations WHERE id = 4');
+
+    const post = await fetchAsUser(page, '/api/admin/organizations', {
+      method: 'POST',
+      body: JSON.stringify({ name: `${E2E_PREFIX}越权新增组织`, type: 'group', parentId: 4 }),
+    });
+    expect(post.status, '书记新增组织应被 403 拒绝').toBe(403);
+
+    const put = await fetchAsUser(page, `/api/admin/organizations/${target.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name: `${E2E_PREFIX}越权改名组织` }),
+    });
+    expect(put.status, '书记修改组织应被 403 拒绝').toBe(403);
+
+    const del = await fetchAsUser(page, `/api/admin/organizations/${target.id}`, { method: 'DELETE' });
+    expect(del.status, '书记删除组织应被 403 拒绝').toBe(403);
+
+    // 数据库零变化：行数一致、目标组织未被篡改、越权新增未落库
+    const countAfter = await queryOne('SELECT COUNT(*) AS c FROM organizations');
+    expect(Number(countAfter.c)).toBe(Number(countBefore.c));
+    const unchanged = await queryOne('SELECT name FROM organizations WHERE id = ?', [target.id]);
+    expect(unchanged.name).toBe(target.name);
+    expect(await queryOne('SELECT id FROM organizations WHERE name = ?', [`${E2E_PREFIX}越权新增组织`])).toBeFalsy();
+  });
+
+  test('管理员组织新增/删除正常并真实落库/清除', async ({ page }) => {
+    await adminLogin(page, ACCOUNTS.admin.username);
+    const name = `${E2E_PREFIX}临时组织-${Date.now()}`;
+
+    const created = await fetchAsUser(page, '/api/admin/organizations', {
+      method: 'POST',
+      body: JSON.stringify({ name, type: 'group', parentId: 4 }),
+    });
+    expect(created.status, '管理员新增组织应成功').toBeLessThan(300);
+    const row = await queryOne('SELECT id FROM organizations WHERE name = ?', [name]);
+    expect(row, '新增组织应真实落库').toBeTruthy();
+
+    const del = await fetchAsUser(page, `/api/admin/organizations/${row.id}`, { method: 'DELETE' });
+    expect(del.status, '管理员删除组织应成功').toBeLessThan(300);
+    expect(await queryOne('SELECT id FROM organizations WHERE id = ?', [row.id])).toBeFalsy();
+  });
+
+  test('普通党员读取组织管理资源仍被 403 拒绝', async ({ page }) => {
+    await memberLogin(page, ACCOUNTS.member.username);
+    const res = await fetchAsUser(page, '/api/admin/organizations');
+    expect(res.status).toBe(403);
+  });
+});
+
 test.describe('组织范围数据隔离', () => {
   test('书记任务列表仅呈现本组织范围数据（越权范围任务不可见）', async ({ page }) => {
     await adminLogin(page, ACCOUNTS.secretary.username);

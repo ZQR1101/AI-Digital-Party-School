@@ -43,10 +43,13 @@ test('RBAC：人员/题库/试卷路由仅管理员；组织/内容查询开放�
     const s = fs.readFileSync(path.join(adminDir, f), 'utf8');
     assert.match(s, /requireManager/, `${f} 应允许书记访问`);
   }
-  // 组织树：书记仅见本组织子树（getScopedOrgIds 过滤）
+  // 组织树：书记仅见本组织子树（getScopedOrgIds 过滤）；写操作仍需管理员
   const orgs = fs.readFileSync(path.join(adminDir, 'organizations.js'), 'utf8');
   assert.match(orgs, /getScopedOrgIds/, '组织列表必须按书记范围过滤');
   assert.match(orgs, /filterTree/, '组织列表必须递归过滤树');
+  for (const action of ["router.post('/', requireAdmin", "router.put('/:id', requireAdmin", "router.delete('/:id', requireAdmin"]) {
+    assert.ok(orgs.includes(action), `组织写操作必须保留管理员校验：${action}`);
+  }
   // 内容列表：书记强制仅见已发布内容；写操作仍需管理员
   const contents = fs.readFileSync(path.join(adminDir, 'contents.js'), 'utf8');
   assert.match(contents, /effectiveStatus = req\.user\.role === 'admin' \? status : 'published'/, '书记查询内容必须强制 published');

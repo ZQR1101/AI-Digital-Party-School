@@ -6,16 +6,10 @@ const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
 const { getScopedOrgIds } = require('../../services/orgScopeService');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
+const filterTreeByAllowedIds = require('../../utils/orgTreeFilter');
 
 // 查询对管理员与支部书记开放（书记仅见本组织子树）；增删改仍需管理员
 router.use(authenticate, loadCurrentUser, requireManager);
-
-/** 按允许的组织 ID 集合过滤树（保留节点其余字段） */
-function filterTree(nodes, allowed) {
-  return (nodes || [])
-    .filter((node) => allowed.has(Number(node.id)))
-    .map((node) => ({ ...node, children: node.children ? filterTree(node.children, allowed) : node.children }));
-}
 
 /**
  * GET /api/admin/organizations
@@ -29,7 +23,7 @@ router.get('/', async (req, res) => {
     }
     const scopedIds = await getScopedOrgIds(req.user);
     const allowed = new Set((scopedIds || []).map(Number));
-    return ResponseHelper.success(res, filterTree(tree, allowed));
+    return ResponseHelper.success(res, filterTreeByAllowedIds(tree, allowed));
   } catch (err) {
     logger.error('Get organizations error:', err);
     return ResponseHelper.error(res);
@@ -40,7 +34,7 @@ router.get('/', async (req, res) => {
  * POST /api/admin/organizations
  * 新增组织节点
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { name, type, parentId, leaderUserId } = req.body;
     if (!name || !type) {
@@ -62,7 +56,7 @@ router.post('/', async (req, res) => {
  * PUT /api/admin/organizations/:id
  * 编辑组织信息
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const org = await OrganizationService.getById(req.params.id);
     if (!org) return ResponseHelper.notFound(res, '组织不存在');
@@ -79,7 +73,7 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/admin/organizations/:id
  * 删除组织节点（需校验无下级组织和人员）
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const org = await OrganizationService.getById(req.params.id);
     if (!org) return ResponseHelper.notFound(res, '组织不存在');
