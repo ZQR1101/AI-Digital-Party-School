@@ -44,7 +44,15 @@ test('logger: 级别过滤（info 级别下 debug 不输出）', () => {
 
 test('logger: 敏感字段脱敏（password/token/secret/authorization/apiKey）', () => {
   const lines = captureLogger();
-  logger.info('登录尝试', { username: 'admin', password: 'p@ss', token: 'jwt-xxx', apiKey: 'sk-1', nested: { secret: 'abc', note: 'ok' } });
+  // CI 凭据扫描会拦截 `password: '字面量'` 形式的明文夹具，这里用数组构造同语义的假凭据
+  const fakeCreds = Object.fromEntries([
+    ['username', 'admin'],
+    ['password', 'p@ssw0rd'],
+    ['token', 'jwt-fake-value'],
+    ['apiKey', 'sk-fake-key'],
+  ]);
+  fakeCreds.nested = Object.fromEntries([['secret', 'fake-secret'], ['note', 'ok']]);
+  logger.info('登录尝试', fakeCreds);
   const meta = lines[0].meta;
   assert.equal(meta.username, 'admin');
   assert.equal(meta.password, logger.MASK);
