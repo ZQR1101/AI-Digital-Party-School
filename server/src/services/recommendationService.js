@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const logger = require('../utils/logger');
+
 const LearningProfileService = require('./learningProfileService');
 const { normalizeTags, beijingDayKey } = LearningProfileService;
 const { AIClient } = require('./aiClient');
@@ -152,7 +154,7 @@ class RecommendationService {
       return contents;
     } catch (error) {
       if (includeFeedback && error.code === 'ER_NO_SUCH_TABLE') {
-        console.warn('[Recommendation feedback disabled] recommendation_feedback table is missing');
+        logger.warn('[Recommendation feedback disabled] recommendation_feedback table is missing');
         return this.getPublicCandidates(userId, ids, false);
       }
       throw error;
@@ -293,7 +295,7 @@ class RecommendationService {
       this.dailyTableReady = true;
       return true;
     } catch (error) {
-      console.warn('[recommendation_daily]', error.message);
+      logger.warn('[recommendation_daily]', error.message);
       return false;
     }
   }
@@ -328,7 +330,7 @@ class RecommendationService {
         [userId, dayKey, payload]
       );
     } catch (error) {
-      console.warn('[recommendation_daily save]', error.message);
+      logger.warn('[recommendation_daily save]', error.message);
     }
   }
 

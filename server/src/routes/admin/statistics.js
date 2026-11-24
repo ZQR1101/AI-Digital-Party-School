@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const StatisticsService = require('../../services/statisticsService');
 const ResponseHelper = require('../../utils/response');
@@ -25,7 +27,7 @@ router.get('/', async (req, res) => {
     if ([400, 401, 403].includes(err.statusCode)) {
       return ResponseHelper.error(res, err.message, err.statusCode, err.statusCode);
     }
-    console.error('Statistics query failed:', err.code || 'internal_error');
+    logger.error('Statistics query failed:', err.code || 'internal_error');
     return ResponseHelper.error(res);
   }
 });

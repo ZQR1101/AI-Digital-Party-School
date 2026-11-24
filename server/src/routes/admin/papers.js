@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const PaperService = require('../../services/paperService');
 const ResponseHelper = require('../../utils/response');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
@@ -17,7 +19,7 @@ router.get('/', async (req, res) => {
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (error) {
-    console.error('List papers error:', error);
+    logger.error('List papers error:', error);
     return ResponseHelper.error(res);
   }
 });
@@ -45,7 +47,7 @@ router.post('/', async (req, res) => {
     });
     return ResponseHelper.success(res, { id }, '试卷创建成功');
   } catch (error) {
-    console.error('Create paper error:', error);
+    logger.error('Create paper error:', error);
     return ResponseHelper.error(res, error.message);
   }
 });
@@ -59,7 +61,7 @@ router.put('/:id', async (req, res) => {
     await PaperService.update(req.params.id, req.body);
     return ResponseHelper.success(res, null, '试卷更新成功');
   } catch (error) {
-    console.error('Update paper error:', error);
+    logger.error('Update paper error:', error);
     if (error.message === '试卷不存在') return ResponseHelper.notFound(res, error.message);
     return ResponseHelper.error(res, error.message);
   }

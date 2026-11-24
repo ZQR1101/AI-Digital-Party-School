@@ -1,6 +1,8 @@
 const { randomUUID } = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 const AIAuditService = require('../services/aiAuditService');
+const logger = require('../utils/logger');
+
 const { loadActiveActor } = require('../services/organizationAccess');
 const ResponseHelper = require('../utils/response');
 
@@ -34,7 +36,7 @@ async function runAiRequest(req, res, scene, operation, execute) {
 
   if (!failure) return ResponseHelper.success(res, result);
   if (isClientError) return ResponseHelper.error(res, failure.message, status, status);
-  console.error('[AI] 请求失败:', requestId, failure.code || 'internal_error');
+  logger.error('[AI] 请求失败:', requestId, failure.code || 'internal_error');
   return ResponseHelper.error(res, 'AI服务暂时不可用，请稍后重试');
 }
 

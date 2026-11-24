@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const ReportService = require('../services/reportService');
 const HomeSummaryService = require('../services/homeSummaryService');
@@ -24,7 +26,7 @@ router.get('/summary', authenticate, loadCurrentUser, async (req, res) => {
     const summary = await HomeSummaryService.getSummary(req.user.userId);
     return ResponseHelper.success(res, summary);
   } catch (err) {
-    console.error('Get home summary error:', err);
+    logger.error('Get home summary error:', err);
     return ResponseHelper.error(res);
   }
 });

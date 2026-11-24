@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const AuthService = require('../services/authService');
 const ResponseHelper = require('../utils/response');
@@ -31,7 +33,7 @@ router.post('/login', async (req, res) => {
 
     return ResponseHelper.success(res, result, '登录成功');
   } catch (err) {
-    console.error('Login error:', err);
+    logger.error('Login error:', err);
     return ResponseHelper.error(res, '服务器异常');
   }
 });
@@ -50,7 +52,7 @@ router.get('/users/me', authenticate, loadCurrentUser, async (req, res) => {
     }
     return ResponseHelper.success(res, user);
   } catch (err) {
-    console.error('Get user info error:', err);
+    logger.error('Get user info error:', err);
     return ResponseHelper.error(res);
   }
 });

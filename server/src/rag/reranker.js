@@ -1,4 +1,6 @@
 const axios = require('axios');
+const logger = require('../utils/logger');
+
 const { tokenize } = require('./bm25');
 
 /**
@@ -79,7 +81,7 @@ class Reranker {
           return scored.slice(0, topK);
         }
       } catch (err) {
-        console.warn('[Reranker] API 重排调用失败，降级为本地精准重排:', err.message);
+        logger.warn('[Reranker] API 重排调用失败，降级为本地精准重排:', err.message);
         this.lastBackend = { backend: 'local-keyword', semantic: false, error: err.message };
       }
     }

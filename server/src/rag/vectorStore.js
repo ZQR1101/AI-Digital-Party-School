@@ -1,4 +1,6 @@
 const axios = require('axios');
+const logger = require('../utils/logger');
+
 const { tokenize } = require('./bm25');
 
 const DEFAULT_VECTOR_DIM = 1024;
@@ -154,7 +156,7 @@ class EmbeddingClient {
       };
       return allVectors;
     } catch (err) {
-      console.warn('[EmbeddingClient] API 调用失败，降级为本地哈希特征向量:', err.message);
+      logger.warn('[EmbeddingClient] API 调用失败，降级为本地哈希特征向量:', err.message);
       this.lastBackend = { ...this._envSnapshot(), backend: 'local-hash', semantic: false, error: err.message };
       return texts.map(t => this.localEmbed(t));
     }
@@ -258,7 +260,7 @@ class VectorStore {
         points
       }, 2000);
     } catch (err) {
-      console.warn('[VectorStore] Qdrant 写入跳过，使用内置内存向量索引:', err.message);
+      logger.warn('[VectorStore] Qdrant 写入跳过，使用内置内存向量索引:', err.message);
       this.qdrantAvailable = false;
     }
   }
@@ -283,7 +285,7 @@ class VectorStore {
           }));
         }
       } catch (err) {
-        console.warn('[VectorStore] Qdrant 检索失败，降级为内存向量检索:', err.message);
+        logger.warn('[VectorStore] Qdrant 检索失败，降级为内存向量检索:', err.message);
         this.qdrantAvailable = false;
       }
     }

@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const logger = require('../utils/logger');
+
 
 class AIAuditService {
   static async record({ actor, scene, operation, parsedIntent, success, requestId, durationMs, errorType, mode, trace }) {
@@ -31,7 +33,7 @@ class AIAuditService {
         }, values);
       }
     } catch (error) {
-      console.warn('[AI Audit] 写入失败:', requestId, error.code || 'internal_error');
+      logger.warn('[AI Audit] 写入失败:', requestId, error.code || 'internal_error');
     }
   }
 }

@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const TaskService = require('../services/taskService');
 const ResponseHelper = require('../utils/response');
@@ -14,7 +16,7 @@ router.get('/my', authenticate, loadCurrentUser, async (req, res) => {
     const result = await TaskService.getUserTasks(req.user.userId, { page: Number(page), pageSize: Number(pageSize), status });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('Get my tasks error:', err);
+    logger.error('Get my tasks error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -31,7 +33,7 @@ router.get('/:taskId', authenticate, loadCurrentUser, async (req, res) => {
     }
     return ResponseHelper.success(res, task);
   } catch (err) {
-    console.error('Get task detail error:', err);
+    logger.error('Get task detail error:', err);
     return ResponseHelper.error(res);
   }
 });

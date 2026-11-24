@@ -2,8 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const logger = require('./utils/logger');
 
 // 路由
+const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const learningRecordRoutes = require('./routes/learningRecords');
@@ -20,18 +22,24 @@ const adminQuestionRoutes = require('./routes/admin/questions');
 const adminPaperRoutes = require('./routes/admin/papers');
 const adminAssessmentRoutes = require('./routes/admin/assessments');
 const adminStatisticsRoutes = require('./routes/admin/statistics');
+const { requestContext } = require('./middleware/requestContext');
 
 const app = express();
 // 后端统一端口：与前端 Vite 代理、README 保持一致（默认 3001）
 const PORT = process.env.PORT || 3001;
 
 // 中间件
+// 链路追踪最先挂载：全链路 requestId（响应头 X-Request-ID）+ 访问日志 + 指标采集
+app.use(requestContext);
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ============== 运维接口（公开：探活/就绪/指标） ==============
+app.use('/', healthRoutes); // /health /health/ready /metrics
 
 // ============== 通用接口 ==============
 app.use('/api/auth', authRoutes);
@@ -61,19 +69,17 @@ app.use((req, res) => {
 
 // 全局错误处理
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ code: 500, message: '服务器内部错误', data: null });
+  logger.error('Unhandled error', {
+    requestId: req.requestId,
+    method: req.method,
+    path: req.originalUrl || req.url,
+    error: err,
+  });
+  res.status(500).json({ code: 500, message: '服务器内部错误', data: null, requestId: req.requestId });
 });
 
 app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════╗
-║   基于AI的数智党校学习系统 - 后端服务     ║
-║   端口: ${PORT}                           ║
-║   接口前缀: /api                          ║
-║   API文档: 详见项目核心方案               ║
-╚══════════════════════════════════════════╝
-  `);
+  logger.info(`服务已启动 port=${PORT} prefix=/api health=/health metrics=/metrics`);
 });
 
 module.exports = app;

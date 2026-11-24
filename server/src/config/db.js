@@ -1,4 +1,6 @@
 const mysql = require('mysql2/promise');
+const logger = require('../utils/logger');
+
 require('dotenv').config();
 
 const pool = mysql.createPool({
@@ -27,11 +29,11 @@ const skipConnectProbe = process.env.NODE_ENV === 'test'
 if (!skipConnectProbe) {
   pool.getConnection()
     .then(conn => {
-      console.log('[DB] MySQL 连接成功');
+      logger.info('[DB] MySQL 连接成功');
       conn.release();
     })
     .catch(err => {
-      console.error('[DB] MySQL 连接失败:', err.message);
+      logger.error('[DB] MySQL 连接失败:', err.message);
     });
 }
 

@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const TaskService = require('../../services/taskService');
 const ContentService = require('../../services/contentService');
@@ -19,7 +21,7 @@ function handleRouteError(res, err, context) {
   if (err && err.statusCode) {
     return ResponseHelper.error(res, err.message, err.statusCode, err.statusCode);
   }
-  console.error(context, err);
+  logger.error(context, err);
   return ResponseHelper.error(res);
 }
 

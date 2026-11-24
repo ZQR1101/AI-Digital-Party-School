@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const ExamRecordService = require('../services/examRecordService');
 const AssessmentService = require('../services/assessmentService');
@@ -35,7 +37,7 @@ router.get('/my', authenticate, loadCurrentUser, async (req, res) => {
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('Get exam records error:', err);
+    logger.error('Get exam records error:', err);
     return ResponseHelper.error(res);
   }
 });

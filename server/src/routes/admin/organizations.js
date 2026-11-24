@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
@@ -16,7 +18,7 @@ router.get('/', async (req, res) => {
     const tree = await OrganizationService.getTree();
     return ResponseHelper.success(res, tree);
   } catch (err) {
-    console.error('Get organizations error:', err);
+    logger.error('Get organizations error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -38,7 +40,7 @@ router.post('/', async (req, res) => {
     const id = await OrganizationService.create({ name, type, parentId, leaderUserId });
     return ResponseHelper.success(res, { id }, '创建成功');
   } catch (err) {
-    console.error('Create organization error:', err);
+    logger.error('Create organization error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -55,7 +57,7 @@ router.put('/:id', async (req, res) => {
     await OrganizationService.update(req.params.id, req.body);
     return ResponseHelper.success(res, null, '更新成功');
   } catch (err) {
-    console.error('Update organization error:', err);
+    logger.error('Update organization error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -72,7 +74,7 @@ router.delete('/:id', async (req, res) => {
     await OrganizationService.delete(req.params.id);
     return ResponseHelper.success(res, null, '删除成功');
   } catch (err) {
-    console.error('Delete organization error:', err);
+    logger.error('Delete organization error:', err);
     return ResponseHelper.error(res, err.message);
   }
 });

@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const QuestionService = require('../../services/questionService');
 const ResponseHelper = require('../../utils/response');
@@ -18,7 +20,7 @@ router.get('/', async (req, res) => {
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('List questions error:', err);
+    logger.error('List questions error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -55,7 +57,7 @@ router.post('/', async (req, res) => {
     });
     return ResponseHelper.success(res, { id }, '创建成功');
   } catch (err) {
-    console.error('Create question error:', err);
+    logger.error('Create question error:', err);
     return ResponseHelper.error(res);
   }
 });

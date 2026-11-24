@@ -1,4 +1,6 @@
 const fs = require('fs');
+const logger = require('../utils/logger');
+
 const path = require('path');
 const crypto = require('crypto');
 
@@ -136,7 +138,7 @@ class DocumentParser {
         }
         // PDF / Word 走异步 loadFromDirectoryAsync，保留此同步接口向下兼容
       } catch (err) {
-        console.warn(`[DocumentParser] 读取文件失败: ${file}`, err.message);
+        logger.warn(`[DocumentParser] 读取文件失败: ${file}`, err.message);
       }
     }
 
@@ -191,7 +193,7 @@ class DocumentParser {
         if (ext === '.pdf') chunks.push(...await this.parsePdf(fullPath));
         else chunks.push(...await this.parseDocx(fullPath));
       } catch (err) {
-        console.warn(`[DocumentParser] 解析文件失败: ${file}`, err.message);
+        logger.warn(`[DocumentParser] 解析文件失败: ${file}`, err.message);
       }
     }
 

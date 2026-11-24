@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const LearningRecordService = require('../services/learningRecordService');
 const ResponseHelper = require('../utils/response');
@@ -27,7 +29,7 @@ router.post('/', authenticate, loadCurrentUser, async (req, res) => {
     if (err.statusCode === 400) return ResponseHelper.badRequest(res, err.message);
     if (err.statusCode === 403) return ResponseHelper.forbidden(res, err.message);
     if (err.statusCode === 404) return ResponseHelper.notFound(res, err.message);
-    console.error('Submit learning record error:', err);
+    logger.error('Submit learning record error:', err);
     return ResponseHelper.error(res);
   }
 });

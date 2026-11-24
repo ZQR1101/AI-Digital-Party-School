@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
@@ -36,7 +38,7 @@ router.get('/', async (req, res) => {
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('List contents error:', err);
+    logger.error('List contents error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -74,7 +76,7 @@ router.post('/', async (req, res) => {
     });
     return ResponseHelper.success(res, { id }, '创建成功');
   } catch (err) {
-    console.error('Create content error:', err);
+    logger.error('Create content error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -90,7 +92,7 @@ router.put('/:id', async (req, res) => {
     await ContentService.update(req.params.id, req.body);
     return ResponseHelper.success(res, null, '更新成功');
   } catch (err) {
-    console.error('Update content error:', err);
+    logger.error('Update content error:', err);
     return ResponseHelper.error(res);
   }
 });

@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../utils/logger');
+
 const router = express.Router();
 const ContentService = require('../services/contentService');
 const ResponseHelper = require('../utils/response');
@@ -15,7 +17,7 @@ router.get('/', async (req, res) => {
     const data = await ContentService.listPublic(req.query);
     return ResponseHelper.success(res, data);
   } catch (err) {
-    console.error('List public contents error:', err);
+    logger.error('List public contents error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -30,7 +32,7 @@ router.get('/:id', async (req, res) => {
     if (!content) return ResponseHelper.notFound(res, '公共学习内容不存在或已下架');
     return ResponseHelper.success(res, content);
   } catch (err) {
-    console.error('Get public content error:', err);
+    logger.error('Get public content error:', err);
     return ResponseHelper.error(res);
   }
 });

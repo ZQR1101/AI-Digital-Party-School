@@ -1,4 +1,6 @@
 const express = require('express');
+const logger = require('../../utils/logger');
+
 const router = express.Router();
 const multer = require('multer');
 const UserService = require('../../services/userService');
@@ -42,7 +44,7 @@ router.get('/', async (req, res) => {
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
-    console.error('List users error:', err);
+    logger.error('List users error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -85,7 +87,7 @@ router.post('/import', (req, res, next) => {
     const result = await UserService.batchImport(users);
     return ResponseHelper.success(res, result, `导入完成：成功 ${result.success} 条，失败 ${result.fail} 条`);
   } catch (err) {
-    console.error('Import users error:', err);
+    logger.error('Import users error:', err);
     return ResponseHelper.error(res);
   }
 });
@@ -116,7 +118,7 @@ router.post('/', async (req, res) => {
     const id = await UserService.create({ username, password, realName, role, organizationId, phone, email });
     return ResponseHelper.success(res, { id }, '创建成功');
   } catch (err) {
-    console.error('Create user error:', err);
+    logger.error('Create user error:', err);
     if (err.code === 'ER_DUP_ENTRY') {
       return ResponseHelper.badRequest(res, '用户名已存在');
     }
@@ -135,7 +137,7 @@ router.put('/:id', async (req, res) => {
     await UserService.update(req.params.id, req.body);
     return ResponseHelper.success(res, null, '更新成功');
   } catch (err) {
-    console.error('Update user error:', err);
+    logger.error('Update user error:', err);
     return ResponseHelper.error(res);
   }
 });
