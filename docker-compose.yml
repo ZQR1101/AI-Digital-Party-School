@@ -1,0 +1,112 @@
+# AI 数智党校学习系统 - 一键部署编排
+#
+# 使用方式：
+#   1. 在项目根目录创建 .env（必填 JWT_SECRET / DB_PASSWORD / SEED_PASSWORD / DEFAULT_USER_PASSWORD，见 docs/DEPLOY.md）
+#   2. docker compose up -d --build
+#   3. 访问：管理后台 http://localhost:8080 ｜ 学员端 http://localhost:8081 ｜ 健康检查 http://localhost:8080/api/health
+#
+# MySQL 数据通过命名卷 mysql_data 持久化；升级重建容器不会丢数据（docker compose down 不带 -v）。
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: party-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请在项目根 .env 中设置 DB_PASSWORD}
+      MYSQL_DATABASE: party_school
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+    volumes:
+      # 命名卷持久化：容器删除重建后数据仍在
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    # 如需宿主机直连数据库，取消注释：
+    # ports:
+    #   - "3306:3306"
+
+  # 一次性服务：幂等迁移（建表/补列/补索引/种子账号，密码由 SEED_PASSWORD 注入）
+  db-init:
+    build: ./server
+    container_name: party-db-init
+    restart: "no"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:?请在项目根 .env 中设置 DB_PASSWORD}
+      SEED_PASSWORD: ${SEED_PASSWORD:?请在项目根 .env 中设置 SEED_PASSWORD（初始账号口令，≥10 位强口令）}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-}
+      NODE_ENV: production
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # init.sql 的建库建表由本迁移完成；首次启动 MySQL 初始化期间可能短暂拒绝连接，循环重试
+    command: >-
+      sh -c "for i in $$(seq 1 30); do
+        node init-db.js && exit 0;
+        echo \"[db-init] 第 $$i 次迁移失败，5 秒后重试…\";
+        sleep 5;
+      done; echo '[db-init] 迁移多次失败，放弃'; exit 1"
+
+  server:
+    build: ./server
+    container_name: party-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:?请在项目根 .env 中设置 DB_PASSWORD}
+      DB_NAME: party_school
+      JWT_SECRET: ${JWT_SECRET:?请在项目根 .env 中设置 JWT_SECRET（openssl rand -hex 32）}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
+      LOGIN_LOCK_MINUTES: ${LOGIN_LOCK_MINUTES:-15}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TZ: Asia/Shanghai
+    volumes:
+      # 上传文件持久化
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    # 如需宿主机直连后端调试，取消注释：
+    # ports:
+    #   - "3001:3001"
+
+  admin:
+    build: ./admin
+    container_name: party-admin
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${ADMIN_PORT:-8080}:80"
+
+  member:
+    build: .
+    container_name: party-member
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${MEMBER_PORT:-8081}:80"
+
+volumes:
+  mysql_data:
+  uploads_data:

@@ -1,0 +1,15 @@
+# 构建上下文瘦身：学员端镜像只需要根目录源码
+server
+admin
+node_modules
+dist
+.git
+.github
+docs
+perf
+knowledge
+uploads
+test
+*.log
+.env
+.env.*
