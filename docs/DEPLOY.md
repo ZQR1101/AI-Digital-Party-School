@@ -38,6 +38,17 @@ ADMIN_PORT=8080
 MEMBER_PORT=8081
 # 可选：日志级别 debug|info|warn|error
 LOG_LEVEL=info
+
+# 可选：AI 模型与 RAG（不配置时后端自动降级为确定性模板/本地关键词算法）
+# compose 会把以下变量原样传入后端容器
+AI_API_URL=https://api.deepseek.com/v1/chat/completions
+AI_API_KEY=
+AI_MODEL=deepseek-chat
+# RAG 语义检索（阿里云百炼，Key 形如 sk-xxx）
+EMBEDDING_API_KEY=
+RERANKER_API_KEY=
+# 向量数据库（可选）
+QDRANT_URL=
 ```
 
 缺任一必填项时 `docker compose up` 会直接报错拒绝启动（`:?` 语法），不会带默认弱口令上线。
@@ -61,10 +72,11 @@ curl http://localhost:8080/api/health/ready    # 就绪探针（含 DB 检查）
 
 - 管理后台：`http://localhost:8080`
 - 学员端：`http://localhost:8081`
-- 健康检查/指标（任一 Nginx 入口或直连后端）：
+- 健康检查（经 Nginx 精确映射到后端，任一入口均可）：
   - `GET /api/health` 存活探针（liveness，不探测依赖）
   - `GET /api/health/ready` 就绪探针（readiness，探测 MySQL；不可用返回 503）
-  - `GET /api/metrics` 基础指标 JSON
+- 指标 `GET /metrics` **不对外公开**：仅限容器网络内部采集，例如
+  `docker compose exec server wget -qO- http://127.0.0.1:3001/metrics`。
 
 ### 3. 重新构建与停止
 
@@ -122,7 +134,7 @@ docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" party_
 
 容器级 HEALTHCHECK（server 镜像内置）调用 `/health/ready`。
 
-### 基础指标（GET /api/metrics）
+### 基础指标（GET /metrics，仅容器网络内部可访问）
 
 ```json
 {

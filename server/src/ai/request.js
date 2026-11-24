@@ -7,16 +7,19 @@ const { loadActiveActor } = require('../services/organizationAccess');
 const ResponseHelper = require('../utils/response');
 
 async function runAiRequest(req, res, scene, operation, execute) {
-  const requestId = 'AI-' + randomUUID();
+  // 全链路追踪：复用 requestContext 注入的全局 requestId（与 HTTP 访问日志可关联）；
+  // AI 独立执行编号另用 aiRunId，绝不覆盖响应头 X-Request-ID。
+  const httpRequestId = typeof req.requestId === 'string' && req.requestId ? req.requestId : null;
+  const aiRunId = 'AI-' + randomUUID();
+  if (!httpRequestId) res.setHeader('X-Request-Id', aiRunId); // 兜底：未经 requestContext 的直接调用
   const started = performance.now();
-  const trace = {};
-  res.setHeader('X-Request-Id', requestId);
+  const trace = { aiRunId };
   let actor;
   let result;
   let failure;
   try {
     actor = await loadActiveActor(req.user);
-    result = await execute({ actor, trace, requestId });
+    result = await execute({ actor, trace, requestId: aiRunId });
   } catch (error) {
     failure = error;
   }
@@ -28,7 +31,9 @@ async function runAiRequest(req, res, scene, operation, execute) {
       || (isClientError ? 'request_error' : 'internal_error')
     : trace.errorType;
   await AIAuditService.record({
-    actor, scene, operation, requestId,
+    actor, scene, operation,
+    // 审计表的 requestId 字段存全局链路 ID（无则回退 aiRunId），保证与访问日志同 ID 可查
+    requestId: httpRequestId || aiRunId,
     parsedIntent: scene === 'organization_query' ? result?.query || result?.data?.query : null,
     success: !failure, errorType, durationMs: Math.round(performance.now() - started),
     mode: trace.resultMode, trace
@@ -36,7 +41,7 @@ async function runAiRequest(req, res, scene, operation, execute) {
 
   if (!failure) return ResponseHelper.success(res, result);
   if (isClientError) return ResponseHelper.error(res, failure.message, status, status);
-  logger.error('[AI] 请求失败:', requestId, failure.code || 'internal_error');
+  logger.error('[AI] 请求失败:', { requestId: httpRequestId || aiRunId, aiRunId, error: failure });
   return ResponseHelper.error(res, 'AI服务暂时不可用，请稍后重试');
 }
 

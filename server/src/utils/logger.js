@@ -13,6 +13,18 @@ const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 const SENSITIVE_KEY_RE = /(password|passwd|secret|token|authorization|apikey|api_key|cookie)/i;
 const MASK = '***';
 
+// 文本级脱敏：Error message/stack 里按 key 脱敏无效，按模式抓取 token=xxx / Bearer xxx 等
+const SENSITIVE_TEXT_RE = /\b(password|passwd|secret|(?:api[_-]?key|access[_-]?key|refresh[_-]?token|access[_-]?token|id[_-]?token|session[_-]?id|token|code)|authorization)\s*[:=]\s*["']?([A-Za-z0-9._~+/=@%&-]{6,})["']?/gi;
+const BEARER_RE = /\bBearer\s+([A-Za-z0-9._~+/=@%&-]{10,})/gi;
+
+/** 对自由文本（错误消息/堆栈）做模式级脱敏，避免 token=xxx、Bearer xxx 原样落盘 */
+function scrubText(text) {
+  if (typeof text !== 'string' || !text) return text;
+  return text
+    .replace(BEARER_RE, 'Bearer ***')
+    .replace(SENSITIVE_TEXT_RE, (m, key) => `${key}=***`);
+}
+
 let minLevel = LEVELS[String(process.env.LOG_LEVEL || 'info').toLowerCase()] || LEVELS.info;
 // 可注入的输出通道，测试时替换为收集器
 let sink = null;
@@ -46,8 +58,8 @@ function serializeError(err) {
   if (!(err instanceof Error)) return err;
   return {
     name: err.name,
-    message: err.message,
-    stack: err.stack,
+    message: scrubText(err.message),
+    stack: scrubText(err.stack),
     ...(err.code ? { code: err.code } : {}),
   };
 }
@@ -97,5 +109,6 @@ module.exports = {
   setLevel,
   redact,
   serializeError,
+  scrubText,
   MASK,
 };

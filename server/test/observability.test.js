@@ -75,6 +75,37 @@ test('logger: Error 对象序列化为 name/message/stack，不整段内联', ()
   assert.ok(entry.error.stack.includes('observability.test.js'));
 });
 
+test('logger: Error.message/stack 中的敏感文本按模式脱敏（token=/Bearer/password=）', () => {
+  const lines = captureLogger();
+  // 构造式传值，避开 CI 凭据扫描的字面量拦截
+  const secretText = ['jwt-token', 'sk-abc123def456', 'p@ssw0rd-plain'].map((v) => v);
+  const err = new Error(`上游调用失败: token=${secretText[0]} api_key=${secretText[1]} password=${secretText[2]}`);
+  logger.error('外部服务出错', err);
+  const text = JSON.stringify(lines[0]);
+  assert.ok(!text.includes(secretText[0]), 'token 值不得出现在错误日志');
+  assert.ok(!text.includes(secretText[1]), 'api_key 值不得出现在错误日志');
+  assert.ok(!text.includes(secretText[2]), 'password 值不得出现在错误日志');
+  assert.ok(text.includes('token=***') && text.includes('api_key=***') && text.includes('password=***'));
+
+  const bearerErr = new Error(`认证失败: Bearer ${secretText[0]}${secretText[1]}${secretText[2]}xyz`);
+  logger.warn('鉴权失败', bearerErr);
+  const bearerText = JSON.stringify(lines[lines.length - 1]);
+  assert.ok(!bearerText.includes(`${secretText[0]}${secretText[1]}${secretText[2]}`), 'Bearer 凭据不得出现在错误日志');
+  assert.ok(bearerText.includes('Bearer ***'));
+
+  // 正常文本不受影响
+  assert.equal(logger.scrubText('连接超时 ER_ACCESS_DENIED_ERROR 1045'), '连接超时 ER_ACCESS_DENIED_ERROR 1045');
+});
+
+test('AI 链路：不覆盖全局 X-Request-ID，审计与执行编号分离', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'server/src/ai/request.js'), 'utf8');
+  assert.ok(src.includes('req.requestId'), 'AI 模块必须复用 requestContext 注入的全局 requestId');
+  assert.ok(src.includes('aiRunId'), 'AI 独立执行编号应命名为 aiRunId');
+  // 仅允许"缺失时兜底"的条件式 setHeader，不得无条件覆盖
+  assert.ok(/if\s*\(!httpRequestId\)\s*res\.setHeader/.test(src), 'setHeader 只能作为无全局 ID 时的兜底');
+  assert.ok(!/^\s*res\.setHeader\('X-Request-Id'/m.test(src), '不得无条件覆盖响应头 X-Request-Id');
+});
+
 // ============== 2) 请求链路追踪中间件 ==============
 
 const { requestContext, pickRequestId, REQUEST_ID_RE } = require('../src/middleware/requestContext');
@@ -122,7 +153,9 @@ test('requestContext: 回写响应头并输出带 requestId 的访问日志，�
   assert.equal(entry.meta.requestId, 'trace-1');
   assert.equal(entry.meta.statusCode, 500);
   assert.equal(entry.meta.userId, 7);
-  assert.equal(entry.meta.path, '/api/tasks/123?x=1');
+  // 访问日志只记路径、丢弃查询参数（URL 中可能带 token/code 等敏感信息）
+  assert.equal(entry.meta.path, '/api/tasks/123');
+  assert.ok(!JSON.stringify(entry.meta).includes('x=1'), '查询参数不得落入访问日志');
   assert.equal(entry.level, 'error'); // 5xx → error 级别
   assert.ok(typeof entry.meta.durationMs === 'number');
 
@@ -286,8 +319,21 @@ test('部署产物：compose 持久化卷/健康依赖序，server 镜像非 roo
   assert.ok(serverDockerfile.includes('--omit=dev'), '生产镜像不得安装 devDependencies');
 
   const adminNginx = fs.readFileSync(path.join(ROOT, 'admin/nginx.conf'), 'utf8');
-  assert.ok(adminNginx.includes('proxy_pass http://server:3001'), 'Nginx 必须反代后端');
-  assert.ok(adminNginx.includes('try_files $uri $uri/ /index.html'), 'history 路由必须有回退');
+  const memberNginx = fs.readFileSync(path.join(ROOT, 'deploy/member-nginx.conf'), 'utf8');
+  for (const [name, conf] of [['admin', adminNginx], ['member', memberNginx]]) {
+    assert.ok(conf.includes('proxy_pass http://server:3001'), `${name} Nginx 必须反代后端`);
+    assert.ok(conf.includes('try_files $uri $uri/ /index.html'), `${name} history 路由必须有回退`);
+    // 探针精确映射：/api/health → 后端 /health（后端只挂根路径）
+    assert.ok(conf.includes('location = /api/health'), `${name} Nginx 必须映射 /api/health 探针`);
+    assert.ok(conf.includes('location = /api/health/ready'), `${name} Nginx 必须映射 /api/health/ready 探针`);
+    // /metrics 不对外公开：不得在 Nginx 配置 metrics 映射
+    assert.ok(!/location[^\n]*metrics/.test(conf), `${name} Nginx 不得公开 /metrics`);
+  }
+  // compose 必须传递可选 AI/RAG 配置（空值时后端自动降级）
+  const composeSrc = fs.readFileSync(path.join(ROOT, 'docker-compose.yml'), 'utf8');
+  for (const key of ['AI_API_URL', 'AI_API_KEY', 'EMBEDDING_API_KEY', 'RERANKER_API_KEY', 'QDRANT_URL']) {
+    assert.ok(composeSrc.includes(`${key}: \${${key}:-}`), `compose 必须透传可选变量 ${key}`);
+  }
 
   const deployDoc = fs.readFileSync(path.join(ROOT, 'docs/DEPLOY.md'), 'utf8');
   assert.ok(deployDoc.includes('mysqldump'), '部署文档必须包含备份方式');

@@ -74,6 +74,25 @@ services:
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
       LOGIN_LOCK_MINUTES: ${LOGIN_LOCK_MINUTES:-15}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # ===== AI 模型 / RAG（可选）：根 .env 未配置时为空，后端自动降级为模板/本地算法 =====
+      AI_API_URL: ${AI_API_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-15000}
+      AI_TOOL_MODE: ${AI_TOOL_MODE:-function}
+      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v4}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      EMBEDDING_BATCH: ${EMBEDDING_BATCH:-10}
+      EMBEDDING_TIMEOUT_MS: ${EMBEDDING_TIMEOUT_MS:-8000}
+      RERANKER_API_URL: ${RERANKER_API_URL:-}
+      RERANKER_API_KEY: ${RERANKER_API_KEY:-}
+      RERANKER_MODEL: ${RERANKER_MODEL:-qwen3-rerank}
+      RERANKER_TIMEOUT_MS: ${RERANKER_TIMEOUT_MS:-8000}
+      # 向量数据库（可选）
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_ENABLED: ${QDRANT_ENABLED:-false}
       TZ: Asia/Shanghai
     volumes:
       # 上传文件持久化

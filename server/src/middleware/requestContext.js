@@ -24,6 +24,8 @@ function pickRequestId(req) {
 function requestContext(req, res, next) {
   const requestId = pickRequestId(req);
   const startedAt = process.hrtime.bigint();
+  // 只记路径、丢弃查询参数：URL 中可能带 token/code 等敏感信息，不落日志
+  const pathOnly = String(req.originalUrl || req.url || '').split('?')[0];
 
   req.requestId = requestId;
   res.setHeader('X-Request-ID', requestId);
@@ -34,7 +36,7 @@ function requestContext(req, res, next) {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
     const statusCode = res.statusCode;
     metrics.observeRequest({
-      path: req.originalUrl ? req.originalUrl.split('?')[0] : req.url,
+      path: pathOnly,
       method: req.method,
       statusCode,
       durationMs,
@@ -44,7 +46,7 @@ function requestContext(req, res, next) {
     logger[level]('access', {
       requestId,
       method: req.method,
-      path: req.originalUrl || req.url,
+      path: pathOnly,
       statusCode,
       durationMs: Number(durationMs.toFixed(2)),
       userId: req.user?.userId ?? null,
