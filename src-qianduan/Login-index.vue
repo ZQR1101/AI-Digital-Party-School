@@ -13,13 +13,13 @@
       <form @submit.prevent="submit">
         <label>
           <span>用户名</span>
-          <input v-model.trim="form.username" autocomplete="username" placeholder="请输入用户名">
+          <input v-model.trim="form.username" autocomplete="username" placeholder="请输入用户名" data-testid="mobile-username">
         </label>
         <label>
           <span>密码</span>
-          <input v-model="form.password" type="password" autocomplete="current-password" placeholder="请输入密码">
+          <input v-model="form.password" type="password" autocomplete="current-password" placeholder="请输入密码" data-testid="mobile-password">
         </label>
-        <button :disabled="loading">{{ loading ? '正在登录…' : '登录学习平台' }}</button>
+        <button :disabled="loading" data-testid="mobile-login-submit">{{ loading ? '正在登录…' : '登录学习平台' }}</button>
       </form>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <p class="demo-tip">初始化演示党员：lisi / admin123</p>

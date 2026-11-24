@@ -16,7 +16,7 @@
       <div v-else-if="error" class="state-box"><strong>任务加载失败</strong><p>{{ error }}</p><button type="button" @click="load">重新加载</button></div>
       <div v-else-if="!visible.length" class="state-box"><p>{{ tab === 'done' ? '还没有已完成的任务' : '暂无进行中的任务' }}</p></div>
       <div v-else class="list">
-        <article v-for="item in visible" :key="item.taskId" :class="{ required: item.status !== 'completed' }">
+        <article v-for="item in visible" :key="item.taskId" :class="{ required: item.status !== 'completed' }" :data-testid="`task-card-${item.taskId}`">
           <div class="head">
             <div>
               <span class="kind">{{ item.contentType === 'video' ? '视频课' : '必修课' }}</span>
@@ -32,7 +32,7 @@
           </div>
           <div class="foot">
             <span><Icon name="schedule" /> 截止: {{ item.deadline ? String(item.deadline).slice(0, 10) : '待安排' }}</span>
-            <button type="button" @click="router.push(`/task/${item.taskId}`)">{{ item.status === 'completed' ? '再看一遍' : progress(item) ? '继续学习' : '开始学习' }}</button>
+            <button type="button" data-testid="task-open" @click="router.push(`/task/${item.taskId}`)">{{ item.status === 'completed' ? '再看一遍' : progress(item) ? '继续学习' : '开始学习' }}</button>
           </div>
         </article>
       </div>

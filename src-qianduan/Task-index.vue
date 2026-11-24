@@ -34,12 +34,12 @@
         </div>
         <p v-if="task.contentTitle">学习内容：{{ task.contentTitle }}</p>
         <p v-if="task.summary">{{ task.summary }}</p>
-        <div class="progress">
-          <div><span>学习进度</span><b>{{ displayProgress }}%</b></div>
+        <div class="progress" data-testid="task-progress">
+          <div><span>学习进度</span><b data-testid="task-progress-percent">{{ displayProgress }}%</b></div>
           <div class="bar"><i :style="{ width: `${barWidth}%` }"></i></div>
           <small>{{ timeHint }}</small>
         </div>
-        <p class="auto-hint">{{ completed ? (task.contentType === 'video' ? '视频已看完，学习记录已保存' : '已达到规定学习时长') : (task.contentType === 'video' ? '请完整观看视频，播放结束后自动完成。' : '请认真阅读正文，系统会按字数核算学习时长，读满后自动完成。') }}</p>
+        <p class="auto-hint" data-testid="task-hint">{{ completed ? (task.contentType === 'video' ? '视频已看完，学习记录已保存' : '已达到规定学习时长') : (task.contentType === 'video' ? '请完整观看视频，播放结束后自动完成。' : '请认真阅读正文，系统会按字数核算学习时长，读满后自动完成。') }}</p>
       </section>
       <section class="body-wrap">
         <h2>{{ task.contentType === 'video' ? '课程内容' : '介绍' }}</h2>

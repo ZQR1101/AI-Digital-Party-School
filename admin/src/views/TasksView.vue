@@ -271,7 +271,7 @@ onMounted(async () => {
         <label><span>任务状态</span><el-select v-model="filters.status" placeholder="全部状态" clearable><el-option label="进行中" value="inProgress" /><el-option label="已完成" value="completed" /><el-option label="已逾期" value="overdue" /></el-select></label>
         <el-button :icon="Filter" class="filter-button" @click="runSearch">筛选</el-button>
       </div>
-      <el-button type="primary" :icon="Plus" size="large" @click="openPublish">发布任务</el-button>
+      <el-button type="primary" :icon="Plus" size="large" data-testid="admin-task-create" @click="openPublish">发布任务</el-button>
     </article>
 
     <div class="batch-toolbar">
@@ -330,9 +330,9 @@ onMounted(async () => {
 
     <el-dialog v-model="publishVisible" :title="dialogMode === 'create' ? '发布学习任务' : '编辑学习任务'" width="650px" destroy-on-close>
       <el-form :model="form" label-position="top" class="task-form">
-        <el-form-item label="任务名称" required><el-input v-model="form.title" maxlength="80" show-word-limit placeholder="例如：学习党的二十届三中全会精神" /></el-form-item>
+        <el-form-item label="任务名称" required><el-input v-model="form.title" maxlength="80" show-word-limit placeholder="例如：学习党的二十届三中全会精神" data-testid="task-title-input" /></el-form-item>
         <el-form-item label="学习内容" required>
-          <el-select v-model="form.contentId" placeholder="请选择已发布的文章或视频" filterable style="width: 100%">
+          <el-select v-model="form.contentId" placeholder="请选择已发布的文章或视频" filterable style="width: 100%" data-testid="task-content-select">
             <el-option-group v-if="articleContents.length" label="文章">
               <el-option v-for="item in articleContents" :key="item.value" :label="item.label" :value="item.value" />
             </el-option-group>
@@ -343,15 +343,15 @@ onMounted(async () => {
           <p v-if="selectedContent" class="content-hint">当前选择：{{ selectedContent.type === 'video' ? '视频课程' : '学习文章' }} · {{ selectedContent.label }}</p>
         </el-form-item>
         <el-form-item label="下发组织" required>
-          <el-tree-select v-model="form.organizationIds" :data="organizationOptions" multiple show-checkbox check-strictly collapse-tags collapse-tags-tooltip :render-after-expand="false" placeholder="请选择一个或多个组织" style="width: 100%" />
+          <el-tree-select v-model="form.organizationIds" :data="organizationOptions" multiple show-checkbox check-strictly collapse-tags collapse-tags-tooltip :render-after-expand="false" placeholder="请选择一个或多个组织" style="width: 100%" data-testid="task-org-select" />
         </el-form-item>
         <div class="form-grid">
-          <el-form-item label="截止时间" required><el-date-picker v-model="form.deadline" type="date" value-format="YYYY-MM-DD" placeholder="请选择截止日期" style="width: 100%" /></el-form-item>
+          <el-form-item label="截止时间" required><el-date-picker v-model="form.deadline" type="date" value-format="YYYY-MM-DD" placeholder="请选择截止日期" style="width: 100%" data-testid="task-deadline-input" /></el-form-item>
           <div class="switch-box"><div><strong>包含下级组织</strong><span>同步下发至所有下级成员</span></div><el-switch v-model="form.includeChildren" :disabled="dialogMode === 'edit'" /></div>
         </div>
         <div class="switch-box reminder"><div><strong>开启到期提醒</strong><span>截止前 3 天自动提醒未完成人员</span></div><el-switch v-model="form.reminder" /></div>
       </el-form>
-      <template #footer><el-button @click="publishVisible = false">取消</el-button><el-button type="primary" :loading="saving" @click="saveTask">{{ dialogMode === 'create' ? '发布任务' : '保存修改' }}</el-button></template>
+      <template #footer><el-button @click="publishVisible = false">取消</el-button><el-button type="primary" :loading="saving" data-testid="task-submit" @click="saveTask">{{ dialogMode === 'create' ? '发布任务' : '保存修改' }}</el-button></template>
     </el-dialog>
 
     <el-dialog v-model="detailVisible" title="任务详情" width="620px">

@@ -116,7 +116,7 @@ function logout() {
             <strong>系统管理员</strong>
             <small>admin</small>
           </div>
-          <el-button class="logout-button" text :icon="SwitchButton" @click="logout">
+          <el-button class="logout-button" text :icon="SwitchButton" data-testid="admin-logout" @click="logout">
             <span>退出</span>
           </el-button>
         </div>

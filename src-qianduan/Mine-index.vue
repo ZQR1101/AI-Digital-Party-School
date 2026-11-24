@@ -50,7 +50,7 @@
         <button type="button" @click="router.push('/ai-assistant')"><span><Icon name="smart_toy" /> AI 助教</span><Icon name="chevron_right" /></button>
         <button type="button"><span><Icon name="settings" /> 系统设置</span><Icon name="chevron_right" /></button>
         <button type="button"><span><Icon name="help" /> 帮助中心</span><Icon name="chevron_right" /></button>
-        <button class="logout" type="button" @click="logout"><span>退出登录</span></button>
+        <button class="logout" type="button" data-testid="member-logout" @click="logout"><span>退出登录</span></button>
       </section>
     </main>
 

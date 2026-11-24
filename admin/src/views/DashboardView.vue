@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
     <section class="welcome-banner">
       <div class="welcome-copy">
         <span>智慧学习 · 数据赋能</span>
-        <h2>{{ greeting }}，{{ currentUserName }}</h2>
+        <h2 data-testid="stat-welcome">{{ greeting }}，{{ currentUserName }}</h2>
         <p>当前查看「{{ selectedOrganizationName }}」的真实学习数据</p>
       </div>
       <div class="welcome-orbit orbit-one"></div>

@@ -2,7 +2,7 @@
   <div class="page-shell">
     <section class="greet">
       <div>
-        <h2>{{ greeting }}，{{ userName }}</h2>
+        <h2 data-testid="member-home-welcome">{{ greeting }}，{{ userName }}</h2>
         <p>今天也要保持学习</p>
       </div>
       <div class="greet-side">

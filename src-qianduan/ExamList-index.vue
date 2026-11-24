@@ -14,7 +14,7 @@
           <button v-for="item in filters" :key="item.value" :class="{ on: filter === item.value }" :aria-pressed="filter === item.value" type="button" @click="filter = item.value">{{ item.label }}</button>
         </div>
         <div v-if="visible.length" class="list">
-          <article v-for="item in visible" :key="item.id" :class="status(item)">
+          <article v-for="item in visible" :key="item.id" :class="status(item)" :data-testid="`exam-card-${item.id}`">
             <div class="head">
               <h2>{{ item.title }}</h2>
               <span>{{ statusText[status(item)] }}</span>
@@ -23,7 +23,7 @@
             <p v-if="item.deadline"><Icon name="event" /> 截止 {{ formatAssessmentDate(item.deadline) }}</p>
             <p v-if="item.attempt"><Icon name="check" /> 得分 {{ item.attempt.earnedPoints }}/{{ item.attempt.totalScore }} · {{ item.attempt.passed ? '通过' : '未通过' }}</p>
             <p v-if="item.attempt?.submittedAt"><Icon name="calendar" /> 交卷 {{ formatAssessmentDate(item.attempt.submittedAt) }}</p>
-            <button :disabled="status(item) === 'closed'" type="button" @click="open(item)">{{ actionText[status(item)] }}</button>
+            <button :disabled="status(item) === 'closed'" type="button" data-testid="exam-start" @click="open(item)">{{ actionText[status(item)] }}</button>
           </article>
         </div>
         <div v-else class="state-box"><p>{{ assessments.length ? '当前筛选下暂无测评' : '暂无分配给你的测评' }}</p></div>

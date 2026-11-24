@@ -54,7 +54,7 @@
     </main>
 
     <main v-else-if="view === 'result'" class="result-view">
-      <section class="score-card">
+      <section class="score-card" data-testid="exam-result">
         <span>{{ attempt.passed ? '已通过' : '未通过' }}</span>
         <div><strong class="stat-num">{{ attempt.earnedPoints }}</strong><em>/ {{ attempt.totalScore }} 分</em></div>
         <p>{{ assessment.title }}</p>
@@ -118,7 +118,7 @@
     </footer>
     <footer v-else-if="view === 'sheet'" class="bar sheet-bar">
       <button class="ghost" type="button" :disabled="submitting" @click="jump(currentIndex)">返回作答</button>
-      <button class="solid" type="button" :disabled="submitting" @click="submitExam">{{ submitting ? '交卷中…' : unansweredCount ? '留空交卷' : '立即交卷' }}</button>
+      <button class="solid" type="button" data-testid="exam-submit" :disabled="submitting" @click="submitExam">{{ submitting ? '交卷中…' : unansweredCount ? '留空交卷' : '立即交卷' }}</button>
     </footer>
     <footer v-else-if="view === 'result'" class="bar">
       <button class="ghost" type="button" @click="router.push('/record')">查看学习报告</button>

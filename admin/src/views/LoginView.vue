@@ -89,6 +89,7 @@ async function login() {
                 :prefix-icon="User"
                 placeholder="请输入账号"
                 autocomplete="username"
+                data-testid="admin-username"
               />
             </el-form-item>
             <el-form-item label="登录密码">
@@ -99,13 +100,14 @@ async function login() {
                 show-password
                 placeholder="请输入密码"
                 autocomplete="current-password"
+                data-testid="admin-password"
               />
             </el-form-item>
             <div class="login-options">
               <el-checkbox v-model="remember">记住登录状态</el-checkbox>
               <span>账号由管理员统一分配</span>
             </div>
-            <el-button native-type="submit" type="primary" :loading="loading" class="login-button">
+            <el-button native-type="submit" type="primary" :loading="loading" class="login-button" data-testid="admin-login-submit">
               登录管理后台
             </el-button>
           </el-form>
