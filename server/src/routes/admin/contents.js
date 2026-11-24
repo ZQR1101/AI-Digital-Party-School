@@ -24,17 +24,20 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024, files: 1 }
 });
 
-router.use(authenticate, loadCurrentUser, requireAdmin);
+// 认证统一挂载；列表查询对管理员与支部书记开放（书记仅见已发布内容，用于任务下发），
+// 内容的增删改仍需管理员（逐路由校验）
+router.use(authenticate, loadCurrentUser);
 
 /**
  * GET /api/admin/contents
- * 分页查询内容列表
+ * 分页查询内容列表：admin 全量；secretary 强制仅返回已发布内容
  */
-router.get('/', async (req, res) => {
+router.get('/', requireManager, async (req, res) => {
   try {
     const { page = 1, pageSize = 10, keyword, type, status, category } = req.query;
+    const effectiveStatus = req.user.role === 'admin' ? status : 'published';
     const result = await ContentService.list({
-      page: Number(page), pageSize: Number(pageSize), keyword, type, status, category
+      page: Number(page), pageSize: Number(pageSize), keyword, type, status: effectiveStatus, category
     });
     return ResponseHelper.page(res, result.list, result.total);
   } catch (err) {
@@ -46,7 +49,7 @@ router.get('/', async (req, res) => {
 /**
  * GET /api/admin/contents/:id
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAdmin, async (req, res) => {
   try {
     const content = await ContentService.getById(req.params.id);
     if (!content) return ResponseHelper.notFound(res, '内容不存在');
@@ -60,7 +63,7 @@ router.get('/:id', async (req, res) => {
  * POST /api/admin/contents
  * 新增或发布文章、视频内容
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { title, type, coverUrl, bodyOrVideoUrl, summary, tags, isPublic, status } = req.body;
     if (!title || !type) {
@@ -85,7 +88,7 @@ router.post('/', async (req, res) => {
  * PUT /api/admin/contents/:id
  * 编辑已发布的内容
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const content = await ContentService.getById(req.params.id);
     if (!content) return ResponseHelper.notFound(res, '内容不存在');
@@ -101,7 +104,7 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/admin/contents/:id
  * 下架或删除内容
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const content = await ContentService.getById(req.params.id);
     if (!content) return ResponseHelper.notFound(res, '内容不存在');
@@ -116,7 +119,7 @@ router.delete('/:id', async (req, res) => {
  * POST /api/admin/contents/upload
  * 上传封面图或视频文件
  */
-router.post('/upload', (req, res, next) => {
+router.post('/upload', requireAdmin, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) return ResponseHelper.badRequest(res, err.message || '文件上传失败');
     next();

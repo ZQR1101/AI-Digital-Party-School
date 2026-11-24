@@ -4,19 +4,32 @@ const logger = require('../../utils/logger');
 const router = express.Router();
 const OrganizationService = require('../../services/organizationService');
 const ResponseHelper = require('../../utils/response');
+const { getScopedOrgIds } = require('../../services/orgScopeService');
 const { authenticate, loadCurrentUser, requireAdmin, requireManager } = require('../../middleware/auth');
 
-// 所有接口都需要认证 + 管理员权限
-router.use(authenticate, loadCurrentUser, requireAdmin);
+// 查询对管理员与支部书记开放（书记仅见本组织子树）；增删改仍需管理员
+router.use(authenticate, loadCurrentUser, requireManager);
+
+/** 按允许的组织 ID 集合过滤树（保留节点其余字段） */
+function filterTree(nodes, allowed) {
+  return (nodes || [])
+    .filter((node) => allowed.has(Number(node.id)))
+    .map((node) => ({ ...node, children: node.children ? filterTree(node.children, allowed) : node.children }));
+}
 
 /**
  * GET /api/admin/organizations
- * 获取组织树列表
+ * 获取组织树列表：admin 全量；secretary 仅本组织及后代（任务下发/统计筛选用）
  */
 router.get('/', async (req, res) => {
   try {
     const tree = await OrganizationService.getTree();
-    return ResponseHelper.success(res, tree);
+    if (req.user.role === 'admin') {
+      return ResponseHelper.success(res, tree);
+    }
+    const scopedIds = await getScopedOrgIds(req.user);
+    const allowed = new Set((scopedIds || []).map(Number));
+    return ResponseHelper.success(res, filterTree(tree, allowed));
   } catch (err) {
     logger.error('Get organizations error:', err);
     return ResponseHelper.error(res);
