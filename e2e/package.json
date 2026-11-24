@@ -1,0 +1,16 @@
+{
+  "name": "ai-party-school-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AI-Digital-Party-School 真实业务 E2E 测试（Playwright + 隔离 Docker 环境）",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "mysql2": "^3.11.0"
+  }
+}

@@ -53,8 +53,9 @@ EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIM=1024
 EMBEDDING_BATCH=10
 
-# Reranker：百炼原生 rerank 端点（请求体 model/query/documents/top_n）
-RERANKER_API_URL=https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
+# Reranker：DashScope 兼容 rerank 端点（与 SiliconFlow /v1/rerank 同构，
+# 响应解析 results[].index / relevance_score；见 server/.env.example 与 src/rag/reranker.js）
+RERANKER_API_URL=https://dashscope.aliyuncs.com/compatible-api/v1/reranks
 RERANKER_API_KEY=sk-xxxxxxxxxxxxxxxx
 RERANKER_MODEL=qwen3-rerank
 

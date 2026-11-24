@@ -1,0 +1,40 @@
+name: E2E 全量回归
+
+# 完整 E2E 套件独立工作流：手动触发或每日定时，不占用主 CI 时长
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 18 * * *' # 每日 UTC 18:00（北京时间次日凌晨 2 点）
+
+jobs:
+  e2e-full:
+    name: E2E 全量（浏览器到 MySQL 完整业务链路）
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      E2E_DB_PASSWORD: e2e-db-pass-2026
+      E2E_SEED_PASSWORD: e2e-seed-pass-2026
+      E2E_JWT_SECRET: e2e-only-jwt-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: 安装依赖与浏览器
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: 运行全量 E2E（隔离 Docker 栈，结束销毁全部临时卷）
+        working-directory: e2e
+        run: npm test
+      - name: 上传失败工件（截图/trace/报告）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-full-artifacts-${{ github.run_id }}
+          path: e2e/test-results/
+          retention-days: 14
+          if-no-files-found: ignore

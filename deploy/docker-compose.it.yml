@@ -10,6 +10,9 @@
 services:
   mysql:
     container_name: party-it-${IT_RUN_ID:-local}-mysql
+    # 测试专用：宿主机通过该端口直连做数据断言与种子（仅测试栈暴露，默认部署不映射）
+    ports:
+      - "${IT_DB_PORT:-23306}:3306"
   db-init:
     container_name: party-it-${IT_RUN_ID:-local}-db-init
   server:

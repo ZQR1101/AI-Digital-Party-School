@@ -104,6 +104,39 @@ jobs:
       - name: 运行 Docker 集成测试（独立项目名+临时卷，结束自动清理）
         run: bash deploy/docker-integration-test.sh
 
+  e2e-smoke:
+    name: E2E 冒烟测试（真实浏览器核心链路）
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      # 一次性隔离测试环境凭据（独立卷，栈销毁即失效），非生产凭据
+      E2E_DB_PASSWORD: e2e-db-pass-2026
+      E2E_SEED_PASSWORD: e2e-seed-pass-2026
+      E2E_JWT_SECRET: e2e-only-jwt-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: 安装依赖与浏览器
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: 运行 E2E 冒烟（自动拉起隔离 Docker 栈，结束销毁全部临时卷）
+        working-directory: e2e
+        run: npm run test:smoke
+      - name: 上传失败工件（截图/trace/报告）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-smoke-artifacts-${{ github.run_id }}
+          path: e2e/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   secret-scan:
     name: 凭据安全扫描
     runs-on: ubuntu-latest
