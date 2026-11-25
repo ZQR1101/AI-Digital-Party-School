@@ -137,6 +137,64 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  ai-eval:
+    name: AI 质量评测（离线基线 + 隔离库真值）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ai_eval_ci_root
+          MYSQL_DATABASE: ai_eval_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot -pai_eval_ci_root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ai_eval_ci_root
+      DB_NAME: ai_eval_ci
+      JWT_SECRET: ai-eval-only-secret-not-for-production
+      SEED_PASSWORD: ai-eval-seed-password-2026
+      AI_EVAL_DB_TRUTH: '1'
+      # 明确清空外部模型配置：CI 只跑确定性离线评测
+      EMBEDDING_API_URL: ''
+      EMBEDDING_API_KEY: ''
+      RERANKER_API_URL: ''
+      RERANKER_API_KEY: ''
+      DASHSCOPE_API_KEY: ''
+      AI_API_URL: ''
+      AI_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - name: 初始化隔离评测库
+        run: node init-db.js
+      - name: 运行离线评测门禁（含数据库真值校验）
+        run: npm run eval:offline
+      - name: 上传评测报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-eval-report-${{ github.run_id }}
+          path: server/ai-eval/reports/latest.*
+          retention-days: 14
+          if-no-files-found: ignore
+
   secret-scan:
     name: 凭据安全扫描
     runs-on: ubuntu-latest

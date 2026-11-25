@@ -20,3 +20,6 @@ server/test-connection.js
 e2e/.runtime/
 e2e/test-results/
 e2e/playwright-report/
+
+# AI 评测历史归档（每次运行生成；只提交 latest.json / latest.md 基线）
+server/ai-eval/reports/run-*

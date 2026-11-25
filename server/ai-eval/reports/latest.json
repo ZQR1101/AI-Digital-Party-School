@@ -1,0 +1,4642 @@
+{
+  "reportVersion": "2.0.0",
+  "datasetVersion": "1.1.0",
+  "mode": "offline",
+  "status": "completed",
+  "online": {
+    "status": "not_run",
+    "reason": "离线模式强制关闭外部模型；在线指标标记 N/A",
+    "usage": "N/A"
+  },
+  "generatedAt": "2026-11-25T07:31:24.952Z",
+  "fixedNow": "2026-06-15T02:00:00.000Z",
+  "environment": {
+    "node": "v22.22.2",
+    "platform": "win32 x64",
+    "ci": false,
+    "gitCommit": "f39aabc4a926775f3bcf630d7631a3940ec930a8",
+    "knowledgeBase": {
+      "files": 10,
+      "sha256": "bc881d8a19ec77fb55aa1911f74177edfb1a04f32cffd580ea54f0be850ddd68"
+    },
+    "config": {
+      "topK": 5,
+      "topN": 20,
+      "backend": {
+        "embedding": {
+          "configured": false,
+          "model": "text-embedding-v4",
+          "dim": 1024,
+          "backend": "local-hash",
+          "semantic": false
+        },
+        "reranker": {
+          "configured": false,
+          "model": "qwen3-rerank",
+          "backend": "local-keyword",
+          "semantic": false
+        },
+        "chunkCount": 50,
+        "vectorDim": 1024,
+        "initialized": true
+      },
+      "aiConfigured": false,
+      "datasetSplitRule": "sha1(id) % 10 < 3 → heldout；其余 dev",
+      "gateFloors": {
+        "retrieval": {
+          "recallAt5": 0.95,
+          "mrrAt5": 0.9,
+          "hitAt5": 0.95
+        },
+        "refusal": {
+          "refusalRate": 0.6
+        },
+        "qa": {
+          "factAccuracyRate": 0.9,
+          "citationNumberValidRate": 1
+        },
+        "nlq": {
+          "toolSelectionAccuracy": 1,
+          "metricAccuracy": 1,
+          "exactMatchRate": 0.85
+        },
+        "toolParams": {
+          "accuracy": 1
+        },
+        "access": {
+          "permissionCorrectRate": 1
+        },
+        "citation": {
+          "accuracy": 0.85
+        }
+      }
+    },
+    "mode": "offline"
+  },
+  "limitations": [
+    "旧 rag-evaluate.js 仅 19 道题、50 个分块、文档级 Recall@3=1，只说明\"命中正确文档\"，不能代表答案证据/分块级检索质量。",
+    "引用支持度为启发式规则判定（可人工复核），不是 LLM Judge 客观真值。",
+    "isGrounded=true 仅表示检索门禁通过且有来源，不等价于答案事实正确。"
+  ],
+  "totals": {
+    "samples": 122,
+    "failed": 10,
+    "passed": 112,
+    "passRate": 0.918
+  },
+  "suites": {
+    "retrieval": {
+      "title": "检索四方案对比（文档级 / 分块级）",
+      "mode": "offline",
+      "topK": 5,
+      "topN": 20,
+      "summary": {
+        "samples": 40,
+        "hitAt1": 0.875,
+        "hitAt3": 0.975,
+        "hitAt5": 0.975,
+        "recallAt3": 0.975,
+        "recallAt5": 0.975,
+        "mrrAt5": 0.9167,
+        "avgMs": 0.48,
+        "p95Ms": 0.6,
+        "bySplit": {
+          "dev": {
+            "samples": 28,
+            "hitAt1": 0.9643,
+            "hitAt3": 1,
+            "hitAt5": 1,
+            "recallAt3": 1,
+            "recallAt5": 1,
+            "mrrAt5": 0.9821,
+            "avgMs": 0.5061,
+            "p95Ms": 1.44
+          },
+          "heldout": {
+            "samples": 12,
+            "hitAt1": 0.6667,
+            "hitAt3": 0.9167,
+            "hitAt5": 0.9167,
+            "recallAt3": 0.9167,
+            "recallAt5": 0.9167,
+            "mrrAt5": 0.7639,
+            "avgMs": 0.4192,
+            "p95Ms": 0.55
+          }
+        },
+        "documentRecallAt3": 0.975,
+        "chunkRecallAt5": 0.9625,
+        "configurations": {
+          "bm25": {
+            "document": {
+              "samples": 40,
+              "hitAt1": 0.925,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.9625,
+              "avgMs": 0.142,
+              "p95Ms": 0.28,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.9286,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.9643,
+                  "avgMs": 0.1529,
+                  "p95Ms": 0.48
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.9167,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.9583,
+                  "avgMs": 0.1167,
+                  "p95Ms": 0.19
+                }
+              }
+            },
+            "chunk": {
+              "samples": 40,
+              "hitAt1": 0.8,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.9875,
+              "recallAt5": 0.9875,
+              "mrrAt5": 0.8917,
+              "avgMs": 0.142,
+              "p95Ms": 0.28,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.7857,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 0.9821,
+                  "recallAt5": 0.9821,
+                  "mrrAt5": 0.8869,
+                  "avgMs": 0.1529,
+                  "p95Ms": 0.48
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.8333,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.9028,
+                  "avgMs": 0.1167,
+                  "p95Ms": 0.19
+                }
+              }
+            }
+          },
+          "vector": {
+            "document": {
+              "samples": 40,
+              "hitAt1": 0.75,
+              "hitAt3": 0.925,
+              "hitAt5": 1,
+              "recallAt3": 0.9125,
+              "recallAt5": 0.9875,
+              "mrrAt5": 0.8383,
+              "avgMs": 0.1025,
+              "p95Ms": 0.11,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.8214,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 0.9821,
+                  "recallAt5": 0.9821,
+                  "mrrAt5": 0.8988,
+                  "avgMs": 0.1186,
+                  "p95Ms": 0.23
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.5833,
+                  "hitAt3": 0.75,
+                  "hitAt5": 1,
+                  "recallAt3": 0.75,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.6972,
+                  "avgMs": 0.065,
+                  "p95Ms": 0.08
+                }
+              }
+            },
+            "chunk": {
+              "samples": 40,
+              "hitAt1": 0.575,
+              "hitAt3": 0.775,
+              "hitAt5": 0.85,
+              "recallAt3": 0.7625,
+              "recallAt5": 0.85,
+              "mrrAt5": 0.68,
+              "avgMs": 0.1025,
+              "p95Ms": 0.11,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.6429,
+                  "hitAt3": 0.8214,
+                  "hitAt5": 0.8571,
+                  "recallAt3": 0.8036,
+                  "recallAt5": 0.8571,
+                  "mrrAt5": 0.7333,
+                  "avgMs": 0.1186,
+                  "p95Ms": 0.23
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.4167,
+                  "hitAt3": 0.6667,
+                  "hitAt5": 0.8333,
+                  "recallAt3": 0.6667,
+                  "recallAt5": 0.8333,
+                  "mrrAt5": 0.5556,
+                  "avgMs": 0.065,
+                  "p95Ms": 0.08
+                }
+              }
+            }
+          },
+          "hybrid": {
+            "document": {
+              "samples": 40,
+              "hitAt1": 0.85,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.9167,
+              "avgMs": 0.2588,
+              "p95Ms": 0.38,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.9643,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.9821,
+                  "avgMs": 0.2864,
+                  "p95Ms": 1.21
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.5833,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.7639,
+                  "avgMs": 0.1942,
+                  "p95Ms": 0.26
+                }
+              }
+            },
+            "chunk": {
+              "samples": 40,
+              "hitAt1": 0.65,
+              "hitAt3": 0.95,
+              "hitAt5": 0.975,
+              "recallAt3": 0.9375,
+              "recallAt5": 0.975,
+              "mrrAt5": 0.7896,
+              "avgMs": 0.2588,
+              "p95Ms": 0.38,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.7143,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 0.9821,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.8393,
+                  "avgMs": 0.2864,
+                  "p95Ms": 1.21
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.5,
+                  "hitAt3": 0.8333,
+                  "hitAt5": 0.9167,
+                  "recallAt3": 0.8333,
+                  "recallAt5": 0.9167,
+                  "mrrAt5": 0.6736,
+                  "avgMs": 0.1942,
+                  "p95Ms": 0.26
+                }
+              }
+            }
+          },
+          "hybrid_rerank": {
+            "document": {
+              "samples": 40,
+              "hitAt1": 0.875,
+              "hitAt3": 0.975,
+              "hitAt5": 0.975,
+              "recallAt3": 0.975,
+              "recallAt5": 0.975,
+              "mrrAt5": 0.9167,
+              "avgMs": 0.48,
+              "p95Ms": 0.6,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.9643,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 1,
+                  "recallAt5": 1,
+                  "mrrAt5": 0.9821,
+                  "avgMs": 0.5061,
+                  "p95Ms": 1.44
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.6667,
+                  "hitAt3": 0.9167,
+                  "hitAt5": 0.9167,
+                  "recallAt3": 0.9167,
+                  "recallAt5": 0.9167,
+                  "mrrAt5": 0.7639,
+                  "avgMs": 0.4192,
+                  "p95Ms": 0.55
+                }
+              }
+            },
+            "chunk": {
+              "samples": 40,
+              "hitAt1": 0.675,
+              "hitAt3": 0.95,
+              "hitAt5": 0.975,
+              "recallAt3": 0.9375,
+              "recallAt5": 0.9625,
+              "mrrAt5": 0.805,
+              "avgMs": 0.48,
+              "p95Ms": 0.6,
+              "bySplit": {
+                "dev": {
+                  "samples": 28,
+                  "hitAt1": 0.75,
+                  "hitAt3": 1,
+                  "hitAt5": 1,
+                  "recallAt3": 0.9821,
+                  "recallAt5": 0.9821,
+                  "mrrAt5": 0.869,
+                  "avgMs": 0.5061,
+                  "p95Ms": 1.44
+                },
+                "heldout": {
+                  "samples": 12,
+                  "hitAt1": 0.5,
+                  "hitAt3": 0.8333,
+                  "hitAt5": 0.9167,
+                  "recallAt3": 0.8333,
+                  "recallAt5": 0.9167,
+                  "mrrAt5": 0.6556,
+                  "avgMs": 0.4192,
+                  "p95Ms": 0.55
+                }
+              }
+            }
+          }
+        }
+      },
+      "details": {
+        "bm25": {
+          "document": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.48,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.1,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.1,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.28,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.19,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.04,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ],
+          "chunk": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.48,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.12,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.1,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.1,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.28,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.19,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.09,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 0.5,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.04,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.05,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ]
+        },
+        "vector": {
+          "document": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 1.37,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.25
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.2
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.25
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 0.5,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.08,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ],
+          "chunk": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 1.37,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.2
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.25
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.08,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.25
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.07,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.08,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.07,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.05,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.06,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.05,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.06,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ]
+        },
+        "hybrid": {
+          "document": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 1.99,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.22,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.19,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.37,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.25,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.21,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.22,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.38,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.16,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.21,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ],
+          "chunk": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 1.99,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.25
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.22,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.19,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.37,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.26,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.2,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.18,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.16,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.25,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.21,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.22,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.23,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.38,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.15,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.16,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.21,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.12,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.11,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.11,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.13,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ]
+        },
+        "hybrid_rerank": {
+          "document": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 2.61,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.5,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.53,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.39,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.49,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.33,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.42,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.33,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.57,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.55,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.4,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.42,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.39,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.44,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.44,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.6,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.4,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.37,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.39,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.4,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.44,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.35,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.36,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.31,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.33,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.27,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.38,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.27,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.28,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ],
+          "chunk": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 2.61,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-002",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-003",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.5,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-004",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.53,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 1,
+              "recallAt3": 0,
+              "recallAt5": 1,
+              "mrrAt5": 0.2
+            },
+            {
+              "id": "ret-005",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.39,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-007",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-008",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-009",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.49,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-010",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-011",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.33,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-012",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.42,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-013",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.33,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-014",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.57,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-015",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.55,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-016",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.4,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-017",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.42,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.39,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-019",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.36,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "ret-020",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-021",
+              "split": "heldout",
+              "category": "同义改写",
+              "latencyMs": 0.44,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-022",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.46,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 0.5,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.44,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-024",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.6,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-025",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 0.4,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-026",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.37,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.3333333333333333
+            },
+            {
+              "id": "ret-027",
+              "split": "heldout",
+              "category": "跨段落",
+              "latencyMs": 0.39,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-028",
+              "split": "heldout",
+              "category": "易混淆制度",
+              "latencyMs": 0.4,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-029",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 1.44,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-031",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.35,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-032",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.36,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-033",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.31,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.33,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-035",
+              "split": "heldout",
+              "category": "精确事实",
+              "latencyMs": 0.27,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 0.38,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-037",
+              "split": "dev",
+              "category": "精确事实",
+              "latencyMs": 0.34,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-038",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 0.27,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 0.28,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-040",
+              "split": "dev",
+              "category": "易混淆制度",
+              "latencyMs": 0.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ]
+        }
+      }
+    },
+    "qa": {
+      "title": "问答质量（真实 RagService 链路）",
+      "summary": {
+        "samples": 12,
+        "factAccuracyRate": 0.9167,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "fallbackReliabilityRate": 1,
+        "llmJudgeScore": "N/A",
+        "avgFactCoverage": 0.9167
+      },
+      "bySplit": {
+        "dev": {
+          "samples": 10,
+          "factAccuracyRate": 0.9,
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        },
+        "heldout": {
+          "samples": 2,
+          "factAccuracyRate": 1,
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        }
+      }
+    },
+    "refusal": {
+      "title": "无答案拒答",
+      "summary": {
+        "samples": 10,
+        "refusalRate": 0.6,
+        "unwarrantedAnswerRate": 0.4
+      },
+      "bySplit": {
+        "dev": {
+          "samples": 4,
+          "refusalRate": 0.5,
+          "unwarrantedAnswerRate": 0.5
+        },
+        "heldout": {
+          "samples": 6,
+          "refusalRate": 0.6667,
+          "unwarrantedAnswerRate": 0.3333
+        }
+      }
+    },
+    "citation": {
+      "title": "引用编号校验",
+      "summary": {
+        "samples": 8,
+        "accuracy": 0.875
+      },
+      "bySplit": {
+        "dev": {
+          "samples": 6,
+          "accuracy": 0.8333
+        },
+        "heldout": {
+          "samples": 2,
+          "accuracy": 1
+        }
+      }
+    },
+    "nlq": {
+      "title": "自然语言统计查询（工具选择 / 参数准确率）",
+      "summary": {
+        "samples": 25,
+        "toolSelectionAccuracy": 1,
+        "metricAccuracy": 1,
+        "organizationAccuracy": 0.88,
+        "timeRangeAccuracy": 1,
+        "groupByAccuracy": 1,
+        "exactMatchRate": 0.88,
+        "intentModeSplit": {
+          "rules": 25
+        }
+      },
+      "bySplit": {
+        "dev": {
+          "samples": 16,
+          "toolSelectionAccuracy": 1,
+          "metricAccuracy": 1,
+          "organizationAccuracy": 1,
+          "timeRangeAccuracy": 1,
+          "groupByAccuracy": 1,
+          "exactMatchRate": 1
+        },
+        "heldout": {
+          "samples": 9,
+          "toolSelectionAccuracy": 1,
+          "metricAccuracy": 1,
+          "organizationAccuracy": 0.6667,
+          "timeRangeAccuracy": 1,
+          "groupByAccuracy": 1,
+          "exactMatchRate": 0.6667
+        }
+      }
+    },
+    "toolParams": {
+      "title": "工具调用结构校验（接受/拒绝）",
+      "summary": {
+        "samples": 12,
+        "accuracy": 1,
+        "acceptCorrectRate": 1,
+        "rejectCorrectRate": 1
+      }
+    },
+    "access": {
+      "title": "角色权限与组织范围隔离",
+      "summary": {
+        "samples": 15,
+        "permissionCorrectRate": 1
+      },
+      "bySplit": {
+        "dev": {
+          "samples": 11,
+          "permissionCorrectRate": 1
+        },
+        "heldout": {
+          "samples": 4,
+          "permissionCorrectRate": 1
+        }
+      }
+    },
+    "dbTruth": {
+      "title": "工具调用与数据库真值一致性",
+      "status": "not_run",
+      "summary": {
+        "samples": "N/A"
+      },
+      "reason": "未设置 AI_EVAL_DB_TRUTH=1；本项标记 N/A（不把未运行记作 0 或 100%）"
+    }
+  },
+  "gate": {
+    "passed": true,
+    "breaches": []
+  },
+  "failures": [
+    {
+      "dataset": "retrieval",
+      "id": "ret-019",
+      "category": "rerank_failure",
+      "input": "怎样才算一名活跃的党员 统计上怎么定义",
+      "expected": {
+        "document": [
+          "指标统计口径.md"
+        ],
+        "evidence": [
+          "活跃党员人数为统计周期内至少产生一条有效学习时长记录的去重党员人数。"
+        ]
+      },
+      "actual": {
+        "document": [
+          "党员组织关系与党籍管理.md",
+          "党费收缴使用与管理规定.md",
+          "党章核心要义与党员权利义务.md",
+          "党费收缴使用与管理规定.md",
+          "党组织生活制度规范.md"
+        ],
+        "chunkMatched": 0
+      },
+      "detail": "相关来源已进入 RRF 融合候选（topN），但被重排挤出 Top-5",
+      "sources": "1.党员组织关系与党籍管理.md 2.党费收缴使用与管理规定.md 3.党章核心要义与党员权利义务.md 4.党费收缴使用与管理规定.md 5.党组织生活制度规范.md"
+    },
+    {
+      "dataset": "qa",
+      "id": "qa-010",
+      "category": "generation_failure",
+      "input": "什么情况下需要转移党员组织关系？",
+      "expected": {
+        "keywords": [
+          "六个月",
+          "转移组织关系"
+        ]
+      },
+      "actual": {
+        "keywordCoverage": 0,
+        "missingKeywords": [
+          "六个月",
+          "转移组织关系"
+        ],
+        "fallback": true
+      },
+      "detail": "确定性兜底摘录未覆盖标准答案要点",
+      "sources": "1.党员组织关系与党籍管理.md 2.党员组织关系与党籍管理.md 3.党员组织关系与党籍管理.md 4.党员组织关系与党籍管理.md"
+    },
+    {
+      "dataset": "refusal",
+      "id": "ref-005",
+      "category": "unwarranted_answer",
+      "input": "党的二十大是哪一年召开的",
+      "expected": {
+        "isGrounded": false,
+        "sources": []
+      },
+      "actual": {
+        "isGrounded": true,
+        "topScore": 0.26
+      },
+      "detail": "知识库不含该事实，系统仍给出带来源的回答",
+      "sources": "党组织生活制度规范.md 党史学习教育要点.md 党员教育管理与发展工作细则.md 党组织生活制度规范.md"
+    },
+    {
+      "dataset": "refusal",
+      "id": "ref-006",
+      "category": "unwarranted_answer",
+      "input": "三严三实的具体内容是什么",
+      "expected": {
+        "isGrounded": false,
+        "sources": []
+      },
+      "actual": {
+        "isGrounded": true,
+        "topScore": 0.26
+      },
+      "detail": "知识库不含该事实，系统仍给出带来源的回答",
+      "sources": "中央八项规定精神与作风建设.md 党规党纪与纪律处分要点.md 党组织生活制度规范.md 党组织生活制度规范.md"
+    },
+    {
+      "dataset": "refusal",
+      "id": "ref-007",
+      "category": "unwarranted_answer",
+      "input": "统一战线工作条例主要讲了什么内容",
+      "expected": {
+        "isGrounded": false,
+        "sources": []
+      },
+      "actual": {
+        "isGrounded": true,
+        "topScore": 0.29
+      },
+      "detail": "知识库不含该事实，系统仍给出带来源的回答",
+      "sources": "中央八项规定精神与作风建设.md 党规党纪与纪律处分要点.md 党组织生活制度规范.md 党组织生活制度规范.md"
+    },
+    {
+      "dataset": "refusal",
+      "id": "ref-010",
+      "category": "unwarranted_answer",
+      "input": "两学一做学习教育具体指哪两学哪一做",
+      "expected": {
+        "isGrounded": false,
+        "sources": []
+      },
+      "actual": {
+        "isGrounded": true,
+        "topScore": 0.33
+      },
+      "detail": "知识库不含该事实，系统仍给出带来源的回答",
+      "sources": "党史学习教育要点.md 党员教育管理与发展工作细则.md 党史学习教育要点.md 指标统计口径.md"
+    },
+    {
+      "dataset": "citation",
+      "id": "cit-008",
+      "category": "citation_error",
+      "input": "参见附录[附录A]与[2026]年修订版说明[1]。",
+      "expected": {
+        "invalid": [],
+        "contains": [
+          "[附录A]",
+          "[2026]年修订版说明[1]"
+        ]
+      },
+      "actual": {
+        "invalid": [
+          2026
+        ],
+        "answer": "参见附录[附录A]与年修订版说明[1]。"
+      },
+      "detail": "引用编号清洗结果与预期不符"
+    },
+    {
+      "dataset": "nlq",
+      "id": "nlq-006",
+      "category": "tool_error",
+      "input": "看看2025年全校学习完成率月度走势",
+      "expected": {
+        "metric": "learning_completion_rate",
+        "organizationName": null,
+        "timeRangeLabel": "2025年",
+        "groupBy": "month"
+      },
+      "actual": {
+        "metric": "learning_completion_rate",
+        "organizationName": "全校 月度走势",
+        "timeRangeLabel": "2025年",
+        "groupBy": "month",
+        "tool": "query_learning_statistics"
+      },
+      "detail": "规则解析字段错误：organizationName"
+    },
+    {
+      "dataset": "nlq",
+      "id": "nlq-013",
+      "category": "tool_error",
+      "input": "全校下级组织数量",
+      "expected": {
+        "metric": "sub_organization_count",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "actual": {
+        "metric": "sub_organization_count",
+        "organizationName": "全校 数量",
+        "timeRangeLabel": "2026年",
+        "groupBy": null,
+        "tool": "query_organization_statistics"
+      },
+      "detail": "规则解析字段错误：organizationName"
+    },
+    {
+      "dataset": "nlq",
+      "id": "nlq-015",
+      "category": "tool_error",
+      "input": "2024年全校下级组织有多少个",
+      "expected": {
+        "metric": "sub_organization_count",
+        "organizationName": null,
+        "timeRangeLabel": "2024年",
+        "groupBy": null
+      },
+      "actual": {
+        "metric": "sub_organization_count",
+        "organizationName": "全校 有多少个",
+        "timeRangeLabel": "2024年",
+        "groupBy": null,
+        "tool": "query_organization_statistics"
+      },
+      "detail": "规则解析字段错误：organizationName"
+    }
+  ],
+  "recommendations": [
+    {
+      "rank": 1,
+      "impact": "高",
+      "problem": "无依据问题拒答率仅 60.0%",
+      "suggestion": "先调整检索相关性门禁与来源Evidence校验（仅改判定策略，不改知识库事实），避免低分片段被当作依据生成回答。"
+    },
+    {
+      "rank": 2,
+      "impact": "中",
+      "problem": "引用相关失败 1 条（年份/编号被误当引用编号）",
+      "suggestion": "收紧引用编号正则与语义判定，仅清理确属越界的 [n]，保留正文中的年份/附录编号。"
+    },
+    {
+      "rank": 3,
+      "impact": "中",
+      "problem": "自然语言问数组织识别错误 3 条",
+      "suggestion": "修正组织名称抽取边界，避免把\"月度走势/数量\"等统计词并入组织名；保持规则解析与 Function Calling 同构。"
+    }
+  ]
+}

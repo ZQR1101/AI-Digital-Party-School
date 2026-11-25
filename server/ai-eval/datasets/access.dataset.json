@@ -1,0 +1,316 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-11-25",
+  "description": "组织范围权限隔离样本：使用固定组织架构 fixture（与真实部署同构），验证 selectOrganizationScope / requireStatisticsRole 的角色与层级隔离。不连接数据库。",
+  "organizationFixture": [
+    {
+      "id": 1,
+      "name": "学校党委",
+      "parentId": null
+    },
+    {
+      "id": 2,
+      "name": "信息工程学院党委",
+      "parentId": 1
+    },
+    {
+      "id": 3,
+      "name": "软件工程系党总支",
+      "parentId": 2
+    },
+    {
+      "id": 4,
+      "name": "学生第一党支部",
+      "parentId": 3
+    },
+    {
+      "id": 5,
+      "name": "第一党小组",
+      "parentId": 4
+    },
+    {
+      "id": 6,
+      "name": "学生第二党支部",
+      "parentId": 3
+    },
+    {
+      "id": 9,
+      "name": "机关党委",
+      "parentId": 1
+    },
+    {
+      "id": 7,
+      "name": "行政第一党支部",
+      "parentId": 9
+    },
+    {
+      "id": 8,
+      "name": "教师党支部",
+      "parentId": 9
+    }
+  ],
+  "cases": [
+    {
+      "id": "acc-001",
+      "name": "党员无统计查询角色",
+      "actor": {
+        "role": "member",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "学生第一党支部"
+      },
+      "expect": {
+        "status": 403,
+        "messageContains": "仅对管理员和支部书记开放"
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-002",
+      "name": "书记默认范围为本组织子树",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {},
+      "expect": {
+        "status": 200,
+        "organizationName": "学生第一党支部",
+        "orgIds": [
+          4,
+          5
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-003",
+      "name": "书记查询本组织",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "学生第一党支部"
+      },
+      "expect": {
+        "status": 200,
+        "organizationName": "学生第一党支部",
+        "orgIds": [
+          4,
+          5
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-004",
+      "name": "书记查询本组织下属党小组",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "第一党小组"
+      },
+      "expect": {
+        "status": 200,
+        "organizationName": "第一党小组",
+        "orgIds": [
+          5
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-005",
+      "name": "书记越权查询平行支部",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "学生第二党支部"
+      },
+      "expect": {
+        "status": 403,
+        "messageContains": "权限范围"
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "acc-006",
+      "name": "书记越权查询上级机关党委",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "机关党委"
+      },
+      "expect": {
+        "status": 403,
+        "messageContains": "权限范围"
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-007",
+      "name": "书记越权查询全校根组织",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "学校党委"
+      },
+      "expect": {
+        "status": 403,
+        "messageContains": "权限范围"
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-008",
+      "name": "书记查询不存在组织",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 4
+      },
+      "selector": {
+        "name": "不存在的第十八党支部"
+      },
+      "expect": {
+        "status": 403,
+        "messageContains": "未找到可查询的组织"
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "acc-009",
+      "name": "管理员默认全校范围",
+      "actor": {
+        "role": "admin",
+        "organizationId": 1
+      },
+      "selector": {},
+      "expect": {
+        "status": 200,
+        "organizationName": null,
+        "orgIds": null
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-010",
+      "name": "管理员查询机关党委子树",
+      "actor": {
+        "role": "admin",
+        "organizationId": 1
+      },
+      "selector": {
+        "name": "机关党委"
+      },
+      "expect": {
+        "status": 200,
+        "organizationName": "机关党委",
+        "orgIds": [
+          9,
+          7,
+          8
+        ]
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "acc-011",
+      "name": "管理员按编号查询党总支子树",
+      "actor": {
+        "role": "admin",
+        "organizationId": 1
+      },
+      "selector": {
+        "id": 3
+      },
+      "expect": {
+        "status": 200,
+        "organizationName": "软件工程系党总支",
+        "orgIds": [
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-012",
+      "name": "书记（学生第二党支部）默认范围",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 6
+      },
+      "selector": {},
+      "expect": {
+        "status": 200,
+        "organizationName": "学生第二党支部",
+        "orgIds": [
+          6
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-013",
+      "name": "模糊名称歧义时优先学生支部",
+      "actor": {
+        "role": "admin",
+        "organizationId": 1
+      },
+      "selector": {
+        "name": "党支部"
+      },
+      "expect": {
+        "status": 200,
+        "organizationName": "学生第一党支部",
+        "orgIds": [
+          4,
+          5
+        ]
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-014",
+      "name": "书记账号未挂组织",
+      "actor": {
+        "role": "secretary",
+        "organizationId": 999
+      },
+      "selector": {},
+      "expect": {
+        "status": 403,
+        "messageContains": "未分配有效的查询组织"
+      },
+      "split": "dev"
+    },
+    {
+      "id": "acc-015",
+      "name": "管理员非法组织编号",
+      "actor": {
+        "role": "admin",
+        "organizationId": 1
+      },
+      "selector": {
+        "id": 0
+      },
+      "expect": {
+        "status": 400,
+        "messageContains": "组织编号无效"
+      },
+      "split": "heldout"
+    }
+  ]
+}

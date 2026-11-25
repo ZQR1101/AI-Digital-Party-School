@@ -1,0 +1,119 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-11-25",
+  "description": "引用编号校验样本：模型回答中的 [n] 只允许指向实际存在的来源（1..validCount），越界/非法引用必须被剔除并上报 invalidCitations。",
+  "cases": [
+    {
+      "id": "cit-001",
+      "name": "合法引用全部保留",
+      "answer": "党员党龄从预备期满转为正式党员之日算起[1]，预备党员没有党龄[2]。",
+      "validCount": 2,
+      "expectAnswerContains": [
+        "[1]",
+        "[2]"
+      ],
+      "expectInvalid": [],
+      "split": "dev"
+    },
+    {
+      "id": "cit-002",
+      "name": "越界引用被剔除",
+      "answer": "六项纪律中政治纪律最重要[1]，组织纪律次之[7]。",
+      "validCount": 4,
+      "expectAnswerContains": [
+        "[1]"
+      ],
+      "expectAnswerNotContains": [
+        "[7]"
+      ],
+      "expectInvalid": [
+        7
+      ],
+      "split": "heldout"
+    },
+    {
+      "id": "cit-003",
+      "name": "零号与负向编号非法",
+      "answer": "八项规定共八条内容[0]，此处[0]为编造引用[3]。",
+      "validCount": 3,
+      "expectAnswerNotContains": [
+        "[0]"
+      ],
+      "expectInvalid": [
+        0
+      ],
+      "split": "dev"
+    },
+    {
+      "id": "cit-004",
+      "name": "重复非法引用去重上报",
+      "answer": "党费按月交纳[9]，不得拖欠[9]，工资基数按税后计算[99]。",
+      "validCount": 4,
+      "expectAnswerNotContains": [
+        "[9]",
+        "[99]"
+      ],
+      "expectInvalid": [
+        9,
+        99
+      ],
+      "split": "dev"
+    },
+    {
+      "id": "cit-005",
+      "name": "合法与非法引用混合",
+      "answer": "组织生活会每年至少一次[1]，民主生活会第四季度召开[2]，另外还有[5]这条编造来源。",
+      "validCount": 2,
+      "expectAnswerContains": [
+        "[1]",
+        "[2]"
+      ],
+      "expectAnswerNotContains": [
+        "[5]"
+      ],
+      "expectInvalid": [
+        5
+      ],
+      "split": "dev"
+    },
+    {
+      "id": "cit-006",
+      "name": "无引用文本原样保留",
+      "answer": "这段回答没有引用任何来源编号。",
+      "validCount": 3,
+      "expectAnswerContains": [
+        "没有引用任何来源编号"
+      ],
+      "expectInvalid": [],
+      "split": "heldout"
+    },
+    {
+      "id": "cit-007",
+      "name": "引用编号处于边界值",
+      "answer": "边界内的[4]应保留，边界外的[5]应剔除。",
+      "validCount": 4,
+      "expectAnswerContains": [
+        "[4]"
+      ],
+      "expectAnswerNotContains": [
+        "[5]"
+      ],
+      "expectInvalid": [
+        5
+      ],
+      "split": "dev"
+    },
+    {
+      "id": "cit-008",
+      "name": "纯文本方括号非编号不误伤",
+      "answer": "参见附录[附录A]与[2026]年修订版说明[1]。",
+      "validCount": 1,
+      "expectAnswerContains": [
+        "[附录A]",
+        "[2026]年修订版说明[1]"
+      ],
+      "expectInvalid": [],
+      "split": "dev"
+    }
+  ]
+}

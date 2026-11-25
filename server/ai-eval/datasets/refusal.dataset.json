@@ -1,0 +1,67 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-11-25",
+  "description": "无答案拒答样本：知识库明确不含这些事实。预期系统拒答（isGrounded=false 且 sources 为空），不得凭空编造有出处的回答。",
+  "cases": [
+    {
+      "id": "ref-001",
+      "query": "量子力学里薛定谔的猫到底是什么意思",
+      "domain": "无关-自然科学",
+      "split": "dev"
+    },
+    {
+      "id": "ref-002",
+      "query": "红烧肉怎么做才能软烂入味",
+      "domain": "无关-生活",
+      "split": "heldout"
+    },
+    {
+      "id": "ref-003",
+      "query": "Python 怎么读取 Excel 表格数据",
+      "domain": "无关-编程",
+      "split": "heldout"
+    },
+    {
+      "id": "ref-004",
+      "query": "世界杯足球赛每几年举办一届",
+      "domain": "无关-体育",
+      "split": "heldout"
+    },
+    {
+      "id": "ref-005",
+      "query": "党的二十大是哪一年召开的",
+      "domain": "党务-知识库未收录",
+      "split": "dev"
+    },
+    {
+      "id": "ref-006",
+      "query": "三严三实的具体内容是什么",
+      "domain": "党务-知识库未收录",
+      "split": "dev"
+    },
+    {
+      "id": "ref-007",
+      "query": "统一战线工作条例主要讲了什么内容",
+      "domain": "党务-知识库未收录",
+      "split": "heldout"
+    },
+    {
+      "id": "ref-008",
+      "query": "学校这学期运动会什么时候召开",
+      "domain": "校园事务",
+      "split": "heldout"
+    },
+    {
+      "id": "ref-009",
+      "query": "今天食堂中午有什么菜",
+      "domain": "校园事务",
+      "split": "dev"
+    },
+    {
+      "id": "ref-010",
+      "query": "两学一做学习教育具体指哪两学哪一做",
+      "domain": "党务-知识库未收录",
+      "split": "heldout"
+    }
+  ]
+}

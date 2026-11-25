@@ -250,15 +250,22 @@ function toolForMetric(metric) {
 
 function mapParsedQueryToToolCall(parsed) {
   const tool = toolForMetric(parsed.metric);
-  return {
-    tool,
-    parameters: {
-      metric: parsed.metric,
-      organizationName: parsed.organizationName,
-      timeRange: parsed.timeRange?.label || '今年',
-      groupBy: parsed.groupBy
-    }
+  const tr = parsed.timeRange;
+  const parameters = {
+    metric: parsed.metric,
+    organizationName: parsed.organizationName,
+    // 已解析的时间范围直接以对象形式透传。不能把 label 文本（如“最近3个月（含本月）”）
+    // 交给 resolveTimeRange 二次解析：label 中的“本月”会被再切出一个统计周期，
+    // 导致“最近3/6个月”类问题在规则回退路径必然报“请在一次查询中指定一个统计周期”。
+    timeRange: tr?.startDate
+      ? { label: tr.label, startDate: tr.startDate, endDate: tr.endDate }
+      : (tr?.label || '今年')
   };
+  // 组织统计工具 schema 为 strictObject 且不含 groupBy，多余键会被整体拒绝
+  if (tool !== 'query_organization_statistics') {
+    parameters.groupBy = parsed.groupBy;
+  }
+  return { tool, parameters };
 }
 
 module.exports = {

@@ -1,0 +1,211 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-11-25",
+  "description": "工具调用结构校验样本：合法调用被接受并按预期归一，非法调用必须被拒绝。覆盖 validateToolCall / extractToolCall / normalizeToolParameters。",
+  "fixedNow": "2026-06-15T02:00:00Z",
+  "cases": [
+    {
+      "id": "tool-001",
+      "name": "学习统计合法调用",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "learning_completion_rate",
+          "organizationName": "学生第一党支部",
+          "timeRange": "今年",
+          "groupBy": null
+        }
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "tool": "query_learning_statistics",
+        "metric": "learning_completion_rate",
+        "organizationName": "学生第一党支部",
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "tool-002",
+      "name": "全校范围归一为 null",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "total_study_hours",
+          "organizationName": "全校党组织"
+        }
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "metric": "total_study_hours",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "dev"
+    },
+    {
+      "id": "tool-003",
+      "name": "对象型时间范围生成 label",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "total_study_hours",
+          "timeRange": {
+            "startDate": "2026-01-01",
+            "endDate": "2026-03-31"
+          }
+        }
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "metric": "total_study_hours",
+        "organizationName": null,
+        "timeRangeLabel": "2026-01-01至2026-03-31",
+        "groupBy": null
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "tool-004",
+      "name": "缺省参数取默认值",
+      "input": {
+        "tool": "query_exam_statistics",
+        "parameters": {
+          "metric": "average_exam_score"
+        }
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "tool": "query_exam_statistics",
+        "metric": "average_exam_score",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "tool-005",
+      "name": "OpenAI tool_calls 结构解析",
+      "input": {
+        "message": {
+          "tool_calls": [
+            {
+              "function": {
+                "name": "query_exam_statistics",
+                "arguments": "{\"metric\":\"exam_pass_rate\",\"groupBy\":\"month\"}"
+              }
+            }
+          ]
+        }
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "tool": "query_exam_statistics",
+        "metric": "exam_pass_rate",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": "month"
+      },
+      "split": "dev"
+    },
+    {
+      "id": "tool-006",
+      "name": "JSON 代码块内容解析",
+      "input": {
+        "content": "```json\n{\"tool\":\"query_organization_statistics\",\"parameters\":{\"metric\":\"member_distribution\"}}\n```"
+      },
+      "expect": "accept",
+      "expectNormalized": {
+        "tool": "query_organization_statistics",
+        "metric": "member_distribution",
+        "organizationName": null,
+        "groupBy": null
+      },
+      "split": "heldout"
+    },
+    {
+      "id": "tool-007",
+      "name": "未知 metric 枚举被拒绝",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "study_hours_total"
+        }
+      },
+      "expect": "reject",
+      "split": "dev"
+    },
+    {
+      "id": "tool-008",
+      "name": "未注册工具被拒绝",
+      "input": {
+        "tool": "query_salary_statistics",
+        "parameters": {
+          "metric": "learning_completion_rate"
+        }
+      },
+      "expect": "reject",
+      "split": "dev"
+    },
+    {
+      "id": "tool-009",
+      "name": "多余未知字段被拒绝（strict）",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "learning_completion_rate",
+          "rawSql": "SELECT 1"
+        }
+      },
+      "expect": "reject",
+      "note": "严禁任意 SQL 注入通道",
+      "split": "dev"
+    },
+    {
+      "id": "tool-010",
+      "name": "缺少必填 metric 被拒绝",
+      "input": {
+        "tool": "query_exam_statistics",
+        "parameters": {
+          "organizationName": "机关党委"
+        }
+      },
+      "expect": "reject",
+      "split": "dev"
+    },
+    {
+      "id": "tool-011",
+      "name": "arguments 非法 JSON 被拒绝",
+      "input": {
+        "message": {
+          "tool_calls": [
+            {
+              "function": {
+                "name": "query_exam_statistics",
+                "arguments": "{metric: exam_pass_rate"
+              }
+            }
+          ]
+        }
+      },
+      "expect": "reject",
+      "split": "dev"
+    },
+    {
+      "id": "tool-012",
+      "name": "非法月份（13月）被拒绝",
+      "input": {
+        "tool": "query_learning_statistics",
+        "parameters": {
+          "metric": "total_study_hours",
+          "timeRange": "2026年13月"
+        }
+      },
+      "expect": "reject",
+      "split": "dev"
+    }
+  ]
+}

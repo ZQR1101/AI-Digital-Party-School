@@ -1,0 +1,308 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-11-25",
+  "description": "自然语言统计查询样本：离线用规则解析器（parseOrganizationQuery→工具映射→参数归一），在线用真实 LLM 意图识别（identifyQueryIntent）。统一使用固定时钟 2026-06-15（北京时间）保证期望值确定。",
+  "fixedNow": "2026-06-15T02:00:00Z",
+  "cases": [
+    {
+      "id": "nlq-001",
+      "message": "学生第一党支部今年的学习完成率是多少",
+      "expect": {
+        "metric": "learning_completion_rate",
+        "organizationName": "学生第一党支部",
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-002",
+      "message": "全校去年考试平均分怎么样",
+      "expect": {
+        "metric": "average_exam_score",
+        "organizationName": null,
+        "timeRangeLabel": "2025年",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-003",
+      "message": "机关党委上个月考试及格率",
+      "expect": {
+        "metric": "exam_pass_rate",
+        "organizationName": "机关党委",
+        "timeRangeLabel": "2026年5月",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-004",
+      "message": "软件工程系党总支最近3个月学习时长趋势",
+      "expect": {
+        "metric": "total_study_hours",
+        "organizationName": "软件工程系党总支",
+        "timeRangeLabel": "最近3个月（含本月）",
+        "groupBy": "month"
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-005",
+      "message": "信息工程学院党委今年活跃党员人数",
+      "expect": {
+        "metric": "active_member_count",
+        "organizationName": "信息工程学院党委",
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-006",
+      "message": "看看2025年全校学习完成率月度走势",
+      "expect": {
+        "metric": "learning_completion_rate",
+        "organizationName": null,
+        "timeRangeLabel": "2025年",
+        "groupBy": "month"
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-007",
+      "message": "「学生第一党支部」2026年3月的考试平均分",
+      "expect": {
+        "metric": "average_exam_score",
+        "organizationName": "学生第一党支部",
+        "timeRangeLabel": "2026年3月",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-008",
+      "message": "全校学习完成率哪几个月比较低",
+      "expect": {
+        "metric": "learning_completion_rate",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": "month"
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-009",
+      "message": "教师党支部本月的学习时长",
+      "expect": {
+        "metric": "total_study_hours",
+        "organizationName": "教师党支部",
+        "timeRangeLabel": "2026年6月",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-010",
+      "message": "行政第一党支部去年及格率是多少",
+      "expect": {
+        "metric": "exam_pass_rate",
+        "organizationName": "行政第一党支部",
+        "timeRangeLabel": "2025年",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-011",
+      "message": "第一党小组最近6个月活跃党员趋势",
+      "expect": {
+        "metric": "active_member_count",
+        "organizationName": "第一党小组",
+        "timeRangeLabel": "最近6个月（含本月）",
+        "groupBy": "month"
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-012",
+      "message": "全校党员人数分布",
+      "expect": {
+        "metric": "member_distribution",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-013",
+      "message": "全校下级组织数量",
+      "expect": {
+        "metric": "sub_organization_count",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-014",
+      "message": "全校组织概况",
+      "expect": {
+        "metric": "organization_overview",
+        "organizationName": null,
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-015",
+      "message": "2024年全校下级组织有多少个",
+      "expect": {
+        "metric": "sub_organization_count",
+        "organizationName": null,
+        "timeRangeLabel": "2024年",
+        "groupBy": null
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-016",
+      "message": "帮我看一下全校考试平均分最近3个月的月度趋势",
+      "expect": {
+        "metric": "average_exam_score",
+        "organizationName": null,
+        "timeRangeLabel": "最近3个月（含本月）",
+        "groupBy": "month"
+      },
+      "split": "heldout",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-017",
+      "message": "去年全校学习时长是多少",
+      "expect": {
+        "metric": "total_study_hours",
+        "organizationName": null,
+        "timeRangeLabel": "2025年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-018",
+      "message": "统计一下机关党委今年的完成率数据",
+      "expect": {
+        "metric": "learning_completion_rate",
+        "organizationName": "机关党委",
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-019",
+      "message": "全校这个月活跃党员人数",
+      "expect": {
+        "metric": "active_member_count",
+        "organizationName": null,
+        "timeRangeLabel": "2026年6月",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-020",
+      "message": "请问学生第一党支部去年平均成绩怎么样",
+      "expect": {
+        "metric": "average_exam_score",
+        "organizationName": "学生第一党支部",
+        "timeRangeLabel": "2025年",
+        "groupBy": null
+      },
+      "split": "dev",
+      "category": "参数解析"
+    },
+    {
+      "id": "nlq-021",
+      "message": "查询全校最近6个月学习时长趋势",
+      "expect": {
+        "metric": "total_study_hours",
+        "organizationName": null,
+        "timeRangeLabel": "最近6个月（含本月）",
+        "groupBy": "month"
+      },
+      "category": "月度趋势",
+      "split": "dev"
+    },
+    {
+      "id": "nlq-022",
+      "message": "机关党委本月考试及格率是多少",
+      "expect": {
+        "metric": "exam_pass_rate",
+        "organizationName": "机关党委",
+        "timeRangeLabel": "2026年6月",
+        "groupBy": null
+      },
+      "category": "组织识别",
+      "split": "dev"
+    },
+    {
+      "id": "nlq-023",
+      "message": "学生第一党支部上个月学习完成率",
+      "expect": {
+        "metric": "learning_completion_rate",
+        "organizationName": "学生第一党支部",
+        "timeRangeLabel": "2026年5月",
+        "groupBy": null
+      },
+      "category": "时间范围",
+      "split": "dev"
+    },
+    {
+      "id": "nlq-024",
+      "message": "请问学生第二党支部2025年的活跃党员人数",
+      "expect": {
+        "metric": "active_member_count",
+        "organizationName": "学生第二党支部",
+        "timeRangeLabel": "2025年",
+        "groupBy": null
+      },
+      "category": "指标选择",
+      "split": "dev"
+    },
+    {
+      "id": "nlq-025",
+      "message": "软件工程系党总支党员人数分布",
+      "expect": {
+        "metric": "member_distribution",
+        "organizationName": "软件工程系党总支",
+        "timeRangeLabel": "2026年",
+        "groupBy": null
+      },
+      "category": "组织识别",
+      "split": "heldout"
+    }
+  ]
+}

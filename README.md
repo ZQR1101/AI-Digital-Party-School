@@ -107,7 +107,28 @@ node rag-evaluate.js
 Pop-Location
 ```
 
-`rag-diagnose.js` 显示检索后端，加 `--live` 可验证已配置的外部服务。`rag-evaluate.js` 对比 BM25、向量召回和混合检索重排的 Hit@K、Recall@K 与 MRR，结果写入 `server/rag-eval-report.json`。
+`rag-diagnose.js` 显示检索后端，加 `--live` 可验证已配置的外部服务。`rag-evaluate.js` 是历史兼容脚本：19 道题、50 个分块、仅文档级 Recall@3；命中正确文档不等于命中正确分块或答案证据，结果写入 `server/rag-eval-report.json`。
+
+系统化质量基线在 `server/ai-eval/`：122 条样本（40 检索 / 12 问答 / 10 拒答 / 8 引用 / 25 问数 / 12 工具参数 / 15 权限），按 ID 哈希划分 dev 与 heldout，覆盖文档级与分块级证据标注、四种检索方案、问答事实与引用支持度、工具参数和权限隔离。
+
+```powershell
+Push-Location server
+npm run eval:offline                       # 离线确定性评测 + CI 门禁（无外部 API）
+node ai-eval/run-eval.js --mode=offline    # 只生成报告，不执行门禁
+Pop-Location
+```
+
+报告写入 `server/ai-eval/reports/latest.json` 与 `latest.md`。在线评测必须显式开启，并配置全部真实模型 Key；未配置时报告标记 N/A，不会把本地 fallback 冒充在线结果：
+
+```powershell
+Push-Location server
+$env:AI_EVAL_ONLINE = '1'
+$env:AI_EVAL_ONLINE_MAX_REQUESTS = '60'   # 请求数上限（另可设 AI_EVAL_ONLINE_MAX_COST_CNY）
+npm run eval:online
+Pop-Location
+```
+
+数据库真值一致性校验仅在隔离库执行：需设置 `AI_EVAL_DB_TRUTH=1` 且 `DB_NAME` 包含 `eval`，否则该项标记 N/A。
 
 ## 测试
 
