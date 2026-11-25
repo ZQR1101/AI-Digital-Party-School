@@ -182,8 +182,10 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
       - run: npm ci
-      - name: 初始化隔离评测库
+      - name: 初始化种子库
         run: node init-db.js
+      - name: 复制到隔离评测库 ai_eval_ci
+        run: node ai-eval/tools/clone-eval-db.js
       - name: 运行离线评测门禁（含数据库真值校验）
         run: npm run eval:offline
       - name: 上传评测报告
