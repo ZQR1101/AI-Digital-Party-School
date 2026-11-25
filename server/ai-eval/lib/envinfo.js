@@ -33,13 +33,16 @@ function onlineLimits() {
     return Number.isSafeInteger(value) && value > 0 ? value : fallback;
   };
   return {
-    maxRequests: integer('AI_EVAL_ONLINE_MAX_REQUESTS', 60),
+    // 覆盖 122 样本的 Embedding 批次 + 每样本 Rerank + NLQ 意图调用（含重试）
+    maxRequests: integer('AI_EVAL_ONLINE_MAX_REQUESTS', 400),
     maxCostCny: Number(process.env.AI_EVAL_ONLINE_MAX_COST_CNY) > 0
       ? Number(process.env.AI_EVAL_ONLINE_MAX_COST_CNY) : 5,
     pricePerMillionTokens: Number(process.env.AI_EVAL_ONLINE_PRICE_PER_MTOK) > 0
       ? Number(process.env.AI_EVAL_ONLINE_PRICE_PER_MTOK) : 2,
     timeoutMs: integer('AI_TIMEOUT_MS', 12000),
-    transportMaxAttempts: 2 // 由 src/ai/modelTransport.js 固化，评测不修改业务重试策略
+    transportMaxAttempts: 2, // 由 src/ai/modelTransport.js 固化，评测不修改业务重试策略
+    embeddingCostPerRequest: Number(process.env.AI_EVAL_ONLINE_EMBED_COST_PER_REQ) || 0,
+    rerankCostPerRequest: Number(process.env.AI_EVAL_ONLINE_RERANK_COST_PER_REQ) || 0
   };
 }
 

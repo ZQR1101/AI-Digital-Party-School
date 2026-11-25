@@ -138,9 +138,11 @@ function extractOrganizationName(message) {
     if (candidate && !ALL_ORGANIZATIONS.test(candidate)) return candidate;
   }
 
+  // 统计描述词既可能出现在组织名之前，也可能出现在其后；在识别兜底组织名时统一剥离。
+  // 例：「全校学习完成率月度走势」→ 全校；「全校下级组织数量」→ 全校。
   const scope = strippedText
     .replace(/^(?:\s|请问|请|帮我|查一下|看一下|怎么查|查询|统计|看看|分析|查看)+/, '')
-    .replace(/(?:\s|的|是多少|多少|怎么样|如何|情况|数据|月度趋势|趋势|每月|月度|按月|是|呢|吗)+$/, '')
+    .replace(/(?:\s|的|是多少|有多少个|有多少|多少个|几个|多少|怎么样|如何|情况|数据|月度趋势|月度走势|走势|趋势|每月|月度|按月|数量|是|呢|吗)+$/, '')
     .trim();
   return !scope || ALL_ORGANIZATIONS.test(scope) ? null : scope;
 }

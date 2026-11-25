@@ -5,6 +5,7 @@ const { VectorStore, EmbeddingClient } = require('../rag/vectorStore');
 const { reciprocalRankFusion } = require('../rag/fusion');
 const Reranker = require('../rag/reranker');
 const { AIClient } = require('./aiClient');
+const { hasTopicEvidence } = require('../rag/evidenceGate');
 const LearningProfileService = require('./learningProfileService');
 
 const KNOWLEDGE_DIR = path.resolve(__dirname, '../../knowledge');
@@ -87,6 +88,10 @@ class RagService {
     const invalid = [];
     const cleaned = String(answer || '').replace(/\[(\d+)\]/g, (match, digits) => {
       const n = Number(digits);
+      // 四位数字方括号通常是正文年份（如 [2026] 年修订版），不是模型引用编号；
+      // 两位以内（以及确实落在有效来源范围内的三位数）才按引用编号处理。
+      const looksLikeCitation = digits.length <= 2 || (digits.length === 3 && n <= validCount);
+      if (!looksLikeCitation) return match;
       if (n >= 1 && n <= validCount) return match;
       invalid.push(n);
       return '';
@@ -116,8 +121,13 @@ class RagService {
 
     const results = await this.hybridSearch(question, { topK });
 
-    // 防模型幻觉门禁：如果知识库未检索到足够相关内容，明确告知用户，不编造答案
-    const isRelevant = results.length > 0 && results[0].relevanceScore >= currentRelevanceThreshold();
+    // 防模型幻觉门禁：保留原相关性阈值，同时要求检索分块中出现问题的核心主题短语。
+    // 避免「党的二十大」「三严三实」等知识库未收录问题仅靠通用字词重叠被误判为有依据。
+    const evidence = hasTopicEvidence(question, results.map((r) => r.chunk), { topK: 3 });
+    trace.evidenceGate = evidence;
+    const isRelevant = results.length > 0
+      && results[0].relevanceScore >= currentRelevanceThreshold()
+      && evidence.pass;
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       return {
@@ -199,8 +209,14 @@ class RagService {
 
     const results = await this.hybridSearch(searchQuery, { topK: 4 });
 
-    // 相关性拒答门禁：与知识问答一致，检索结果不达标时不得生成带来源的"专业建议"
-    const isRelevant = results.length > 0 && results[0].relevanceScore >= currentRelevanceThreshold();
+    // 相关性拒答门禁：与知识问答一致，保留原阈值并增加主题证据校验。
+    // 个性化问答实际用 searchQuery（问题 + 学习画像薄弱点）检索，证据校验必须使用同一查询，
+    // 否则「我最近哪些知识点掌握得不好」这类依赖画像补全的问题会被误判为无来源。
+    const evidence = hasTopicEvidence(searchQuery, results.map((r) => r.chunk), { topK: 3 });
+    trace.evidenceGate = evidence;
+    const isRelevant = results.length > 0
+      && results[0].relevanceScore >= currentRelevanceThreshold()
+      && evidence.pass;
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       const weakHint = weakCategories.length

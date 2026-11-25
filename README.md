@@ -118,17 +118,29 @@ node ai-eval/run-eval.js --mode=offline    # 只生成报告，不执行门禁
 Pop-Location
 ```
 
-报告写入 `server/ai-eval/reports/latest.json` 与 `latest.md`。在线评测必须显式开启，并配置全部真实模型 Key；未配置时报告标记 N/A，不会把本地 fallback 冒充在线结果：
+报告写入 `server/ai-eval/reports/latest.json` 与 `latest.md`。V2 优化的同版本基线、策略分析与前后对照报告分别为 `baseline-v1.1.0.json/.md`、`refusal-strategy-analysis.json`、`comparison-v1-v2.json/.md`；可复现命令：
+
+```powershell
+Push-Location server
+npm run eval:refusal-analysis   # 拒答策略 dev 对比 + heldout 最终复核
+npm run eval:compare            # 生成 V1→V2 同版本对照报告
+Pop-Location
+```
+
+在线评测必须显式开启，并配置全部真实模型 Key；未配置时报告标记 N/A，不会把本地 fallback 冒充在线结果。预算钩子覆盖 LLM（含重试）、Embedding 批次与 Reranker 请求，任一超限立即停止：
 
 ```powershell
 Push-Location server
 $env:AI_EVAL_ONLINE = '1'
-$env:AI_EVAL_ONLINE_MAX_REQUESTS = '60'   # 请求数上限（另可设 AI_EVAL_ONLINE_MAX_COST_CNY）
+$env:AI_EVAL_ONLINE_MAX_REQUESTS = '400'  # 请求数上限（含重试）
+$env:AI_EVAL_ONLINE_MAX_COST_CNY = '5'    # 成本上限（元）
 npm run eval:online
 Pop-Location
 ```
 
-数据库真值一致性校验仅在隔离库执行：需设置 `AI_EVAL_DB_TRUTH=1` 且 `DB_NAME` 包含 `eval`，否则该项标记 N/A。
+V2 离线基线结果：122 样本 120 通过；拒答率 60%→100%、无依据回答率 40%→0、正常问答误拒率 0；问数精确匹配率 88%→100%。策略在 dev 选定、heldout 仅最终复核，未删除失败样本或修改标准答案。
+
+数据库真值一致性校验仅在隔离库执行：需设置 `AI_EVAL_DB_TRUTH=1` 且 `DB_NAME` 包含 `eval`，否则该项标记 N/A。CI 使用独立 `ai_eval_ci` 库并复制种子数据，真实执行一致性检查；存在失败时不会标记 passed。
 
 ## 测试
 

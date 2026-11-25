@@ -1,0 +1,702 @@
+{
+  "reportType": "AI 质量优化 V1→V2 同版本对照",
+  "generatedAt": "2026-11-25T08:29:04.863Z",
+  "datasetVersion": "1.1.0",
+  "baseline": {
+    "generatedAt": "2026-11-25T07:35:10.746Z",
+    "gitSha": "336da63cb667f6bbc305e7a6434370177782594e",
+    "knowledgeBaseSha256": "bc881d8a19ec77fb55aa1911f74177edfb1a04f32cffd580ea54f0be850ddd68",
+    "mode": "offline",
+    "status": "completed",
+    "totals": {
+      "samples": 122,
+      "failed": 10,
+      "passed": 112,
+      "passRate": 0.918
+    },
+    "gateBasis": "N/A"
+  },
+  "optimized": {
+    "generatedAt": "2026-11-25T08:29:04.126Z",
+    "gitSha": "74cfa907984143b8b1216ebdccdb8f821ba5110a",
+    "knowledgeBaseSha256": "bc881d8a19ec77fb55aa1911f74177edfb1a04f32cffd580ea54f0be850ddd68",
+    "mode": "offline",
+    "status": "completed",
+    "totals": {
+      "samples": 122,
+      "failed": 2,
+      "passed": 120,
+      "passRate": 0.9836
+    },
+    "gateBasis": "dev",
+    "gatePassed": true
+  },
+  "samplesPreserved": {
+    "baselineSamples": 122,
+    "optimizedSamples": 122,
+    "baselineFailures": 10,
+    "optimizedFailures": 2,
+    "note": "未删除困难样本、未修改标准答案；失败案例仅随真实评测结果减少。"
+  },
+  "refusal": {
+    "overall": {
+      "baseline": {
+        "samples": 10,
+        "refusalRate": 0.6,
+        "unwarrantedAnswerRate": 0.4,
+        "normalOverRefusalRate": 0,
+        "normalSamples": 12
+      },
+      "optimized": {
+        "samples": 10,
+        "refusalRate": 1,
+        "unwarrantedAnswerRate": 0,
+        "normalOverRefusalRate": 0,
+        "normalSamples": 12
+      }
+    },
+    "bySplit": {
+      "dev": {
+        "baseline": 0.5,
+        "optimized": 1,
+        "samples": 4
+      },
+      "heldout": {
+        "baseline": 0.6667,
+        "optimized": 1,
+        "samples": 6,
+        "note": "heldout 仅最终独立复核，不用于策略选择或阈值调整。"
+      }
+    },
+    "strategySelection": {
+      "selected": "evidenceMatch（保留原阈值 0.24 + 主题证据匹配；未提高全局阈值）",
+      "thresholds": {
+        "base": 0.24,
+        "fixed": 0.27,
+        "gap": 0.02
+      },
+      "dev": {
+        "baseline": {
+          "samples": 4,
+          "refused": 2,
+          "refusalRate": 0.5,
+          "normalSamples": 10,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "fixedThreshold": {
+          "samples": 4,
+          "refused": 4,
+          "refusalRate": 1,
+          "normalSamples": 10,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "scoreGap": {
+          "samples": 4,
+          "refused": 3,
+          "refusalRate": 0.75,
+          "normalSamples": 10,
+          "overRefused": 2,
+          "overRefusalRate": 0.2
+        },
+        "evidenceMatch": {
+          "samples": 4,
+          "refused": 4,
+          "refusalRate": 1,
+          "normalSamples": 10,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "combined": {
+          "samples": 4,
+          "refused": 4,
+          "refusalRate": 1,
+          "normalSamples": 10,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        }
+      },
+      "heldoutFinalCheckOnly": {
+        "baseline": {
+          "samples": 6,
+          "refused": 4,
+          "refusalRate": 0.6667,
+          "normalSamples": 2,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "fixedThreshold": {
+          "samples": 6,
+          "refused": 4,
+          "refusalRate": 0.6667,
+          "normalSamples": 2,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "scoreGap": {
+          "samples": 6,
+          "refused": 2,
+          "refusalRate": 0.3333,
+          "normalSamples": 2,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "evidenceMatch": {
+          "samples": 6,
+          "refused": 6,
+          "refusalRate": 1,
+          "normalSamples": 2,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        },
+        "combined": {
+          "samples": 6,
+          "refused": 6,
+          "refusalRate": 1,
+          "normalSamples": 2,
+          "overRefused": 0,
+          "overRefusalRate": 0
+        }
+      },
+      "note": "策略在 dev 上选定；固定阈值方案虽在 dev 达到 1.0，但需上调全局阈值且 heldout 仅 0.6667，故未采用。最终采用原阈值 + 主题证据匹配。"
+    }
+  },
+  "qa": {
+    "overall": {
+      "baselineSamples": 12,
+      "baseline": {
+        "keywordCoverageRate": 0.9167,
+        "factPointCoverageRate": 0.9167,
+        "humanVerifiedFactAccuracy": "N/A",
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": "N/A",
+        "fallbackReliabilityRate": 1,
+        "llmJudgeScore": "N/A",
+        "samples": 12
+      },
+      "optimizedSamples": 12,
+      "optimized": {
+        "keywordCoverageRate": 0.9167,
+        "factPointCoverageRate": 0.9167,
+        "humanVerifiedFactAccuracy": "N/A",
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "fallbackReliabilityRate": 1,
+        "llmJudgeScore": "N/A",
+        "samples": 12
+      },
+      "note": "V1 的 factAccuracyRate/avgFactCoverage 实为关键词要点覆盖的启发式统计，非人工验证事实准确率；V2 已拆分命名并新增 overRefusalRate。"
+    },
+    "bySplit": [
+      {
+        "split": "dev",
+        "baseline": {
+          "samples": 10,
+          "factAccuracyRate": 0.9,
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        },
+        "optimized": {
+          "samples": 10,
+          "keywordCoverageRate": 0.9,
+          "factPointCoverageRate": 0.9,
+          "humanVerifiedFactAccuracy": "N/A",
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "overRefusalRate": 0,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        }
+      },
+      {
+        "split": "heldout",
+        "baseline": {
+          "samples": 2,
+          "factAccuracyRate": 1,
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        },
+        "optimized": {
+          "samples": 2,
+          "keywordCoverageRate": 1,
+          "factPointCoverageRate": 1,
+          "humanVerifiedFactAccuracy": "N/A",
+          "citationNumberValidRate": 1,
+          "citationSupportRate": 1,
+          "overRefusalRate": 0,
+          "fallbackReliabilityRate": 1,
+          "llmJudgeScore": "N/A"
+        }
+      }
+    ]
+  },
+  "retrieval": [
+    {
+      "config": "bm25",
+      "granularity": "document",
+      "split": "all",
+      "samples": 40,
+      "baseline": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9625,
+        "hitAt5": 1,
+        "avgMs": 0.1253,
+        "p95Ms": 0.2
+      },
+      "optimized": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9625,
+        "hitAt5": 1,
+        "avgMs": 0.1303,
+        "p95Ms": 0.22
+      }
+    },
+    {
+      "config": "bm25",
+      "granularity": "document",
+      "split": "dev",
+      "samples": 28,
+      "baseline": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9643,
+        "hitAt5": 1,
+        "avgMs": 0.1257,
+        "p95Ms": 0.49
+      },
+      "optimized": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9643,
+        "hitAt5": 1,
+        "avgMs": 0.1279,
+        "p95Ms": 0.17
+      }
+    },
+    {
+      "config": "bm25",
+      "granularity": "document",
+      "split": "heldout",
+      "samples": 12,
+      "baseline": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9583,
+        "hitAt5": 1,
+        "avgMs": 0.1242,
+        "p95Ms": 0.2
+      },
+      "optimized": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9583,
+        "hitAt5": 1,
+        "avgMs": 0.1358,
+        "p95Ms": 0.23
+      }
+    },
+    {
+      "config": "bm25",
+      "granularity": "chunk",
+      "split": "all",
+      "samples": 40,
+      "baseline": {
+        "recallAt5": 0.9875,
+        "mrrAt5": 0.8917,
+        "hitAt5": 1,
+        "avgMs": 0.1253,
+        "p95Ms": 0.2
+      },
+      "optimized": {
+        "recallAt5": 0.9875,
+        "mrrAt5": 0.8917,
+        "hitAt5": 1,
+        "avgMs": 0.1303,
+        "p95Ms": 0.22
+      }
+    },
+    {
+      "config": "bm25",
+      "granularity": "chunk",
+      "split": "dev",
+      "samples": 28,
+      "baseline": {
+        "recallAt5": 0.9821,
+        "mrrAt5": 0.8869,
+        "hitAt5": 1,
+        "avgMs": 0.1257,
+        "p95Ms": 0.49
+      },
+      "optimized": {
+        "recallAt5": 0.9821,
+        "mrrAt5": 0.8869,
+        "hitAt5": 1,
+        "avgMs": 0.1279,
+        "p95Ms": 0.17
+      }
+    },
+    {
+      "config": "bm25",
+      "granularity": "chunk",
+      "split": "heldout",
+      "samples": 12,
+      "baseline": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9028,
+        "hitAt5": 1,
+        "avgMs": 0.1242,
+        "p95Ms": 0.2
+      },
+      "optimized": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9028,
+        "hitAt5": 1,
+        "avgMs": 0.1358,
+        "p95Ms": 0.23
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "document",
+      "split": "all",
+      "samples": 40,
+      "baseline": {
+        "recallAt5": 0.975,
+        "mrrAt5": 0.9167,
+        "hitAt5": 0.975,
+        "avgMs": 0.4575,
+        "p95Ms": 0.58
+      },
+      "optimized": {
+        "recallAt5": 0.975,
+        "mrrAt5": 0.9167,
+        "hitAt5": 0.975,
+        "avgMs": 0.504,
+        "p95Ms": 0.59
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "document",
+      "split": "dev",
+      "samples": 28,
+      "baseline": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9821,
+        "hitAt5": 1,
+        "avgMs": 0.4707,
+        "p95Ms": 0.88
+      },
+      "optimized": {
+        "recallAt5": 1,
+        "mrrAt5": 0.9821,
+        "hitAt5": 1,
+        "avgMs": 0.5246,
+        "p95Ms": 1.5
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "document",
+      "split": "heldout",
+      "samples": 12,
+      "baseline": {
+        "recallAt5": 0.9167,
+        "mrrAt5": 0.7639,
+        "hitAt5": 0.9167,
+        "avgMs": 0.4267,
+        "p95Ms": 0.58
+      },
+      "optimized": {
+        "recallAt5": 0.9167,
+        "mrrAt5": 0.7639,
+        "hitAt5": 0.9167,
+        "avgMs": 0.4558,
+        "p95Ms": 0.59
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "chunk",
+      "split": "all",
+      "samples": 40,
+      "baseline": {
+        "recallAt5": 0.9625,
+        "mrrAt5": 0.805,
+        "hitAt5": 0.975,
+        "avgMs": 0.4575,
+        "p95Ms": 0.58
+      },
+      "optimized": {
+        "recallAt5": 0.9625,
+        "mrrAt5": 0.805,
+        "hitAt5": 0.975,
+        "avgMs": 0.504,
+        "p95Ms": 0.59
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "chunk",
+      "split": "dev",
+      "samples": 28,
+      "baseline": {
+        "recallAt5": 0.9821,
+        "mrrAt5": 0.869,
+        "hitAt5": 1,
+        "avgMs": 0.4707,
+        "p95Ms": 0.88
+      },
+      "optimized": {
+        "recallAt5": 0.9821,
+        "mrrAt5": 0.869,
+        "hitAt5": 1,
+        "avgMs": 0.5246,
+        "p95Ms": 1.5
+      }
+    },
+    {
+      "config": "hybrid_rerank",
+      "granularity": "chunk",
+      "split": "heldout",
+      "samples": 12,
+      "baseline": {
+        "recallAt5": 0.9167,
+        "mrrAt5": 0.6556,
+        "hitAt5": 0.9167,
+        "avgMs": 0.4267,
+        "p95Ms": 0.58
+      },
+      "optimized": {
+        "recallAt5": 0.9167,
+        "mrrAt5": 0.6556,
+        "hitAt5": 0.9167,
+        "avgMs": 0.4558,
+        "p95Ms": 0.59
+      }
+    }
+  ],
+  "nlq": [
+    {
+      "metric": "toolSelectionAccuracy",
+      "split": "all",
+      "samples": 25,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "toolSelectionAccuracy",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "toolSelectionAccuracy",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "metricAccuracy",
+      "split": "all",
+      "samples": 25,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "metricAccuracy",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "metricAccuracy",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "organizationAccuracy",
+      "split": "all",
+      "samples": 25,
+      "baseline": 0.88,
+      "optimized": 1
+    },
+    {
+      "metric": "organizationAccuracy",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "organizationAccuracy",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 0.6667,
+      "optimized": 1
+    },
+    {
+      "metric": "timeRangeAccuracy",
+      "split": "all",
+      "samples": 25,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "timeRangeAccuracy",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "timeRangeAccuracy",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "groupByAccuracy",
+      "split": "all",
+      "samples": 25,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "groupByAccuracy",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "groupByAccuracy",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "exactMatchRate",
+      "split": "all",
+      "samples": 25,
+      "baseline": 0.88,
+      "optimized": 1
+    },
+    {
+      "metric": "exactMatchRate",
+      "split": "dev",
+      "samples": 16,
+      "baseline": 1,
+      "optimized": 1
+    },
+    {
+      "metric": "exactMatchRate",
+      "split": "heldout",
+      "samples": 9,
+      "baseline": 0.6667,
+      "optimized": 1
+    }
+  ],
+  "dbTruth": {
+    "baseline": {
+      "status": "not_run",
+      "summary": {
+        "samples": "N/A"
+      }
+    },
+    "optimized": {
+      "status": "not_run",
+      "summary": {
+        "samples": "N/A",
+        "failedSamples": "N/A"
+      }
+    },
+    "note": "本地无隔离 MySQL，标记 N/A；CI 隔离库 ai_eval_ci 的真实校验结果见对应 CI 评测产物，不以本地 N/A 冒充通过。"
+  },
+  "failures": {
+    "baseline": {
+      "count": 10,
+      "categories": {
+        "retrieval/rerank_failure": 1,
+        "qa/generation_failure": 1,
+        "refusal/unwarranted_answer": 4,
+        "citation/citation_error": 1,
+        "nlq/tool_error": 3
+      }
+    },
+    "optimized": {
+      "count": 2,
+      "categories": {
+        "retrieval/rerank_failure": 1,
+        "qa/generation_failure": 1
+      }
+    },
+    "retainedCases": [
+      {
+        "dataset": "retrieval",
+        "id": "ret-019",
+        "category": "rerank_failure",
+        "input": "怎样才算一名活跃的党员 统计上怎么定义",
+        "expected": {
+          "document": [
+            "指标统计口径.md"
+          ],
+          "evidence": [
+            "活跃党员人数为统计周期内至少产生一条有效学习时长记录的去重党员人数。"
+          ]
+        },
+        "actual": {
+          "document": [
+            "党员组织关系与党籍管理.md",
+            "党费收缴使用与管理规定.md",
+            "党章核心要义与党员权利义务.md",
+            "党费收缴使用与管理规定.md",
+            "党组织生活制度规范.md"
+          ],
+          "chunkMatched": 0
+        },
+        "detail": "相关来源已进入 RRF 融合候选（topN），但被重排挤出 Top-5",
+        "sources": "1.党员组织关系与党籍管理.md 2.党费收缴使用与管理规定.md 3.党章核心要义与党员权利义务.md 4.党费收缴使用与管理规定.md 5.党组织生活制度规范.md"
+      },
+      {
+        "dataset": "qa",
+        "id": "qa-010",
+        "category": "generation_failure",
+        "input": "什么情况下需要转移党员组织关系？",
+        "expected": {
+          "keywords": [
+            "六个月",
+            "转移组织关系"
+          ]
+        },
+        "actual": {
+          "keywordCoverageRate": 0,
+          "missingKeywords": [
+            "六个月",
+            "转移组织关系"
+          ],
+          "fallback": true
+        },
+        "detail": "确定性兜底摘录未覆盖标准答案要点",
+        "sources": "1.党员组织关系与党籍管理.md 2.党员组织关系与党籍管理.md 3.党员组织关系与党籍管理.md 4.党员组织关系与党籍管理.md"
+      }
+    ]
+  },
+  "conclusions": [
+    "拒答率由 60% 提升至 100%，无依据回答率由 40% 降至 0；正常问答误拒率维持 0。",
+    "策略在 dev 上比较固定阈值、分数差距、主题证据匹配后选定；未全局提高相关性阈值。",
+    "组织名边界与引用编号清洗修复后，问数精确匹配率 88%→100%，引用编号校验维持 100%。",
+    "检索层 BM25 与 Hybrid+Rerank 文档级/分块级 Recall@5、MRR@5 无实质回退。",
+    "剩余 2 条失败样本全部保留：1 条重排困难样本、1 条确定性兜底要点覆盖不足；未改标注。"
+  ]
+}

@@ -12,7 +12,9 @@
     "db:upgrade:assessments": "node upgrade-assessments.js",
     "test": "node --test test/*.test.js",
     "eval:offline": "node ai-eval/run-eval.js --mode=offline --gate",
-    "eval:online": "node ai-eval/run-eval.js --mode=online"
+    "eval:online": "node ai-eval/run-eval.js --mode=online",
+    "eval:refusal-analysis": "node ai-eval/tools/compare-refusal-strategies.js",
+    "eval:compare": "node ai-eval/tools/compare-v1-v2.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

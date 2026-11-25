@@ -46,6 +46,12 @@ async function requestModel({ payload, budgetMs, parse }, trace = {}) {
   trace.model = payload.model;
   try {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      // 可选的外部预算钩子（仅评测传入）：返回 false 时立即中断重试，不影响业务默认行为。
+      if (typeof trace.onAttempt === 'function' && trace.onAttempt(attempt) === false) {
+        trace.errorType = 'budget_stopped';
+        trace.fallbackReason = 'budget_stopped';
+        break;
+      }
       const remaining = Math.floor(budgetMs - (performance.now() - started));
       if (remaining <= 0) break;
       const timeout = attempt === 1 && remaining >= 4 * MIN_RETRY_TIME_MS

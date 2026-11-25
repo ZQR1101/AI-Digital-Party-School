@@ -42,7 +42,7 @@ function retrievalTable(lines, report) {
 
 function buildMarkdown(report) {
   const lines = [];
-  lines.push(`# AI 质量评测报告 V1（${report.mode === 'online' ? '在线真实模型' : '离线确定性'}）`);
+  lines.push(`# AI 质量评测报告 V2（${report.mode === 'online' ? '在线真实模型' : '离线确定性'}）`);
   lines.push('');
   lines.push(`- 报告版本：${report.reportVersion} ｜ 数据集版本：${report.datasetVersion} ｜ 状态：${report.status}`);
   lines.push(`- 生成时间：${report.generatedAt} ｜ Git Commit：\`${report.environment.gitCommit}\``);
@@ -51,7 +51,7 @@ function buildMarkdown(report) {
   lines.push(`- 固定时钟：${report.fixedNow} ｜ 样本划分规则：${report.environment.config.datasetSplitRule}`);
   lines.push(`- 样本总数：${report.totals.samples}，通过：${report.totals.passed}（${pct(report.totals.passRate)}），失败：${report.totals.failed}`);
   if (report.gate) {
-    lines.push(`- CI 门禁：${report.gate.passed ? '✅ 通过' : `❌ 未通过（${report.gate.breaches.map((b) => `${b.suite}.${b.metric} 实际 ${b.actual ?? NA} < 阈值 ${b.floor}`).join('；')}）`}`);
+    lines.push(`- CI 门禁（依据：${report.gate.basis}；${report.gate.heldoutUsage}）：${report.gate.passed ? '✅ 通过' : `❌ 未通过（${report.gate.breaches.map((b) => `${b.suite}.${b.metric} 实际 ${b.actual ?? NA} < 阈值 ${b.floor}`).join('；')}）`}`);
   }
   lines.push('');
 
@@ -72,8 +72,9 @@ function buildMarkdown(report) {
     lines.push(`- 在线状态：${o.status}${o.reason ? `（${o.reason}）` : ''}`);
     if (o.usage && o.usage !== NA) {
       lines.push(`- 预算：请求上限 ${o.limits.maxRequests}，成本上限 ¥${o.limits.maxCostCny}，超时 ${o.limits.timeoutMs}ms，业务层重试上限 ${o.limits.transportMaxAttempts}`);
-      lines.push(`- 调用量：${o.usage.requests} 次 ｜ Tokens：${o.usage.totalTokens}（prompt ${o.usage.promptTokens} / completion ${o.usage.completionTokens}）｜ 估算成本 ¥${o.usage.estimatedCostCny}`);
-      lines.push(`- 实际模型：${o.usage.models.join('、') || NA}`);
+      lines.push(`- 调用量：${o.usage.requests} 次（LLM ${o.usage.byKind.llm} 含重试 / Embedding ${o.usage.byKind.embedding} 批次 / Reranker ${o.usage.byKind.rerank}）｜ Tokens：${o.usage.totalTokens}（prompt ${o.usage.promptTokens} / completion ${o.usage.completionTokens}）｜ 估算成本 ¥${o.usage.estimatedCostCny}`);
+      lines.push(`- 超预算停止：${o.usage.stopped ? `是（${o.usage.stopReason}）` : '否'} ｜ 实际模型：${o.usage.models.join('、') || NA}`);
+      if (o.note) lines.push(`- 计量说明：${o.note}`);
     }
   }
   lines.push('');
@@ -95,7 +96,21 @@ function buildMarkdown(report) {
     lines.push(`| ${suite.title || name} | ${suite.summary?.samples ?? NA} | ${suite.summary ? metricLine(suite.summary) : NA} |`);
   }
   lines.push('');
-  lines.push('> 所有未运行项以 N/A 标记，不以 0 或 100% 代替；引用支持度为启发式辅助判定，LLM Judge 分数未运行。');
+  lines.push('> 所有未运行项以 N/A 标记，不以 0 或 100% 代替；关键词覆盖率/要点覆盖率/证据支持度均为启发式辅助判定，LLM Judge 与人工事实核验未运行（N/A）。');
+  lines.push('');
+  lines.push('### dev / heldout 独立指标');
+  lines.push('');
+  lines.push('| 分项 | 划分 | 样本数 | 关键指标 |');
+  lines.push('|---|---|---|---|');
+  for (const [name, suite] of Object.entries(report.suites)) {
+    for (const split of ['dev', 'heldout']) {
+      const s = suite.bySplit?.[split];
+      if (!s) continue;
+      lines.push(`| ${suite.title || name} | ${split} | ${s.samples ?? NA} | ${metricLine(s)} |`);
+    }
+  }
+  lines.push('');
+  lines.push('> dev 为调参依据；heldout 仅最终独立报告，严禁反复用于阈值调整。');
   lines.push('');
 
   lines.push('## 最值得优化的三个问题');

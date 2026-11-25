@@ -1,0 +1,627 @@
+{
+  "generatedAt": "2026-11-25T08:29:27.528Z",
+  "datasetVersion": "1.1.0",
+  "note": "dev 用于选择策略；heldout 仅最终独立复核。基线与所有备选方案均在同一原始样本上计算，未改标注。",
+  "thresholds": {
+    "base": 0.24,
+    "fixed": 0.27,
+    "gap": 0.02
+  },
+  "selectedStrategy": "evidenceMatch（保留原阈值 0.24 + 主题证据匹配；未提高全局阈值）",
+  "byStrategy": {
+    "baseline": {
+      "dev": {
+        "samples": 4,
+        "refused": 2,
+        "refusalRate": 0.5,
+        "normalSamples": 10,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      },
+      "heldoutFinalCheckOnly": {
+        "samples": 6,
+        "refused": 4,
+        "refusalRate": 0.6667,
+        "normalSamples": 2,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      }
+    },
+    "fixedThreshold": {
+      "dev": {
+        "samples": 4,
+        "refused": 4,
+        "refusalRate": 1,
+        "normalSamples": 10,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      },
+      "heldoutFinalCheckOnly": {
+        "samples": 6,
+        "refused": 4,
+        "refusalRate": 0.6667,
+        "normalSamples": 2,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      }
+    },
+    "scoreGap": {
+      "dev": {
+        "samples": 4,
+        "refused": 3,
+        "refusalRate": 0.75,
+        "normalSamples": 10,
+        "overRefused": 2,
+        "overRefusalRate": 0.2
+      },
+      "heldoutFinalCheckOnly": {
+        "samples": 6,
+        "refused": 2,
+        "refusalRate": 0.3333,
+        "normalSamples": 2,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      }
+    },
+    "evidenceMatch": {
+      "dev": {
+        "samples": 4,
+        "refused": 4,
+        "refusalRate": 1,
+        "normalSamples": 10,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      },
+      "heldoutFinalCheckOnly": {
+        "samples": 6,
+        "refused": 6,
+        "refusalRate": 1,
+        "normalSamples": 2,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      }
+    },
+    "combined": {
+      "dev": {
+        "samples": 4,
+        "refused": 4,
+        "refusalRate": 1,
+        "normalSamples": 10,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      },
+      "heldoutFinalCheckOnly": {
+        "samples": 6,
+        "refused": 6,
+        "refusalRate": 1,
+        "normalSamples": 2,
+        "overRefused": 0,
+        "overRefusalRate": 0
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "ref-001",
+      "dataset": "refusal",
+      "split": "dev",
+      "query": "量子力学里薛定谔的猫到底是什么意思",
+      "topScore": 0.2,
+      "scoreGap": 0,
+      "sources": [
+        "党员教育管理与发展工作细则.md",
+        "党史学习教育要点.md",
+        "党章核心要义与党员权利义务.md",
+        "党的基层组织建设与换届选举.md",
+        "党章核心要义与党员权利义务.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "量子力学里薛定谔"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-002",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "红烧肉怎么做才能软烂入味",
+      "topScore": 0.19,
+      "scoreGap": 0.02,
+      "sources": [
+        "中央八项规定精神与作风建设.md",
+        "中央八项规定精神与作风建设.md",
+        "党史学习教育要点.md",
+        "党的基层组织建设与换届选举.md",
+        "党员组织关系与党籍管理.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "红烧肉",
+        "做才能软烂入味"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-003",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "Python 怎么读取 Excel 表格数据",
+      "topScore": 0.22,
+      "scoreGap": 0.01,
+      "sources": [
+        "中央八项规定精神与作风建设.md",
+        "指标统计口径.md",
+        "指标统计口径.md",
+        "党员教育管理与发展工作细则.md",
+        "党章核心要义与党员权利义务.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "python",
+        "excel",
+        "表格数据"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-004",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "世界杯足球赛每几年举办一届",
+      "topScore": 0.21,
+      "scoreGap": 0.02,
+      "sources": [
+        "党的基层组织建设与换届选举.md",
+        "党规党纪与纪律处分要点.md",
+        "党史学习教育要点.md",
+        "指标统计口径.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "世界杯足球赛",
+        "年举办一届"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-005",
+      "dataset": "refusal",
+      "split": "dev",
+      "query": "党的二十大是哪一年召开的",
+      "topScore": 0.26,
+      "scoreGap": 0.01,
+      "sources": [
+        "党组织生活制度规范.md",
+        "党史学习教育要点.md",
+        "党员教育管理与发展工作细则.md",
+        "党组织生活制度规范.md",
+        "党规党纪与纪律处分要点.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "二十大"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-006",
+      "dataset": "refusal",
+      "split": "dev",
+      "query": "三严三实的具体内容是什么",
+      "topScore": 0.26,
+      "scoreGap": 0.03,
+      "sources": [
+        "中央八项规定精神与作风建设.md",
+        "党规党纪与纪律处分要点.md",
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md",
+        "党规党纪与纪律处分要点.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "三严三实"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-007",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "统一战线工作条例主要讲了什么内容",
+      "topScore": 0.29,
+      "scoreGap": 0,
+      "sources": [
+        "中央八项规定精神与作风建设.md",
+        "党规党纪与纪律处分要点.md",
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md",
+        "党的基层组织建设与换届选举.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "统一战线工作条例"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-008",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "学校这学期运动会什么时候召开",
+      "topScore": 0.23,
+      "scoreGap": 0.02,
+      "sources": [
+        "党员教育管理与发展工作细则.md",
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md",
+        "党章核心要义与党员权利义务.md",
+        "党史学习教育要点.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "学校",
+        "学期运动会",
+        "时候"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-009",
+      "dataset": "refusal",
+      "split": "dev",
+      "query": "今天食堂中午有什么菜",
+      "topScore": 0.19,
+      "scoreGap": 0.01,
+      "sources": [
+        "党规党纪与纪律处分要点.md",
+        "党章核心要义与党员权利义务.md",
+        "党史学习教育要点.md",
+        "党费收缴使用与管理规定.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "今天食堂中午"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "ref-010",
+      "dataset": "refusal",
+      "split": "heldout",
+      "query": "两学一做学习教育具体指哪两学哪一做",
+      "topScore": 0.33,
+      "scoreGap": 0.06,
+      "sources": [
+        "党史学习教育要点.md",
+        "党员教育管理与发展工作细则.md",
+        "党史学习教育要点.md",
+        "指标统计口径.md",
+        "党史学习教育要点.md"
+      ],
+      "evidencePass": false,
+      "evidencePhrases": [
+        "两学一做学习教育",
+        "两学",
+        "一做"
+      ],
+      "evidenceMatched": [],
+      "hasRealAnswerEvidence": false
+    },
+    {
+      "id": "qa-001",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "预备党员有没有党龄？党员的党龄从哪一天开始算？",
+      "topScore": 0.36,
+      "scoreGap": 0.04,
+      "sources": [
+        "党员组织关系与党籍管理.md",
+        "党员教育管理与发展工作细则.md",
+        "党员教育管理与发展工作细则.md",
+        "党费收缴使用与管理规定.md",
+        "党章核心要义与党员权利义务.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "预备党员",
+        "党龄",
+        "党员"
+      ],
+      "evidenceMatched": [
+        "预备党员",
+        "党龄",
+        "党员"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-002",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "我的月工资是四千五百元，每个月应该按什么比例交党费？",
+      "topScore": 0.27,
+      "scoreGap": 0.04,
+      "sources": [
+        "党费收缴使用与管理规定.md",
+        "党费收缴使用与管理规定.md",
+        "党员教育管理与发展工作细则.md",
+        "党费收缴使用与管理规定.md",
+        "党员组织关系与党籍管理.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "月工资",
+        "四千五百元",
+        "比例",
+        "党费"
+      ],
+      "evidenceMatched": [
+        "月工资",
+        "比例",
+        "党费"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-003",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "党员在党内享有哪些权利？",
+      "topScore": 0.42,
+      "scoreGap": 0.11,
+      "sources": [
+        "党章核心要义与党员权利义务.md",
+        "党章核心要义与党员权利义务.md",
+        "党规党纪与纪律处分要点.md",
+        "党的基层组织建设与换届选举.md",
+        "党员组织关系与党籍管理.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "党员",
+        "党内享",
+        "权利"
+      ],
+      "evidenceMatched": [
+        "党员",
+        "权利"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-004",
+      "dataset": "qa",
+      "split": "heldout",
+      "query": "党员违反党纪可能受到哪些种类的处分？",
+      "topScore": 0.32,
+      "scoreGap": 0.04,
+      "sources": [
+        "党规党纪与纪律处分要点.md",
+        "党章核心要义与党员权利义务.md",
+        "党规党纪与纪律处分要点.md",
+        "党章核心要义与党员权利义务.md",
+        "党员教育管理与发展工作细则.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "党员违反党纪",
+        "处分"
+      ],
+      "evidenceMatched": [
+        "处分"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-005",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "组织生活会和民主生活会有什么区别？",
+      "topScore": 0.59,
+      "scoreGap": 0.01,
+      "sources": [
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md",
+        "中央八项规定精神与作风建设.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "组织生活会",
+        "民主生活会",
+        "区别"
+      ],
+      "evidenceMatched": [
+        "组织生活会",
+        "民主生活会",
+        "区别"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-006",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "支部委员会任期届满后换届选举应该怎么进行？",
+      "topScore": 0.5,
+      "scoreGap": 0.22,
+      "sources": [
+        "党的基层组织建设与换届选举.md",
+        "党的基层组织建设与换届选举.md",
+        "党的基层组织建设与换届选举.md",
+        "党组织生活制度规范.md",
+        "党员教育管理与发展工作细则.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "支部委员会",
+        "后换届选举"
+      ],
+      "evidenceMatched": [
+        "支部委员会"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-007",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "党的历史上生死攸关的转折点是哪次会议？",
+      "topScore": 0.4,
+      "scoreGap": 0.11,
+      "sources": [
+        "党史学习教育要点.md",
+        "党史学习教育要点.md",
+        "党史学习教育要点.md",
+        "党章核心要义与党员权利义务.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "历史",
+        "生死攸关",
+        "转折点",
+        "次会议"
+      ],
+      "evidenceMatched": [
+        "历史",
+        "生死攸关",
+        "转折点"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-008",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "看板里的学习完成率指标是怎么统计出来的？",
+      "topScore": 0.62,
+      "scoreGap": 0.37,
+      "sources": [
+        "指标统计口径.md",
+        "党员教育管理与发展工作细则.md",
+        "指标统计口径.md",
+        "指标统计口径.md",
+        "党的基层组织建设与换届选举.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "看板里",
+        "学习完成率"
+      ],
+      "evidenceMatched": [
+        "学习完成率"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-009",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "发展一名党员要经过哪几个阶段？",
+      "topScore": 0.34,
+      "scoreGap": 0.05,
+      "sources": [
+        "党员教育管理与发展工作细则.md",
+        "党员教育管理与发展工作细则.md",
+        "党章核心要义与党员权利义务.md",
+        "党组织生活制度规范.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "发展",
+        "党员",
+        "阶段"
+      ],
+      "evidenceMatched": [
+        "发展",
+        "党员",
+        "阶段"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-010",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "什么情况下需要转移党员组织关系？",
+      "topScore": 0.43,
+      "scoreGap": 0.01,
+      "sources": [
+        "党员组织关系与党籍管理.md",
+        "党员组织关系与党籍管理.md",
+        "党员组织关系与党籍管理.md",
+        "党员组织关系与党籍管理.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "转移党员组织关系"
+      ],
+      "evidenceMatched": [
+        "转移党员组织关系"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-011",
+      "dataset": "qa",
+      "split": "dev",
+      "query": "中央八项规定主要包括哪些方面的内容？",
+      "topScore": 0.53,
+      "scoreGap": 0.14,
+      "sources": [
+        "中央八项规定精神与作风建设.md",
+        "中央八项规定精神与作风建设.md",
+        "党组织生活制度规范.md",
+        "中央八项规定精神与作风建设.md",
+        "党组织生活制度规范.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "中央八项规定"
+      ],
+      "evidenceMatched": [
+        "中央八项规定"
+      ],
+      "hasRealAnswerEvidence": true
+    },
+    {
+      "id": "qa-012",
+      "dataset": "qa",
+      "split": "heldout",
+      "query": "统计上怎样定义一名活跃党员？",
+      "topScore": 0.37,
+      "scoreGap": 0.11,
+      "sources": [
+        "指标统计口径.md",
+        "党章核心要义与党员权利义务.md",
+        "党员组织关系与党籍管理.md",
+        "党员组织关系与党籍管理.md",
+        "党章核心要义与党员权利义务.md"
+      ],
+      "evidencePass": true,
+      "evidencePhrases": [
+        "活跃党员"
+      ],
+      "evidenceMatched": [
+        "活跃党员"
+      ],
+      "hasRealAnswerEvidence": true
+    }
+  ]
+}

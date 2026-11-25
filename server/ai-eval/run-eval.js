@@ -1,11 +1,12 @@
-// AI 质量评测 V1 入口（先建立真实基线，不修改业务 RAG 算法）
+// AI 质量评测 V2 入口（V1.1.0 数据集不变；先校准评测器，再做有证据的优化）
 //
 // 用法：
-//   npm run eval:offline                               # CI 门禁，确定性、无外部 API
-//   node ai-eval/run-eval.js --mode=offline            # 本地离线全量（不出错即退出 0）
+//   npm run eval:offline                                # CI 门禁（dev 为依据，确定性无外部 API）
+//   node ai-eval/run-eval.js --mode=offline             # 本地离线全量
 //   AI_EVAL_ONLINE=1 AI_API_URL=... AI_API_KEY=... \
-//   EMBEDDING_API_URL=... RERANKER_API_URL=... \
-//   npm run eval:online                                # 真实模型（需显式开启，有请求/成本上限）
+//   EMBEDDING_API_URL=... EMBEDDING_API_KEY=... \
+//   RERANKER_API_URL=... RERANKER_API_KEY=... \
+//   npm run eval:online                                 # 真实模型；严格显式开启，有请求/成本上限
 //
 // 离线模式把外部 Key 置空字符串（dotenv 不覆盖已存在变量，避免模块加载时重新注入），
 // 强制本地哈希向量 + 本地关键词重排 + 规则解析 + 确定性兜底答案。
@@ -36,6 +37,7 @@ const { evaluateRetrieval } = require('./lib/retrieval-eval');
 const { NA, collect, onlineLimits } = require('./lib/envinfo');
 const { evaluateDbTruth } = require('./lib/db-truth');
 const { FLOORS, evaluateGate } = require('./lib/gate');
+const { createBudget } = require('./lib/budget');
 
 function loadDataset(name) {
   return JSON.parse(fs.readFileSync(path.join(DATASETS_DIR, `${name}.dataset.json`), 'utf8'));
@@ -45,8 +47,57 @@ function pushFailure(failures, value) {
   failures.push(value);
 }
 
+const bySplitSummary = (rows, summaryOf) => ({
+  dev: summaryOf(rows.filter((r) => r.split === 'dev')),
+  heldout: summaryOf(rows.filter((r) => r.split === 'heldout'))
+});
+
+/** 在线模式下统一包裹外部模型调用：请求数（含重试）、tokens、成本、超预算即停 */
+function instrumentOnlineCalls({ AIClient, RagService, Reranker, EmbeddingClient }, budget) {
+  const llmMethods = [
+    'identifyQueryIntent', 'generateRagAnswer', 'generatePersonalizedRagAnswer', 'generateGroundedAnalysis'
+  ];
+  for (const name of llmMethods) {
+    if (typeof AIClient[name] !== 'function') continue;
+    const original = AIClient[name].bind(AIClient);
+    AIClient[name] = async (...args) => {
+      if (!AIClient.isConfigured()) return original(...args);
+      budget.reserve('llm', 1);
+      const trace = args.find((a) => a && typeof a === 'object' && !Array.isArray(a)) || {};
+      if (!args.some((a) => a === trace && a && typeof a === 'object')) args.push(trace);
+      trace.onAttempt = budget.attemptHook('llm');
+      try {
+        return await original(...args);
+      } finally {
+        budget.recordUsage(trace);
+      }
+    };
+  }
+
+  const embedOriginal = EmbeddingClient.embedTexts.bind(EmbeddingClient);
+  EmbeddingClient.embedTexts = async (texts) => {
+    const requests = EmbeddingClient.isApiConfigured() ? Math.ceil(texts.length / EmbeddingClient.batchSize) : 0;
+    if (requests) budget.reserve('embedding', requests);
+    const vectors = await embedOriginal(texts);
+    if (requests) budget.recordExternal('embedding', requests);
+    return vectors;
+  };
+
+  const rerankOriginal = Reranker.rerank.bind(Reranker);
+  Reranker.rerank = async (query, candidates, topK) => {
+    if (!Reranker.isApiConfigured()) return rerankOriginal(query, candidates, topK);
+    budget.reserve('rerank', 1);
+    const result = await rerankOriginal(query, candidates, topK);
+    budget.recordExternal('rerank', 1);
+    return result;
+  };
+
+  // RagService 内部持有的是同一静态类对象；无需替换其实例引用
+  void RagService;
+}
+
 // ---------- 问答质量（真实 RagService 链路） ----------
-async function evalQA(cases, failures, mode, usage) {
+async function evalQA(cases, failures) {
   const RagService = require('../src/services/ragService');
   const rows = [];
   await RagService.init(true);
@@ -54,12 +105,10 @@ async function evalQA(cases, failures, mode, usage) {
   for (const item of cases) {
     const trace = {};
     const result = await RagService.ask(item.question, { trace });
-    collectUsage(usage, trace);
     const sources = result.sources || [];
     const sourceMatched = sources.some((s) => s.source === item.expectedSource);
-    const coverage = keywordCoverage(result.answer, item.expectedKeywords);
+    const keywordCoverageRate = keywordCoverage(result.answer, item.expectedKeywords);
     const citedNumbers = [...String(result.answer).matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]));
-    const validCitations = citedNumbers.filter((n) => n >= 1 && n <= sources.length);
     const invalidCitations = citedNumbers.filter((n) => n < 1 || n > sources.length);
     // 引用支持度（启发式、可人工复核）：被引用来源的证据片段出现在答案中，
     // 或该来源证据片段覆盖至少一半标准答案要点。不是 LLM Judge，也不等价于事实正确。
@@ -71,7 +120,10 @@ async function evalQA(cases, failures, mode, usage) {
     });
     const fallback = !trace.resultMode;
     const row = {
-      id: item.id, split: item.split, sourceMatched, factCorrect: coverage >= 0.6, coverage,
+      id: item.id, split: item.split, sourceMatched,
+      // 仅为「标准答案要点覆盖率」的启发式判定，不冒充人工验证的事实准确率
+      factPointCovered: keywordCoverageRate >= 0.6,
+      keywordCoverageRate,
       citationValid: citedNumbers.length ? invalidCitations.length === 0 : true,
       citationSupport: supportHit, grounded: result.isGrounded, fallback,
       hasAnswer: Boolean(result.answer)
@@ -82,7 +134,7 @@ async function evalQA(cases, failures, mode, usage) {
       pushFailure(failures, {
         dataset: 'qa', id: item.id, category: 'over_refusal',
         input: truncate(item.question), expected: { source: item.expectedSource, keywords: item.expectedKeywords },
-        actual: { isGrounded: false, topScore: sources[0]?.relevanceScore ?? null },
+        actual: { isGrounded: false, topScore: sources[0]?.relevanceScore ?? null, gate: trace.evidenceGate || null },
         detail: '知识库可回答的问题被拒答', sources: '(空)'
       });
     } else if (!sourceMatched) {
@@ -92,11 +144,13 @@ async function evalQA(cases, failures, mode, usage) {
         actual: { sources: sources.map((s) => s.source) },
         detail: '回答来源中未包含预期文档'
       });
-    } else if (!row.factCorrect) {
+    } else if (!row.factPointCovered) {
       pushFailure(failures, {
         dataset: 'qa', id: item.id, category: 'generation_failure',
         input: truncate(item.question), expected: { keywords: item.expectedKeywords },
-        actual: { keywordCoverage: coverage, missingKeywords: missingKeywords(result.answer, item.expectedKeywords), fallback },
+        actual: {
+          keywordCoverageRate, missingKeywords: missingKeywords(result.answer, item.expectedKeywords), fallback
+        },
         detail: fallback ? '确定性兜底摘录未覆盖标准答案要点' : '模型答案未覆盖标准答案要点',
         sources: sources.map((s) => `${s.id}.${s.source}`).join(' ')
       });
@@ -118,52 +172,67 @@ async function evalQA(cases, failures, mode, usage) {
     }
   }
 
-  const dev = rows.filter((r) => r.split === 'dev');
-  const heldout = rows.filter((r) => r.split === 'heldout');
   const summaryOf = (subset) => ({
     samples: subset.length,
-    factAccuracyRate: rateOf(subset, 'factCorrect'),
+    keywordCoverageRate: mean(subset.map((r) => r.keywordCoverageRate)), // 关键词覆盖率（非事实正确率）
+    factPointCoverageRate: rateOf(subset, 'factPointCovered'),           // 启发式要点覆盖，非人工验证
+    humanVerifiedFactAccuracy: NA,
     citationNumberValidRate: rateOf(subset, 'citationValid'),
-    citationSupportRate: rateOf(subset, 'citationSupport'), // 启发式规则，非客观真值
+    citationSupportRate: rateOf(subset, 'citationSupport'),             // 启发式证据支持度
+    // 全部 QA 样本均为知识库可回答的问题，isGrounded=false 即正常问答误拒
+    overRefusalRate: Math.round((1 - rateOf(subset, 'grounded')) * 10000) / 10000,
     fallbackReliabilityRate: rateOf(subset, (r) => r.fallback ? (r.hasAnswer && r.grounded) : true),
-    llmJudgeScore: NA // 未开展 LLM Judge，禁止当作 0 或满分
+    llmJudgeScore: NA
   });
   return {
-    title: '问答质量（真实 RagService 链路）',
-    summary: { ...summaryOf(rows), avgFactCoverage: mean(rows.map((r) => r.coverage)) },
-    bySplit: { dev: summaryOf(dev), heldout: summaryOf(heldout) }
+    title: '问答质量（真实 RagService 链路；启发式判定）',
+    summary: summaryOf(rows),
+    bySplit: bySplitSummary(rows, summaryOf)
   };
 }
 
 // ---------- 拒答 ----------
-async function evalRefusal(cases, failures, mode, usage) {
+async function evalRefusal(cases, failures) {
   const RagService = require('../src/services/ragService');
   const rows = [];
   await RagService.init(true);
   for (const item of cases) {
     const trace = {};
     const result = await RagService.ask(item.query, { trace });
-    collectUsage(usage, trace);
-    const refused = result.isGrounded === false && (result.sources || []).length === 0;
-    rows.push({ id: item.id, split: item.split, refused });
+    const sources = result.sources || [];
+    const refused = result.isGrounded === false && sources.length === 0;
+    const scores = sources.map((s) => Number(s.relevanceScore) || 0);
+    rows.push({
+      id: item.id, split: item.split, domain: item.domain, refused,
+      topScore: scores[0] ?? 0,
+      scoreGap: scores.length > 1 ? Math.round((scores[0] - scores[1]) * 100) / 100 : 0,
+      gate: trace.evidenceGate || null,
+      sources: sources.map((s) => s.source)
+    });
     if (!refused) {
       pushFailure(failures, {
         dataset: 'refusal', id: item.id, category: 'unwarranted_answer',
         input: truncate(item.query), expected: { isGrounded: false, sources: [] },
-        actual: { isGrounded: result.isGrounded, topScore: result.sources?.[0]?.relevanceScore ?? null },
+        actual: {
+          isGrounded: result.isGrounded, topScore: scores[0] ?? null,
+          scoreGap: rows[rows.length - 1].scoreGap, gate: trace.evidenceGate || null
+        },
         detail: '知识库不含该事实，系统仍给出带来源的回答',
-        sources: (result.sources || []).map((s) => s.source).join(' ') || '(空)'
+        sources: sources.map((s) => s.source).join(' ') || '(空)'
       });
     }
   }
   const summaryOf = (subset) => ({
     samples: subset.length,
     refusalRate: rateOf(subset, 'refused'),
-    unwarrantedAnswerRate: Math.round((1 - rateOf(subset, 'refused')) * 10000) / 10000
+    unwarrantedAnswerRate: Math.round((1 - rateOf(subset, 'refused')) * 10000) / 10000,
+    avgTopScore: mean(subset.map((r) => r.topScore)),
+    avgScoreGap: mean(subset.map((r) => r.scoreGap))
   });
   return {
     title: '无答案拒答', summary: summaryOf(rows),
-    bySplit: { dev: summaryOf(rows.filter((r) => r.split === 'dev')), heldout: summaryOf(rows.filter((r) => r.split === 'heldout')) }
+    bySplit: bySplitSummary(rows, summaryOf),
+    cases: rows
   };
 }
 
@@ -189,20 +258,16 @@ async function evalCitation(cases, failures) {
       });
     }
   }
+  const summaryOf = (subset) => ({ samples: subset.length, accuracy: rateOf(subset, 'pass') });
   return {
-    title: '引用编号校验',
-    summary: { samples: rows.length, accuracy: rateOf(rows, 'pass') },
-    bySplit: {
-      dev: { samples: rows.filter((r) => r.split === 'dev').length, accuracy: rateOf(rows.filter((r) => r.split === 'dev'), 'pass') },
-      heldout: { samples: rows.filter((r) => r.split === 'heldout').length, accuracy: rateOf(rows.filter((r) => r.split === 'heldout'), 'pass') }
-    }
+    title: '引用编号校验', summary: summaryOf(rows), bySplit: bySplitSummary(rows, summaryOf)
   };
 }
 
 // ---------- 自然语言统计查询 ----------
-async function evalNLQ(cases, failures, mode, usage, budget) {
+async function evalNLQ(cases, failures, budget) {
   const { parseOrganizationQuery } = require('../src/ai/queryParser');
-  const { validateToolCall, normalizeToolParameters, mapParsedQueryToToolCall } = require('../src/ai/queryTools');
+  const { validateToolCall, normalizeToolParameters, mapParsedQueryToToolCall, toolForMetric } = require('../src/ai/queryTools');
   const { AIClient } = require('../src/services/aiClient');
   const rows = [];
 
@@ -211,12 +276,9 @@ async function evalNLQ(cases, failures, mode, usage, budget) {
     let tool = null;
     let intentMode = 'rules';
     const trace = {};
-    if (mode === 'online') {
+    if (budget && AIClient.isConfigured()) {
       try {
-        budget.check();
         const call = await AIClient.identifyQueryIntent(item.message, trace);
-        budget.requests += 1;
-        collectUsage(usage, trace);
         if (call) {
           parsed = normalizeToolParameters(validateToolCall(call), FIXED_NOW);
           tool = call.tool;
@@ -251,7 +313,8 @@ async function evalNLQ(cases, failures, mode, usage, budget) {
     };
     const expect = {
       metric: item.expect.metric, organizationName: item.expect.organizationName ?? null,
-      timeRangeLabel: item.expect.timeRangeLabel ?? null, groupBy: item.expect.groupBy ?? null
+      timeRangeLabel: item.expect.timeRangeLabel ?? null, groupBy: item.expect.groupBy ?? null,
+      tool: item.expect.tool || toolForMetric(item.expect.metric)
     };
     const fields = {
       metric: actual.metric === expect.metric,
@@ -259,14 +322,18 @@ async function evalNLQ(cases, failures, mode, usage, budget) {
       timeRange: actual.timeRangeLabel === expect.timeRangeLabel,
       groupBy: actual.groupBy === expect.groupBy
     };
-    const toolOk = fields.metric;
-    const exact = Object.values(fields).every(Boolean);
-    rows.push({ id: item.id, split: item.split, toolOk, exact, fields, intentMode });
+    // 独立比对实际工具名称，不再用 metricAccuracy 代替 toolSelectionAccuracy
+    const toolOk = actual.tool === expect.tool;
+    const exact = toolOk && Object.values(fields).every(Boolean);
+    rows.push({ id: item.id, split: item.split, toolOk, exact, fields, intentMode, actualTool: actual.tool, expectedTool: expect.tool });
     if (!exact) {
       pushFailure(failures, {
         dataset: 'nlq', id: item.id, category: 'tool_error', input: truncate(item.message),
         expected: expect, actual,
-        detail: `${intentMode === 'llm' ? 'LLM 意图' : '规则解析'}字段错误：${Object.entries(fields).filter(([, ok]) => !ok).map(([k]) => k).join('、')}`
+        detail: `${intentMode === 'llm' ? 'LLM 意图' : '规则解析'}字段错误：${[
+          ...(toolOk ? [] : ['tool']),
+          ...Object.entries(fields).filter(([, ok]) => !ok).map(([k]) => k)
+        ].join('、')}`
       });
     }
   }
@@ -286,10 +353,7 @@ async function evalNLQ(cases, failures, mode, usage, budget) {
       ...summaryOf(rows),
       intentModeSplit: rows.reduce((acc, r) => { acc[r.intentMode] = (acc[r.intentMode] || 0) + 1; return acc; }, {})
     },
-    bySplit: {
-      dev: summaryOf(rows.filter((r) => r.split === 'dev')),
-      heldout: summaryOf(rows.filter((r) => r.split === 'heldout'))
-    }
+    bySplit: bySplitSummary(rows, summaryOf)
   };
 }
 
@@ -336,14 +400,12 @@ async function evalToolParams(cases, failures) {
     }
     rows.push({ id: item.id, split: item.split, pass, expect: item.expect });
   }
-  return {
-    title: '工具调用结构校验（接受/拒绝）',
-    summary: {
-      samples: rows.length, accuracy: rateOf(rows, 'pass'),
-      acceptCorrectRate: rateOf(rows.filter((r) => r.expect === 'accept'), 'pass'),
-      rejectCorrectRate: rateOf(rows.filter((r) => r.expect === 'reject'), 'pass')
-    }
-  };
+  const summaryOf = (subset) => ({
+    samples: subset.length, accuracy: rateOf(subset, 'pass'),
+    acceptCorrectRate: rateOf(subset.filter((r) => r.expect === 'accept'), 'pass'),
+    rejectCorrectRate: rateOf(subset.filter((r) => r.expect === 'reject'), 'pass')
+  });
+  return { title: '工具调用结构校验（接受/拒绝）', summary: summaryOf(rows), bySplit: bySplitSummary(rows, summaryOf) };
 }
 
 // ---------- 权限隔离 ----------
@@ -369,7 +431,6 @@ async function evalAccess(cases, failures) {
     }
     let pass = status === item.expect.status;
     if (pass && item.expect.status === 200) {
-      // 子树遍历顺序不是契约，按集合比较（原 oracle 用数组顺序比较会误报）
       pass = organizationName === item.expect.organizationName && sameIds(orgIds, item.expect.orgIds);
     } else if (pass && item.expect.messageContains) {
       pass = message.includes(item.expect.messageContains);
@@ -384,52 +445,47 @@ async function evalAccess(cases, failures) {
       });
     }
   }
+  const summaryOf = (subset) => ({ samples: subset.length, permissionCorrectRate: rateOf(subset, 'pass') });
   return {
     title: '角色权限与组织范围隔离',
-    summary: { samples: rows.length, permissionCorrectRate: rateOf(rows, 'pass') },
-    bySplit: {
-      dev: { samples: rows.filter((r) => r.split === 'dev').length, permissionCorrectRate: rateOf(rows.filter((r) => r.split === 'dev'), 'pass') },
-      heldout: { samples: rows.filter((r) => r.split === 'heldout').length, permissionCorrectRate: rateOf(rows.filter((r) => r.split === 'heldout'), 'pass') }
-    }
+    summary: summaryOf(rows), bySplit: bySplitSummary(rows, summaryOf)
   };
-}
-
-function collectUsage(usage, trace) {
-  for (const key of ['promptTokens', 'completionTokens', 'totalTokens']) {
-    usage[key] += Number(trace[key] || 0);
-  }
-  if (trace.model) usage.models.add(trace.model);
-  if (trace.modelDurationMs) usage.durationMs += Number(trace.modelDurationMs);
-}
-
-function makeBudget(limits) {
-  const budget = { requests: 0, limits };
-  budget.check = () => {
-    if (budget.requests >= limits.maxRequests) {
-      throw new Error(`在线请求数达到上限 ${limits.maxRequests}`);
-    }
-  };
-  return budget;
 }
 
 function buildRecommendations(report) {
   const recs = [];
   const refusal = report.suites.refusal?.summary?.refusalRate;
-  if (typeof refusal === 'number' && refusal < 0.8) {
-    recs.push({ rank: 1, impact: '高', problem: `无依据问题拒答率仅 ${(refusal * 100).toFixed(1)}%`, suggestion: '先调整检索相关性门禁与来源Evidence校验（仅改判定策略，不改知识库事实），避免低分片段被当作依据生成回答。' });
+  if (typeof refusal === 'number' && refusal < 0.9) {
+    recs.push({
+      rank: 1, impact: '高',
+      problem: `无依据问题拒答率 ${(refusal * 100).toFixed(1)}%（目标 ≥90%）`,
+      suggestion: '在保持原阈值的前提下引入主题证据匹配（证据片段中必须出现问题的核心主题），避免通用词重叠触发误回答；仅在 dev 上调整，heldout 独立复核。'
+    });
   }
-  const doc = report.suites.retrieval?.configurations?.hybrid_rerank?.document;
-  const chunk = report.suites.retrieval?.configurations?.hybrid_rerank?.chunk;
+  const doc = report.suites.retrieval?.summary?.configurations?.hybrid_rerank?.document;
+  const chunk = report.suites.retrieval?.summary?.configurations?.hybrid_rerank?.chunk;
   if (doc && chunk && typeof chunk.recallAt5 === 'number' && chunk.recallAt5 < doc.recallAt5 - 0.1) {
-    recs.push({ rank: 2, impact: '高', problem: `文档级 Recall@5=${doc.recallAt5} 但分块级=${chunk.recallAt5}`, suggestion: '优化分块边界或证据片段定位策略：当前"命中正确文档"掩盖了答案证据未进入 Top-5 分块的问题。' });
+    recs.push({
+      rank: 2, impact: '高',
+      problem: `文档级 Recall@5=${doc.recallAt5} 但分块级=${chunk.recallAt5}`,
+      suggestion: '优化分块边界或证据片段定位策略：当前"命中正确文档"掩盖了答案证据未进入 Top-5 分块的问题。'
+    });
   }
   const citationFailures = report.failures.filter((f) => f.category === 'citation_error').length;
   if (citationFailures) {
-    recs.push({ rank: 3, impact: '中', problem: `引用相关失败 ${citationFailures} 条（年份/编号被误当引用编号）`, suggestion: '收紧引用编号正则与语义判定，仅清理确属越界的 [n]，保留正文中的年份/附录编号。' });
+    recs.push({
+      rank: 3, impact: '中',
+      problem: `引用相关失败 ${citationFailures} 条（年份/编号被误当引用编号）`,
+      suggestion: '收紧引用编号正则与语义判定，仅清理确属越界的 [n]，保留正文中的年份/附录编号。'
+    });
   }
   const nlqOrg = report.failures.filter((f) => f.dataset === 'nlq' && f.detail?.includes('organizationName')).length;
   if (nlqOrg && recs.length < 3) {
-    recs.push({ rank: recs.length + 1, impact: '中', problem: `自然语言问数组织识别错误 ${nlqOrg} 条`, suggestion: '修正组织名称抽取边界，避免把"月度走势/数量"等统计词并入组织名；保持规则解析与 Function Calling 同构。' });
+    recs.push({
+      rank: recs.length + 1, impact: '中',
+      problem: `自然语言问数组织识别错误 ${nlqOrg} 条`,
+      suggestion: '修正组织名称抽取边界，避免把"月度走势/数量"等统计词并入组织名；保持规则解析与 Function Calling 同构。'
+    });
   }
   if (!recs.length) {
     recs.push({ rank: 1, impact: '低', problem: '基线未发现显著短板', suggestion: '保持门禁阈值，扩大困难样本覆盖后复测。' });
@@ -440,44 +496,42 @@ function buildRecommendations(report) {
 async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
   const failures = [];
   const suites = {};
-  const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs: 0, models: new Set(), requests: 0 };
-  const limits = onlineLimits();
-  const budget = makeBudget(limits);
 
   if (mode === 'offline') {
     process.env.NODE_ENV = 'test';
     process.env.QDRANT_ENABLED = 'false';
     for (const key of OFFLINE_STRIP_KEYS) process.env[key] = '';
-  } else if (!process.env.AI_EVAL_ONLINE) {
-    throw new Error('在线评测需显式设置 AI_EVAL_ONLINE=1（不使用生产数据，仅静态知识库与隔离 fixture）');
+  } else if (process.env.AI_EVAL_ONLINE !== '1') {
+    throw new Error('在线评测需严格显式设置 AI_EVAL_ONLINE=1（不使用生产数据，仅静态知识库与隔离 fixture）');
   }
 
+  const limits = onlineLimits();
+  const budget = createBudget(limits);
   const { AIClient } = require('../src/services/aiClient');
   const RagService = require('../src/services/ragService');
   const Reranker = require('../src/rag/reranker');
   const { reciprocalRankFusion } = require('../src/rag/fusion');
   const EmbeddingClient = require('../src/rag/vectorStore').EmbeddingClient;
 
-  let backend = RagService.getBackendStatus();
-  const aiConfigured = AIClient.isConfigured();
-  let onlineStatus = null;
+  const missing = [];
   if (mode === 'online') {
-    const missing = [];
     if (!EmbeddingClient.isApiConfigured()) missing.push('Embedding');
     if (!Reranker.isApiConfigured()) missing.push('Reranker');
-    if (!aiConfigured) missing.push('LLM');
-    if (missing.length) {
-      onlineStatus = {
-        status: 'not_run',
-        reason: `真实模型未完整配置（缺少 ${missing.join('、')}）；本地 fallback 结果不得冒充真实模型评测`,
-        usage: NA
-      };
-    }
-  } else if (!aiConfigured) {
+    if (!AIClient.isConfigured()) missing.push('LLM');
+    instrumentOnlineCalls({ AIClient, RagService, Reranker, EmbeddingClient }, budget);
+  }
+
+  let onlineStatus = null;
+  if (mode === 'online' && missing.length) {
+    onlineStatus = {
+      status: 'not_run',
+      reason: `真实模型未完整配置（缺少 ${missing.join('、')}）；本地 fallback 结果不得冒充真实模型评测`,
+      limits, usage: NA
+    };
+  } else if (mode === 'offline') {
     onlineStatus = { status: 'not_run', reason: '离线模式强制关闭外部模型；在线指标标记 N/A', usage: NA };
   }
 
-  // 只有在线模式且真实模型未就绪时才跳过整套评测；离线模式必须照常跑确定性套件。
   const skipForMissingOnline = mode === 'online' && onlineStatus?.status === 'not_run';
   if (!skipForMissingOnline) {
     suites.retrieval = await evaluateRetrieval(
@@ -485,21 +539,22 @@ async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
       loadDataset('retrieval').cases, failures, mode
     );
     const r = suites.retrieval;
+    const configurations = r.summary;
     r.summary = {
       samples: loadDataset('retrieval').cases.length,
       ...r.summary.hybrid_rerank.document,
       documentRecallAt3: r.summary.hybrid_rerank.document.recallAt3,
       chunkRecallAt5: r.summary.hybrid_rerank.chunk.recallAt5,
-      configurations: r.summary,
+      configurations,
       bySplit: {
         dev: r.summary.hybrid_rerank.document.bySplit.dev,
         heldout: r.summary.hybrid_rerank.document.bySplit.heldout
       }
     };
-    suites.qa = await evalQA(loadDataset('qa').cases, failures, mode, usage);
-    suites.refusal = await evalRefusal(loadDataset('refusal').cases, failures, mode, usage);
+    suites.qa = await evalQA(loadDataset('qa').cases, failures);
+    suites.refusal = await evalRefusal(loadDataset('refusal').cases, failures);
     suites.citation = await evalCitation(loadDataset('citation').cases, failures);
-    suites.nlq = await evalNLQ(loadDataset('nlq').cases, failures, mode, usage, budget);
+    suites.nlq = await evalNLQ(loadDataset('nlq').cases, failures, mode === 'online' ? budget : null);
     suites.toolParams = await evalToolParams(loadDataset('tool-params').cases, failures);
     suites.access = await evalAccess(loadDataset('access').cases, failures);
   } else {
@@ -508,10 +563,9 @@ async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
     }
   }
 
-  // 评测完成后再取后端状态：此时分块已加载，报告才能写出真实 chunkCount
-  backend = RagService.getBackendStatus();
+  const backend = RagService.getBackendStatus();
   const dbTruth = await evaluateDbTruth();
-  if (dbTruth.status === 'not_run') dbTruth.summary = { samples: NA };
+  if (dbTruth.status === 'not_run') dbTruth.summary = { samples: NA, failedSamples: NA };
   suites.dbTruth = dbTruth;
 
   const totals = {
@@ -523,36 +577,35 @@ async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
 
   const gateResult = gate && mode === 'offline' ? evaluateGate(suites) : null;
   const legacy = JSON.parse(fs.readFileSync(path.join(__dirname, '../rag-eval-report.json'), 'utf8'));
+  const usage = budget.summary();
 
   const report = {
-    reportVersion: '2.0.0',
+    reportVersion: '2.1.0',
     datasetVersion: DATASET_VERSION,
     mode,
-    status: mode === 'online' ? (onlineStatus?.status || 'completed') : 'completed',
+    status: mode === 'online' ? (onlineStatus?.status || (usage.stopped ? 'stopped' : 'completed')) : 'completed',
     online: onlineStatus || {
-      status: mode === 'online' ? 'completed' : 'not_run',
+      status: usage.stopped ? 'stopped' : 'completed',
       limits,
-      usage: {
-        requests: usage.requests, promptTokens: usage.promptTokens,
-        completionTokens: usage.completionTokens, totalTokens: usage.totalTokens,
-        durationMs: usage.durationMs, models: [...usage.models],
-        estimatedCostCny: Math.round((usage.totalTokens / 1e6) * limits.pricePerMillionTokens * 10000) / 10000
-      }
+      usage,
+      note: 'Embedding/Reranker 单价未配置时按 0 估算，实际账单以服务端为准。'
     },
     generatedAt: new Date().toISOString(),
     fixedNow: FIXED_NOW.toISOString(),
     environment: collect({
       mode,
       config: {
-        topK: TOP_K, topN: TOP_N, backend, aiConfigured,
+        topK: TOP_K, topN: TOP_N, backend, aiConfigured: AIClient.isConfigured(),
         datasetSplitRule: 'sha1(id) % 10 < 3 → heldout；其余 dev',
+        gateBasis: gate ? 'dev（heldout 仅最终独立报告）' : NA,
         gateFloors: gate ? FLOORS : NA
       }
     }),
     limitations: [
       `旧 rag-evaluate.js 仅 ${legacy.evalCount} 道题、${legacy.chunkCount} 个分块、文档级 Recall@3=${legacy.summary.hybrid.recallAtK}，只说明"命中正确文档"，不能代表答案证据/分块级检索质量。`,
-      '引用支持度为启发式规则判定（可人工复核），不是 LLM Judge 客观真值。',
-      'isGrounded=true 仅表示检索门禁通过且有来源，不等价于答案事实正确。'
+      'keywordCoverageRate 为关键词覆盖率；factPointCoverageRate 为启发式要点覆盖（人工验证事实准确率标记 N/A）；citationSupportRate 为启发式证据支持度（LLM Judge 标记 N/A）。',
+      'isGrounded=true 仅表示检索门禁通过且有来源，不等价于答案事实正确。',
+      'CI 门禁只用 dev；heldout 仅用于最终独立报告，不参与阈值调整。'
     ],
     totals,
     suites,
@@ -577,7 +630,7 @@ if (require.main === module) {
   const mode = args.mode === 'online' ? 'online' : 'offline';
   runEval({ mode, gate: Boolean(args.gate), outDir: args.out ? path.resolve(String(args.out)) : undefined })
     .then(({ report, files }) => {
-      console.log(`\n===== AI 质量评测 V1（${mode === 'online' ? '在线真实模型' : '离线确定性'}）=====`);
+      console.log(`\n===== AI 质量评测 V2（${mode === 'online' ? '在线真实模型' : '离线确定性'}）=====`);
       console.log(`数据集 ${report.datasetVersion} ｜ Git ${report.environment.gitCommit} ｜ 知识库 ${report.environment.knowledgeBase.files} 文件`);
       console.log(`样本 ${report.totals.samples} ｜ 通过 ${report.totals.passed}（${report.totals.passRate === NA ? NA : `${(report.totals.passRate * 100).toFixed(1)}%`}）｜ 失败 ${report.totals.failed}`);
       if (report.status === 'not_run') console.log(`在线评测：${report.online.reason}`);
@@ -587,7 +640,7 @@ if (require.main === module) {
           .map(([k, v]) => `${k}=${v}`).join('  ');
         console.log(`  ${name.padEnd(12)} ${brief || suite.status || ''}`);
       }
-      if (report.gate) console.log(report.gate.passed ? 'CI 门禁：✅ 全部达标' : `CI 门禁：❌ ${JSON.stringify(report.gate.breaches)}`);
+      if (report.gate) console.log(report.gate.passed ? 'CI 门禁（dev）：✅ 全部达标' : `CI 门禁（dev）：❌ ${JSON.stringify(report.gate.breaches)}`);
       console.log(`报告：${files[0]}\n      ${files[1]}`);
       if (report.gate && !report.gate.passed) process.exit(1);
       process.exit(0);
