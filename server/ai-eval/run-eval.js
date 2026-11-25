@@ -52,6 +52,23 @@ const bySplitSummary = (rows, summaryOf) => ({
   heldout: summaryOf(rows.filter((r) => r.split === 'heldout'))
 });
 
+/**
+ * AIClient 所有 LLM 方法的签名均为 (input, trace = {})，trace 固定在最后一个参数。
+ * 不能简单取「第一个对象」（generateRagAnswer({question, context}, trace) 会取到请求体）。
+ */
+function resolveTraceArgument(args) {
+  if (args.length >= 2) {
+    const last = args[args.length - 1];
+    if (last && typeof last === 'object' && !Array.isArray(last)) return last;
+    const replacement = {};
+    args[args.length - 1] = replacement;
+    return replacement;
+  }
+  const trace = {};
+  args.push(trace);
+  return trace;
+}
+
 /** 在线模式下统一包裹外部模型调用：请求数（含重试）、tokens、成本、超预算即停 */
 function instrumentOnlineCalls({ AIClient, RagService, Reranker, EmbeddingClient }, budget) {
   const llmMethods = [
@@ -62,10 +79,9 @@ function instrumentOnlineCalls({ AIClient, RagService, Reranker, EmbeddingClient
     const original = AIClient[name].bind(AIClient);
     AIClient[name] = async (...args) => {
       if (!AIClient.isConfigured()) return original(...args);
-      budget.reserve('llm', 1);
-      const trace = args.find((a) => a && typeof a === 'object' && !Array.isArray(a)) || {};
-      if (!args.some((a) => a === trace && a && typeof a === 'object')) args.push(trace);
-      trace.onAttempt = budget.attemptHook('llm');
+      const trace = resolveTraceArgument(args);
+      // 首次与重试都由 attemptHook 在 axios.post 前 reserve，避免请求数与报告计数不一致。
+      trace.onAttempt = budget.attemptHook('llm', trace);
       try {
         return await original(...args);
       } finally {
@@ -618,7 +634,7 @@ async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
   return { report, files };
 }
 
-module.exports = { runEval, DATASET_VERSION, FIXED_NOW, TOP_K, TOP_N };
+module.exports = { runEval, instrumentOnlineCalls, resolveTraceArgument, DATASET_VERSION, FIXED_NOW, TOP_K, TOP_N };
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2)

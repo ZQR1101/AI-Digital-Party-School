@@ -3,7 +3,7 @@
  * 记录估算成本，并在任何一项超预算时立即停止后续调用。
  *
  * 约定：
- * - LLM 的实际 HTTP 次数以 modelTransport 写入 trace.attempts 为准（含重试）；
+ * - LLM 的实际 HTTP 次数以 attemptHook 在每次请求前的 reserve 为准（含首次与重试）；
  * - Embedding 每次 embedTexts 按 API 配置下的批次数计（本地 fallback 不计外部请求）；
  * - Reranker 每次 rerank 计 1 次（仅 API 配置时计外部请求）；
  * - 单价由 AI_EVAL_ONLINE_* 环境变量提供，未配置时记 0 并在报告中说明。
@@ -29,6 +29,9 @@ function createBudget(limits) {
     embeddingPerRequest: Number(process.env.AI_EVAL_ONLINE_EMBED_COST_PER_REQ) || 0,
     rerankPerRequest: Number(process.env.AI_EVAL_ONLINE_RERANK_COST_PER_REQ) || 0
   };
+
+  // 同一 trace 可能在重试钩子与最终收尾中被多次观测；按增量记账避免重复累计 token / 成本。
+  const accountedByTrace = new WeakMap();
 
   function stop(reason) {
     if (!state.stopped) {
@@ -66,27 +69,51 @@ function createBudget(limits) {
     state.byKind[kind] = (state.byKind[kind] || 0) + count;
   }
 
-  /** modelTransport 每次重试前调用：超额时让业务请求循环立即中断 */
-  function attemptHook(kind) {
-    let reserved = 0;
+  /**
+   * modelTransport 每次真实 HTTP 尝试前调用：首次与重试都在发请求前 reserve，
+   * 因此报告中的请求数等于实际 axios.post 次数。超额时返回 false 让请求循环立即中断。
+   */
+  function attemptHook(kind, trace) {
+    let reservedAttempt = 0;
     return (attempt) => {
-      if (attempt <= reserved) return true;
-      reserved = Math.max(reserved, attempt);
-      if (attempt === 1) return !state.stopped;
-      return canSpend(kind, 1, true);
+      const current = Math.max(1, Number(attempt) || 1);
+      if (current <= reservedAttempt) return true;
+      try {
+        // 先结算上一段响应已写入 trace 的 token，确保成本上限在下一请求前生效。
+        recordUsage(trace, { silent: true });
+        reserve(kind, 1);
+        reservedAttempt = current;
+        return !state.stopped;
+      } catch (err) {
+        if (!state.stopped) stop(err.message);
+        return false;
+      }
     };
   }
 
-  function recordUsage(trace) {
-    for (const key of ['promptTokens', 'completionTokens', 'totalTokens']) {
-      state[key] += Number(trace?.[key] || 0);
-    }
-    state.durationMs += Number(trace?.modelDurationMs || 0);
-    if (trace?.model) state.models.add(trace.model);
-    state.costCny += Math.round((Number(trace?.totalTokens || 0) / 1e6) * unitPrice.llmPerMillionTokens * 1e8) / 1e8;
+  /** 按 trace 增量记录 token / 时长 / 模型；silent=true 供重试钩子预检成本使用 */
+  function recordUsage(trace, options = {}) {
+    if (!trace || typeof trace !== 'object') return;
+    const prev = accountedByTrace.get(trace) || { promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs: 0 };
+    const next = {
+      promptTokens: Math.max(0, Number(trace.promptTokens) || 0),
+      completionTokens: Math.max(0, Number(trace.completionTokens) || 0),
+      totalTokens: Math.max(0, Number(trace.totalTokens) || 0),
+      durationMs: Math.max(0, Number(trace.modelDurationMs) || 0)
+    };
+    const deltaPrompt = Math.max(0, next.promptTokens - prev.promptTokens);
+    const deltaCompletion = Math.max(0, next.completionTokens - prev.completionTokens);
+    const deltaTotal = Math.max(0, next.totalTokens - prev.totalTokens);
+    state.promptTokens += deltaPrompt;
+    state.completionTokens += deltaCompletion;
+    state.totalTokens += deltaTotal;
+    state.durationMs += Math.max(0, next.durationMs - prev.durationMs);
+    if (trace.model) state.models.add(trace.model);
+    state.costCny += Math.round((deltaTotal / 1e6) * unitPrice.llmPerMillionTokens * 1e8) / 1e8;
+    accountedByTrace.set(trace, next);
     if (state.costCny > limits.maxCostCny) {
       stop(`估算成本 ¥${state.costCny} 超过上限 ¥${limits.maxCostCny}`);
-      throw new Error(`在线评测预算超限：${state.stopReason}`);
+      if (!options.silent) throw new Error(`在线评测预算超限：${state.stopReason}`);
     }
   }
 
