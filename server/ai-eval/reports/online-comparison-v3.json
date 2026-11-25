@@ -1,0 +1,561 @@
+{
+  "reportVersion": "3.0.0",
+  "title": "AI 在线质量评测 V3 对照实验",
+  "generatedAt": "2026-11-25T09:30:41.381Z",
+  "datasetVersion": "1.1.0",
+  "status": "completed",
+  "stopReason": null,
+  "config": {
+    "llm": {
+      "configured": true,
+      "model": "deepseek-v4-flash",
+      "endpoint": "https://api.deepseek.com/v1/chat/completions",
+      "toolMode": "function",
+      "timeoutMs": 8000,
+      "transportMaxAttempts": 2
+    },
+    "embedding": {
+      "configured": true,
+      "model": "qwen3.7-text-embedding-flash",
+      "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings",
+      "dim": 1024,
+      "batchSize": 10,
+      "actualBackend": {
+        "configured": true,
+        "model": "qwen3.7-text-embedding-flash",
+        "dim": 1024,
+        "backend": "api",
+        "semantic": true
+      }
+    },
+    "reranker": {
+      "configured": true,
+      "model": "qwen3.7-text-rerank",
+      "endpoint": "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+      "actualBackend": {
+        "configured": true,
+        "model": "qwen3.7-text-rerank",
+        "backend": "local-keyword",
+        "semantic": false,
+        "error": "Request failed with status code 403"
+      }
+    },
+    "limits": {
+      "maxRequests": 80,
+      "maxCostCny": 2,
+      "pricePerMillionTokens": 8,
+      "timeoutMs": 8000,
+      "transportMaxAttempts": 2,
+      "embeddingCostPerRequest": 0.01,
+      "rerankCostPerRequest": 0.01
+    },
+    "pricingNote": "单价未配置时按 LLM ¥8/百万 token、Embedding ¥0.01/请求、Rerank ¥0.01/请求估算；实际账单以服务商为准。",
+    "dataSafety": {
+      "productionDatabase": "not_accessed",
+      "organizationStatistics": "tool_selection_and_parameters_only",
+      "sampleExpansion": "forbidden",
+      "answersModified": false,
+      "ragStrategyChanged": false
+    }
+  },
+  "selection": {
+    "dev": {
+      "preset": "v3-online",
+      "requestedIds": [],
+      "requestedCategories": [],
+      "requestedSplit": null,
+      "limit": 20,
+      "count": 20,
+      "truncated": false,
+      "idsByDataset": {
+        "retrieval": [
+          "ret-001",
+          "ret-006",
+          "ret-018",
+          "ret-023",
+          "ret-030",
+          "ret-034",
+          "ret-036",
+          "ret-039"
+        ],
+        "qa": [
+          "qa-001",
+          "qa-002",
+          "qa-005",
+          "qa-007",
+          "qa-008"
+        ],
+        "refusal": [
+          "ref-001",
+          "ref-005",
+          "ref-006",
+          "ref-009"
+        ],
+        "nlq": [
+          "nlq-003",
+          "nlq-004",
+          "nlq-012"
+        ]
+      },
+      "splitCounts": {
+        "dev": 20
+      },
+      "categoryCounts": {
+        "同义改写": 4,
+        "相似概念": 2,
+        "多文档": 1,
+        "跨段落": 1,
+        "qa": 5,
+        "无关-自然科学": 1,
+        "党务-知识库未收录": 2,
+        "校园事务": 1,
+        "参数解析": 3
+      },
+      "datasetVersion": "1.1.0"
+    },
+    "heldout": {
+      "preset": "v3-heldout",
+      "requestedIds": [],
+      "requestedCategories": [],
+      "requestedSplit": null,
+      "limit": 20,
+      "count": 5,
+      "truncated": false,
+      "idsByDataset": {
+        "retrieval": [
+          "ret-002",
+          "ret-028"
+        ],
+        "qa": [
+          "qa-004"
+        ],
+        "refusal": [
+          "ref-007"
+        ],
+        "nlq": [
+          "nlq-001"
+        ]
+      },
+      "splitCounts": {
+        "heldout": 5
+      },
+      "categoryCounts": {
+        "同义改写": 1,
+        "易混淆制度": 1,
+        "qa": 1,
+        "党务-知识库未收录": 1,
+        "参数解析": 1
+      },
+      "datasetVersion": "1.1.0"
+    }
+  },
+  "runs": {
+    "offlineDev": {
+      "status": "completed"
+    },
+    "onlineDev": {
+      "status": "completed",
+      "degraded": true,
+      "stopReason": null
+    },
+    "offlineHeldout": {
+      "status": "completed"
+    },
+    "onlineHeldout": {
+      "status": "completed",
+      "stopReason": null
+    }
+  },
+  "comparison": {
+    "dev": {
+      "offlineRetrieval": [
+        {
+          "name": "A · BM25 关键词",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 0.3988,
+          "p95Ms": 1.4,
+          "samples": 8
+        },
+        {
+          "name": "B · 真实 Embedding 向量",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 0.2088,
+          "p95Ms": 1.18,
+          "samples": 8
+        },
+        {
+          "name": "C · BM25 + Embedding + RRF",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 0.6425,
+          "p95Ms": 2.2,
+          "samples": 8
+        },
+        {
+          "name": "D · C + 真实 Reranker",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 0.905,
+          "p95Ms": 2.93,
+          "samples": 8
+        }
+      ],
+      "onlineRetrieval": [
+        {
+          "name": "A · BM25 关键词",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 0.4313,
+          "p95Ms": 0.75,
+          "samples": 8
+        },
+        {
+          "name": "B · 真实 Embedding 向量",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.875,
+          "documentRecallAt5": 1,
+          "avgMs": 164.1388,
+          "p95Ms": 221.18,
+          "samples": 8
+        },
+        {
+          "name": "C · BM25 + Embedding + RRF",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.9375,
+          "documentRecallAt5": 1,
+          "avgMs": 164.6113,
+          "p95Ms": 221.57,
+          "samples": 8
+        },
+        {
+          "name": "D · C + 真实 Reranker",
+          "chunkRecallAt5": "N/A",
+          "chunkMrRAt5": "N/A",
+          "documentRecallAt5": "N/A",
+          "avgMs": "N/A",
+          "p95Ms": "N/A",
+          "samples": "N/A"
+        }
+      ],
+      "offlineQa": {
+        "samples": 5,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 0.062,
+        "status": "completed"
+      },
+      "onlineLlmQa": {
+        "samples": 5,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 2629.806,
+        "status": "completed"
+      },
+      "onlineDeterministicQa": {
+        "samples": 5,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 0.036,
+        "status": "completed"
+      },
+      "offlineRefusal": {
+        "samples": 4,
+        "refusalRate": 1,
+        "unwarrantedAnswerRate": 0,
+        "avgTopScore": 0.2275,
+        "avgScoreGap": 0.0125
+      },
+      "onlineRefusal": {
+        "samples": 4,
+        "refusalRate": 1,
+        "unwarrantedAnswerRate": 0,
+        "avgTopScore": 0.4016,
+        "avgScoreGap": 0.04
+      },
+      "offlineNlq": {
+        "samples": 3,
+        "toolSelectionAccuracy": 1,
+        "metricAccuracy": 1,
+        "organizationAccuracy": 1,
+        "timeRangeAccuracy": 1,
+        "groupByAccuracy": 1,
+        "exactMatchRate": 1,
+        "intentModeSplit": {
+          "rules": 3
+        }
+      },
+      "onlineNlq": {
+        "samples": 3,
+        "toolSelectionAccuracy": 1,
+        "metricAccuracy": 1,
+        "organizationAccuracy": 1,
+        "timeRangeAccuracy": 1,
+        "groupByAccuracy": 1,
+        "exactMatchRate": 1,
+        "intentModeSplit": {
+          "llm": 3
+        }
+      }
+    },
+    "heldout": {
+      "offlineRetrieval": [
+        {
+          "name": "A · BM25 关键词",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 0.21,
+          "p95Ms": 0.27,
+          "samples": 2
+        },
+        {
+          "name": "B · 真实 Embedding 向量",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.75,
+          "documentRecallAt5": 1,
+          "avgMs": 1.61,
+          "p95Ms": 3.15,
+          "samples": 2
+        },
+        {
+          "name": "C · BM25 + Embedding + RRF",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 1.995,
+          "p95Ms": 3.75,
+          "samples": 2
+        },
+        {
+          "name": "D · C + 真实 Reranker",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 2.35,
+          "p95Ms": 4.22,
+          "samples": 2
+        }
+      ],
+      "onlineRetrieval": [
+        {
+          "name": "A · BM25 关键词",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 0.39,
+          "p95Ms": 0.4,
+          "samples": 2
+        },
+        {
+          "name": "B · 真实 Embedding 向量",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 162.685,
+          "p95Ms": 179.73,
+          "samples": 2
+        },
+        {
+          "name": "C · BM25 + Embedding + RRF",
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 1,
+          "documentRecallAt5": 1,
+          "avgMs": 163.155,
+          "p95Ms": 180.25,
+          "samples": 2
+        },
+        {
+          "name": "D · C + 真实 Reranker",
+          "chunkRecallAt5": "N/A",
+          "chunkMrRAt5": "N/A",
+          "documentRecallAt5": "N/A",
+          "avgMs": "N/A",
+          "p95Ms": "N/A",
+          "samples": "N/A"
+        }
+      ],
+      "offlineQa": {
+        "samples": 1,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 0.26,
+        "status": "completed"
+      },
+      "onlineLlmQa": {
+        "samples": 1,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 3105.38,
+        "status": "completed"
+      },
+      "onlineDeterministicQa": {
+        "samples": 1,
+        "factPointCoverageRate": 1,
+        "citationNumberValidRate": 1,
+        "citationSupportRate": 1,
+        "overRefusalRate": 0,
+        "avgGenerationMs": 0.07,
+        "status": "completed"
+      },
+      "offlineRefusal": {
+        "samples": 1,
+        "refusalRate": 1,
+        "unwarrantedAnswerRate": 0,
+        "avgTopScore": 0.29,
+        "avgScoreGap": 0
+      },
+      "onlineRefusal": {
+        "samples": 1,
+        "refusalRate": 1,
+        "unwarrantedAnswerRate": 0,
+        "avgTopScore": 0.4572,
+        "avgScoreGap": 0.05
+      },
+      "offlineNlq": {
+        "samples": 1,
+        "toolSelectionAccuracy": 1,
+        "metricAccuracy": 1,
+        "organizationAccuracy": 1,
+        "timeRangeAccuracy": 1,
+        "groupByAccuracy": 1,
+        "exactMatchRate": 1,
+        "intentModeSplit": {
+          "rules": 1
+        }
+      },
+      "onlineNlq": {
+        "samples": 1,
+        "toolSelectionAccuracy": 1,
+        "metricAccuracy": 1,
+        "organizationAccuracy": 1,
+        "timeRangeAccuracy": 1,
+        "groupByAccuracy": 1,
+        "exactMatchRate": 1,
+        "intentModeSplit": {
+          "llm": 1
+        }
+      }
+    }
+  },
+  "budget": {
+    "dev": {
+      "requests": 31,
+      "byKind": {
+        "llm": 8,
+        "embedding": 22,
+        "rerank": 1
+      },
+      "promptTokens": 6403,
+      "completionTokens": 2313,
+      "totalTokens": 8716,
+      "durationMs": 17128,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "estimatedCostCny": 0.2997,
+      "stopped": false,
+      "stopReason": "N/A",
+      "unitPrice": {
+        "llmPerMillionTokens": 8,
+        "embeddingPerRequest": 0.01,
+        "rerankPerRequest": 0.01
+      }
+    },
+    "heldout": {
+      "requests": 12,
+      "byKind": {
+        "llm": 2,
+        "embedding": 9,
+        "rerank": 1
+      },
+      "promptTokens": 1877,
+      "completionTokens": 616,
+      "totalTokens": 2493,
+      "durationMs": 4556,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "estimatedCostCny": 0.1199,
+      "stopped": false,
+      "stopReason": "N/A",
+      "unitPrice": {
+        "llmPerMillionTokens": 8,
+        "embeddingPerRequest": 0.01,
+        "rerankPerRequest": 0.01
+      }
+    },
+    "total": {
+      "requests": 43,
+      "byKind": {
+        "llm": 10,
+        "embedding": 31,
+        "rerank": 2
+      },
+      "promptTokens": 8280,
+      "completionTokens": 2929,
+      "totalTokens": 11209,
+      "durationMs": 21684,
+      "estimatedCostCny": 0.4196,
+      "models": [
+        "deepseek-v4-flash"
+      ]
+    }
+  },
+  "failures": [
+    {
+      "batch": "dev",
+      "dataset": "runtime",
+      "id": "N/A",
+      "category": "rerank_api_error",
+      "input": "Reranker availability probe",
+      "expected": "真实 Reranker 可用",
+      "actual": {
+        "error": "Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403"
+      },
+      "detail": "Reranker 接口异常；D 方案标记 not_run，后续问答/拒答使用 C 方案上下文，不使用本地重排冒充真实模型"
+    },
+    {
+      "batch": "heldout",
+      "dataset": "runtime",
+      "id": "N/A",
+      "category": "rerank_api_error",
+      "input": "Reranker availability probe",
+      "expected": "真实 Reranker 可用",
+      "actual": {
+        "error": "Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403"
+      },
+      "detail": "Reranker 接口异常；D 方案标记 not_run，后续问答/拒答使用 C 方案上下文，不使用本地重排冒充真实模型"
+    }
+  ],
+  "limitations": [
+    "在线样本量很小（dev 20 条，heldout 5 条），只做配置层对照，不足以证明全量质量提升。",
+    "Recall@5 / MRR@5 使用标注来源与逐字证据片段；事实要点覆盖与引用支持是启发式指标。",
+    "拒答判定依赖检索门禁；LLM 只在门禁通过时生成，拒答本身不消耗 LLM token。",
+    "成本按保守单价估算，Token 事后计费与服务商账单可能存在差异。",
+    "组织统计仅做工具选择与参数解析，未执行 SQL，也未访问生产或隔离业务库。",
+    "Reranker 接口异常（Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403）：D 方案为 not_run；问答/拒答使用 C 方案上下文，并仅保留主题证据门禁，不代表线上 D 链路。"
+  ],
+  "conclusion": {
+    "verdict": "partial_d_not_run",
+    "embedding": "真实 Embedding 相对 BM25：chunk Recall@5 100.0% vs 100.0%（+0.0000），MRR@5 0.8750 vs 0.9375（-0.0625），平均耗时 +163.71 ms。未观察到足以抵消延迟的质量增益。",
+    "reranker": "D 方案 not_run：Reranker 接口返回 403（当前配置未带百炼兼容端点所需的 WorkspaceId），无法评价真实重排收益；修复端点前应继续禁用，禁止用本地关键词重排冒充。",
+    "text": "当前样本下不建议默认启用真实 Embedding；Reranker 需在接口修复后重测 D 方案再决定。 heldout 独立复核已完成，结论仍受小样本限制。"
+  }
+}

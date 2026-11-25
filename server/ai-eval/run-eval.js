@@ -113,79 +113,87 @@ function instrumentOnlineCalls({ AIClient, RagService, Reranker, EmbeddingClient
 }
 
 // ---------- 问答质量（真实 RagService 链路） ----------
+/**
+ * 单条问答评分：关键词覆盖/证据支持均为启发式，不冒充人工事实核验或 LLM Judge。
+ * V3 在线对照复用同一评分逻辑，确保离线与在线可比较。
+ */
+function scoreQaCase(item, result, trace = {}, failures = [], dataset = 'qa') {
+  const sources = result.sources || [];
+  const sourceMatched = sources.some((s) => s.source === item.expectedSource);
+  const keywordCoverageRate = keywordCoverage(result.answer, item.expectedKeywords);
+  const citedNumbers = [...String(result.answer).matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]));
+  const invalidCitations = citedNumbers.filter((n) => n < 1 || n > sources.length);
+  // 引用支持度（启发式、可人工复核）：被引用来源的证据片段出现在答案中，
+  // 或该来源证据片段覆盖至少一半标准答案要点。不是 LLM Judge，也不等价于事实正确。
+  const evidence = item.evidence || [];
+  const supportHit = evidence.some((e) => {
+    if (!sources.some((s) => s.source === e.source)) return false;
+    return String(result.answer).includes(e.snippet)
+      || keywordCoverage(e.snippet, item.expectedKeywords) >= 0.5;
+  });
+  const fallback = !trace.resultMode;
+  const row = {
+    id: item.id, split: item.split, sourceMatched,
+    // 仅为「标准答案要点覆盖率」的启发式判定，不冒充人工验证的事实准确率
+    factPointCovered: keywordCoverageRate >= 0.6,
+    keywordCoverageRate,
+    citationValid: citedNumbers.length ? invalidCitations.length === 0 : true,
+    citationSupport: supportHit, grounded: result.isGrounded, fallback,
+    hasAnswer: Boolean(result.answer)
+  };
+
+  if (!result.isGrounded) {
+    pushFailure(failures, {
+      dataset, id: item.id, category: 'over_refusal',
+      input: truncate(item.question), expected: { source: item.expectedSource, keywords: item.expectedKeywords },
+      actual: { isGrounded: false, topScore: sources[0]?.relevanceScore ?? null, gate: trace.evidenceGate || null },
+      detail: '知识库可回答的问题被拒答', sources: '(空)'
+    });
+  } else if (!sourceMatched) {
+    pushFailure(failures, {
+      dataset, id: item.id, category: 'retrieval_failure',
+      input: truncate(item.question), expected: { source: item.expectedSource, keywords: item.expectedKeywords },
+      actual: { sources: sources.map((s) => s.source) },
+      detail: '回答来源中未包含预期文档'
+    });
+  } else if (!row.factPointCovered) {
+    pushFailure(failures, {
+      dataset, id: item.id, category: 'generation_failure',
+      input: truncate(item.question), expected: { keywords: item.expectedKeywords },
+      actual: {
+        keywordCoverageRate, missingKeywords: missingKeywords(result.answer, item.expectedKeywords), fallback
+      },
+      detail: fallback ? '确定性兜底摘录未覆盖标准答案要点' : '模型答案未覆盖标准答案要点',
+      sources: sources.map((s) => `${s.id}.${s.source}`).join(' ')
+    });
+  }
+  if (invalidCitations.length) {
+    pushFailure(failures, {
+      dataset, id: item.id, category: 'citation_error',
+      input: truncate(item.question), expected: { validRange: [1, sources.length] },
+      actual: { citedNumbers, invalidCitations }, detail: '答案引用编号越界'
+    });
+  }
+  if (result.isGrounded && sourceMatched && !supportHit) {
+    pushFailure(failures, {
+      dataset, id: item.id, category: 'citation_error',
+      input: truncate(item.question), expected: { evidence: evidence.map((e) => e.snippet) },
+      actual: { answer: truncate(result.answer, 160) },
+      detail: '来源文件命中，但答案内容未体现该来源的证据片段（引用对应性辅助判定）'
+    });
+  }
+  return row;
+}
+
 async function evalQA(cases, failures) {
   const RagService = require('../src/services/ragService');
   const rows = [];
-  await RagService.init(true);
+  await RagService.init();
 
   for (const item of cases) {
     const trace = {};
     const result = await RagService.ask(item.question, { trace });
-    const sources = result.sources || [];
-    const sourceMatched = sources.some((s) => s.source === item.expectedSource);
-    const keywordCoverageRate = keywordCoverage(result.answer, item.expectedKeywords);
-    const citedNumbers = [...String(result.answer).matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]));
-    const invalidCitations = citedNumbers.filter((n) => n < 1 || n > sources.length);
-    // 引用支持度（启发式、可人工复核）：被引用来源的证据片段出现在答案中，
-    // 或该来源证据片段覆盖至少一半标准答案要点。不是 LLM Judge，也不等价于事实正确。
-    const evidence = item.evidence || [];
-    const supportHit = evidence.some((e) => {
-      if (!sources.some((s) => s.source === e.source)) return false;
-      return String(result.answer).includes(e.snippet)
-        || keywordCoverage(e.snippet, item.expectedKeywords) >= 0.5;
-    });
-    const fallback = !trace.resultMode;
-    const row = {
-      id: item.id, split: item.split, sourceMatched,
-      // 仅为「标准答案要点覆盖率」的启发式判定，不冒充人工验证的事实准确率
-      factPointCovered: keywordCoverageRate >= 0.6,
-      keywordCoverageRate,
-      citationValid: citedNumbers.length ? invalidCitations.length === 0 : true,
-      citationSupport: supportHit, grounded: result.isGrounded, fallback,
-      hasAnswer: Boolean(result.answer)
-    };
-    rows.push(row);
-
-    if (!result.isGrounded) {
-      pushFailure(failures, {
-        dataset: 'qa', id: item.id, category: 'over_refusal',
-        input: truncate(item.question), expected: { source: item.expectedSource, keywords: item.expectedKeywords },
-        actual: { isGrounded: false, topScore: sources[0]?.relevanceScore ?? null, gate: trace.evidenceGate || null },
-        detail: '知识库可回答的问题被拒答', sources: '(空)'
-      });
-    } else if (!sourceMatched) {
-      pushFailure(failures, {
-        dataset: 'qa', id: item.id, category: 'retrieval_failure',
-        input: truncate(item.question), expected: { source: item.expectedSource, keywords: item.expectedKeywords },
-        actual: { sources: sources.map((s) => s.source) },
-        detail: '回答来源中未包含预期文档'
-      });
-    } else if (!row.factPointCovered) {
-      pushFailure(failures, {
-        dataset: 'qa', id: item.id, category: 'generation_failure',
-        input: truncate(item.question), expected: { keywords: item.expectedKeywords },
-        actual: {
-          keywordCoverageRate, missingKeywords: missingKeywords(result.answer, item.expectedKeywords), fallback
-        },
-        detail: fallback ? '确定性兜底摘录未覆盖标准答案要点' : '模型答案未覆盖标准答案要点',
-        sources: sources.map((s) => `${s.id}.${s.source}`).join(' ')
-      });
-    }
-    if (invalidCitations.length) {
-      pushFailure(failures, {
-        dataset: 'qa', id: item.id, category: 'citation_error',
-        input: truncate(item.question), expected: { validRange: [1, sources.length] },
-        actual: { citedNumbers, invalidCitations }, detail: '答案引用编号越界'
-      });
-    }
-    if (result.isGrounded && sourceMatched && !supportHit) {
-      pushFailure(failures, {
-        dataset: 'qa', id: item.id, category: 'citation_error',
-        input: truncate(item.question), expected: { evidence: evidence.map((e) => e.snippet) },
-        actual: { answer: truncate(result.answer, 160) },
-        detail: '来源文件命中，但答案内容未体现该来源的证据片段（引用对应性辅助判定）'
-      });
-    }
+    rows.push(scoreQaCase(item, result, trace, failures));
   }
 
   const summaryOf = (subset) => ({
@@ -211,7 +219,7 @@ async function evalQA(cases, failures) {
 async function evalRefusal(cases, failures) {
   const RagService = require('../src/services/ragService');
   const rows = [];
-  await RagService.init(true);
+  await RagService.init();
   for (const item of cases) {
     const trace = {};
     const result = await RagService.ask(item.query, { trace });
@@ -281,17 +289,19 @@ async function evalCitation(cases, failures) {
 }
 
 // ---------- 自然语言统计查询 ----------
-async function evalNLQ(cases, failures, budget) {
+async function evalNLQ(cases, failures, budget, options = {}) {
   const { parseOrganizationQuery } = require('../src/ai/queryParser');
   const { validateToolCall, normalizeToolParameters, mapParsedQueryToToolCall, toolForMetric } = require('../src/ai/queryTools');
   const { AIClient } = require('../src/services/aiClient');
   const rows = [];
+  const requireLlm = Boolean(options.requireLlm);
 
   for (const item of cases) {
     let parsed = null;
     let tool = null;
     let intentMode = 'rules';
     const trace = {};
+    let onlineError = null;
     if (budget && AIClient.isConfigured()) {
       try {
         const call = await AIClient.identifyQueryIntent(item.message, trace);
@@ -301,11 +311,24 @@ async function evalNLQ(cases, failures, budget) {
           intentMode = 'llm';
         }
       } catch (err) {
+        onlineError = err;
         pushFailure(failures, {
           dataset: 'nlq', id: item.id, category: 'tool_error', input: truncate(item.message),
           expected: '在线工具调用', actual: { error: truncate(err.message, 100) }, detail: '在线调用受预算或模型限制中断'
         });
       }
+    }
+    if (!parsed && requireLlm && AIClient.isConfigured()) {
+      // V3 在线对照必须证明真实 Function Calling 可用；规则回退只能作为离线确定性基线。
+      if (!onlineError) {
+        pushFailure(failures, {
+          dataset: 'nlq', id: item.id, category: 'tool_error', input: truncate(item.message),
+          expected: '真实 Function Calling 工具调用',
+          actual: { toolMode: trace.toolMode || null, errorType: trace.errorType || null },
+          detail: '在线模型未产出工具调用，禁止用规则解析结果冒充真实 Function Calling'
+        });
+      }
+      continue;
     }
     if (!parsed) {
       try {
@@ -634,7 +657,10 @@ async function runEval({ mode = 'offline', gate = false, outDir } = {}) {
   return { report, files };
 }
 
-module.exports = { runEval, instrumentOnlineCalls, resolveTraceArgument, DATASET_VERSION, FIXED_NOW, TOP_K, TOP_N };
+module.exports = {
+  runEval, instrumentOnlineCalls, resolveTraceArgument, scoreQaCase,
+  evalQA, evalRefusal, evalNLQ, DATASET_VERSION, FIXED_NOW, TOP_K, TOP_N
+};
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2)

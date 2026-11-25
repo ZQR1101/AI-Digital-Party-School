@@ -51,12 +51,15 @@ function splitSummary(rows) {
  * @param {object} deps { RagService, reciprocalRankFusion, Reranker, topK, topN }
  * @param {Array} cases 检索样本
  * @param {Array} failures 失败诊断收集器
+ * @param {object} [options.configs] 仅计算指定方案；reranker 不可用时可排除 hybrid_rerank
  */
-async function evaluateRetrieval(deps, cases, failures, mode) {
+async function evaluateRetrieval(deps, cases, failures, mode, options = {}) {
   const { RagService, reciprocalRankFusion, Reranker, topK, topN } = deps;
-  await RagService.init(true);
+  const enabledConfigs = options.configs || CONFIGS;
+  const disabledConfigs = CONFIGS.filter((c) => !enabledConfigs.includes(c));
+  await RagService.init();
   const results = {};
-  for (const config of CONFIGS) results[config] = { document: [], chunk: [] };
+  for (const config of enabledConfigs) results[config] = { document: [], chunk: [] };
 
   for (const item of cases) {
     // 逐段计时并按“端到端累计耗时”归属各配置，避免四种方案共用同一个耗时造成误导
@@ -69,24 +72,29 @@ async function evaluateRetrieval(deps, cases, failures, mode) {
     started = performance.now();
     const rrf = reciprocalRankFusion(bm25Hits, vectorHits, { k: 60, topN });
     const rrfMs = performance.now() - started;
-    started = performance.now();
-    const reranked = await Reranker.rerank(item.query, rrf, topK);
-    const rerankMs = performance.now() - started;
+    const rerankEnabled = enabledConfigs.includes('hybrid_rerank');
+    let reranked = null;
+    let rerankMs = 0;
+    if (rerankEnabled) {
+      started = performance.now();
+      reranked = await Reranker.rerank(item.query, rrf, topK);
+      rerankMs = performance.now() - started;
+    }
     const ms = (v) => Math.round(v * 100) / 100;
     const latency = {
       bm25: ms(bm25Ms),
       vector: ms(vectorMs),
       hybrid: ms(bm25Ms + vectorMs + rrfMs),
-      hybrid_rerank: ms(bm25Ms + vectorMs + rrfMs + rerankMs)
+      hybrid_rerank: rerankEnabled ? ms(bm25Ms + vectorMs + rrfMs + rerankMs) : null
     };
     const candidates = {
       bm25: bm25Hits.slice(0, topK),
       vector: vectorHits.slice(0, topK),
       hybrid: rrf.slice(0, topK),
-      hybrid_rerank: reranked
+      hybrid_rerank: rerankEnabled ? reranked : null
     };
 
-    for (const config of CONFIGS) {
+    for (const config of enabledConfigs) {
       const hits = candidates[config];
       const docSources = chunkSources(hits);
       const chunkRanked = hits.map((h) => (isEvidenceHit(h, item) ? (h.chunk || h).source : '__miss__'));
@@ -105,21 +113,22 @@ async function evaluateRetrieval(deps, cases, failures, mode) {
       results[config].chunk.push({ ...base, ...values(chunkRanked, evidenceSources) });
     }
 
-    // 失败归因只看线上实际配置（hybrid_rerank）
-    const finalSources = chunkSources(candidates.hybrid_rerank);
+    // 失败归因看最佳可用配置；reranker 不可用时退回 C（RRF 截断），但不伪造 D 结果。
+    const finalCandidates = candidates.hybrid_rerank || candidates.hybrid;
+    const finalSources = chunkSources(finalCandidates);
     if (!item.relevant.some((s) => finalSources.includes(s))) {
       const preHit = item.relevant.some((s) => chunkSources(rrf).includes(s));
       failures.push({
-        dataset: 'retrieval', id: item.id, category: preHit ? 'rerank_failure' : 'retrieval_failure',
+        dataset: 'retrieval', id: item.id, category: preHit && rerankEnabled ? 'rerank_failure' : 'retrieval_failure',
         input: item.query,
         expected: { document: item.relevant, evidence: (item.evidence || []).map((e) => e.snippet) },
-        actual: { document: finalSources, chunkMatched: candidates.hybrid_rerank.filter((h) => isEvidenceHit(h, item)).length },
-        detail: preHit
+        actual: { document: finalSources, chunkMatched: finalCandidates.filter((h) => isEvidenceHit(h, item)).length },
+        detail: preHit && rerankEnabled
           ? '相关来源已进入 RRF 融合候选（topN），但被重排挤出 Top-5'
           : '相关来源在 BM25 / 向量双路召回阶段即未出现',
         sources: finalSources.map((s, i) => `${i + 1}.${s}`).join(' ') || '(空)'
       });
-    } else if (!candidates.hybrid_rerank.some((h) => isEvidenceHit(h, item))) {
+    } else if (!finalCandidates.some((h) => isEvidenceHit(h, item))) {
       failures.push({
         dataset: 'retrieval', id: item.id, category: 'chunk_evidence_miss',
         input: item.query,
@@ -132,7 +141,7 @@ async function evaluateRetrieval(deps, cases, failures, mode) {
   }
 
   const summary = {};
-  for (const config of CONFIGS) {
+  for (const config of enabledConfigs) {
     summary[config] = {
       document: { ...aggregate(results[config].document), bySplit: splitSummary(results[config].document) },
       chunk: { ...aggregate(results[config].chunk), bySplit: splitSummary(results[config].chunk) }
@@ -143,6 +152,8 @@ async function evaluateRetrieval(deps, cases, failures, mode) {
     title: '检索四方案对比（文档级 / 分块级）',
     mode,
     topK, topN,
+    enabledConfigs,
+    disabledConfigs,
     summary,
     details: results
   };

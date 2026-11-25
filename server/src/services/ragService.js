@@ -35,6 +35,17 @@ class RagService {
   }
 
   /**
+   * 问答证据门禁：与 ask / personalizedAsk 共用同一判定，评测可从外部复用而不改变策略。
+   */
+  static isAnswerable(question, results, trace = {}) {
+    const evidence = hasTopicEvidence(question, results.map((r) => r.chunk), { topK: 3 });
+    trace.evidenceGate = evidence;
+    return results.length > 0
+      && results[0].relevanceScore >= currentRelevanceThreshold()
+      && evidence.pass;
+  }
+
+  /**
    * 混合检索 (BM25 + 向量检索 + RRF 融合 + Reranker 重排)
    */
   static async hybridSearch(query, options = {}) {
@@ -123,11 +134,7 @@ class RagService {
 
     // 防模型幻觉门禁：保留原相关性阈值，同时要求检索分块中出现问题的核心主题短语。
     // 避免「党的二十大」「三严三实」等知识库未收录问题仅靠通用字词重叠被误判为有依据。
-    const evidence = hasTopicEvidence(question, results.map((r) => r.chunk), { topK: 3 });
-    trace.evidenceGate = evidence;
-    const isRelevant = results.length > 0
-      && results[0].relevanceScore >= currentRelevanceThreshold()
-      && evidence.pass;
+    const isRelevant = this.isAnswerable(question, results, trace);
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       return {
@@ -212,11 +219,7 @@ class RagService {
     // 相关性拒答门禁：与知识问答一致，保留原阈值并增加主题证据校验。
     // 个性化问答实际用 searchQuery（问题 + 学习画像薄弱点）检索，证据校验必须使用同一查询，
     // 否则「我最近哪些知识点掌握得不好」这类依赖画像补全的问题会被误判为无来源。
-    const evidence = hasTopicEvidence(searchQuery, results.map((r) => r.chunk), { topK: 3 });
-    trace.evidenceGate = evidence;
-    const isRelevant = results.length > 0
-      && results[0].relevanceScore >= currentRelevanceThreshold()
-      && evidence.pass;
+    const isRelevant = this.isAnswerable(searchQuery, results, trace);
     if (!isRelevant) {
       trace.ragOutcome = 'no_relevant_knowledge';
       const weakHint = weakCategories.length
