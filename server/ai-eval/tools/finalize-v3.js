@@ -112,7 +112,7 @@ function buildConclusion(onlineDev, onlineHeldout) {
     ? 'heldout 独立复核已完成，结论仍受小样本限制。'
     : 'heldout 未完成，本结论仅为 dev 小样本观察。';
   const rerankerText = rerankNotRun
-    ? 'D 方案 not_run：Reranker 接口返回 403（当前配置未带百炼兼容端点所需的 WorkspaceId），无法评价真实重排收益；修复端点前应继续禁用，禁止用本地关键词重排冒充。'
+    ? 'D 方案 not_run：真实 Reranker 最小请求返回 HTTP 403，响应码 AllocationQuota.FreeTierOnly / insufficient_quota（百炼账号免费额度耗尽，需充值或关闭「仅使用免费额度」模式）；旧兼容端点、DashScope 原生端点与试用域名均返回同一错误，与 WorkspaceId 或 URL 格式无关。额度恢复并使用业务空间专属域名后可直接补跑 D 方案；当前禁止用本地关键词重排冒充，真实重排收益暂不可评价。'
     : `真实 Reranker 在融合后相对 C 的 chunk Recall@5 变化 ${delta(d.recallAt5, c.recallAt5)}，平均额外耗时 ${num(Math.max(0, (d.avgMs ?? 0) - (c.avgMs ?? 0)))} ms。`;
   const verdict = rerankNotRun
     ? 'partial_d_not_run'
@@ -151,6 +151,25 @@ function markdown(json) {
   lines.push(`API Key 仅从环境变量读取，未写入仓库或报告。${cfg.pricingNote || ''}`);
   lines.push('');
 
+  const audit = fs.existsSync(path.join(REPORT_DIR, 'rerank-config-audit.json'))
+    ? readJson('rerank-config-audit.json') : null;
+  if (audit) {
+    lines.push('### Reranker 配置核对与最小请求验证');
+    lines.push('');
+    lines.push(`- 官方兼容端点：\`${audit.officialFindings.compatibleEndpoint}\`；请求体为扁平结构，响应 \`results[].{index, relevance_score}\`。`);
+    lines.push(`- WorkspaceId：业务空间 ID（形如 \`llm-xxxxxx\`），可在创建 Key 弹窗或业务空间管理页的 API Host 获取，作为专属域名的一级子域。`);
+    lines.push(`- 地域 / 地域 ID / DashScope 域名：${audit.officialFindings.regionMapping.map((r) => `${r.region}=${r.regionId}（${r.dashScopeDomain}）`).join('；')}。`);
+    lines.push(`- 地域与 API Key 绑定：${audit.officialFindings.keyRegionBinding}`);
+    lines.push(`- 配置示例已修正：\`${audit.localConfig.oldEndpointExample}\` → \`${audit.localConfig.correctedEndpointExample}\`；涉及 ${audit.localConfig.filesCorrected.length} 个文件。`);
+    lines.push('- 最小请求验证（每端点仅 1 请求，不参与指标）：');
+    for (const p of audit.minimalProbes) {
+      lines.push(`  - ${p.label}：\`${p.endpoint}\` → HTTP ${p.httpStatus} \`${p.errorCode}\`。`);
+    }
+    lines.push(`- 验证结论：${audit.verdict.rootCause}。${audit.verdict.previousAttribution}。${audit.verdict.dScheme}。`);
+    lines.push(`- 额度恢复后补跑命令：\`${audit.verdict.rerunCommand}\`（复用原 dev 样本 ID，不扩样、不改标准答案）。`);
+    lines.push('');
+  }
+
   lines.push('## 2. 样本 ID 与数量');
   lines.push('');
   for (const [batch, data] of [['dev', json.selection.dev], ['heldout（配置冻结后复核）', json.selection.heldout]]) {
@@ -171,6 +190,11 @@ function markdown(json) {
   for (const row of dev.onlineRetrieval || []) {
     lines.push(`| ${row.name} | ${int(row.samples)} | ${pct(row.chunkRecallAt5)} | ${num(row.chunkMrRAt5, 4)} | ${pct(row.documentRecallAt5)} | ${num(row.avgMs)} | ${num(row.p95Ms)} |`);
   }
+  lines.push('');
+  const rerankRequests = json.budget?.dev?.byKind?.rerank ?? NA;
+  const rerankBackend = cfg.reranker?.actualBackend?.backend || NA;
+  lines.push(`- D 方案样本：dev 检索 8 条（\`${(json.selection?.dev?.idsByDataset?.retrieval || []).join(', ')}\`）保持原 V3 预设不变；D 方案状态 **not_run**。Recall@5 / MRR@5 / P95 均不填充估算值。`);
+  lines.push(`- D 方案真实重排请求次数：0；__探测请求 ${rerankRequests} 次（仅用于可用性验证，不属于 D 方案）__；Reranker 实际后端：\`${rerankBackend}\`（降级，未用于在线结果）。`);
   lines.push('');
   lines.push('离线同 ID 基线：');
   lines.push('');
@@ -273,6 +297,8 @@ function main() {
   ];
   const status = onlineDev?.status || 'not_run';
   const config = onlineDev?.environment?.config || offlineDev?.environment?.config || {};
+  const audit = fs.existsSync(path.join(REPORT_DIR, 'rerank-config-audit.json'))
+    ? readJson('rerank-config-audit.json') : null;
   const json = {
     reportVersion: '3.0.0',
     title: 'AI 在线质量评测 V3 对照实验',
@@ -305,6 +331,7 @@ function main() {
       total: addUsage(onlineDev?.usage, onlineHeldout?.usage)
     },
     failures,
+    rerankConfigAudit: audit,
     limitations: onlineDev?.limitations || [],
     conclusion: buildConclusion(onlineDev, onlineHeldout)
   };

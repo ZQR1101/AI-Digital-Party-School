@@ -1,7 +1,7 @@
 {
   "reportVersion": "3.0.0",
   "title": "AI 在线质量评测 V3 对照实验",
-  "generatedAt": "2026-11-25T09:30:41.381Z",
+  "generatedAt": "2026-11-25T09:51:50.623Z",
   "datasetVersion": "1.1.0",
   "status": "completed",
   "stopReason": null,
@@ -544,6 +544,96 @@
       "detail": "Reranker 接口异常；D 方案标记 not_run，后续问答/拒答使用 C 方案上下文，不使用本地重排冒充真实模型"
     }
   ],
+  "rerankConfigAudit": {
+    "auditVersion": "1.0.0",
+    "generatedAt": "2026-11-25T17:48:00+08:00",
+    "model": "qwen3.7-text-rerank",
+    "officialReferences": [
+      "https://help.aliyun.com/zh/model-studio/text-rerank-api#openai-compatible-rerank",
+      "https://help.aliyun.com/zh/model-studio/regions"
+    ],
+    "officialFindings": {
+      "compatibleEndpoint": "POST https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks",
+      "requestBody": "扁平结构：model / query / documents / top_n / instruct / return_documents，不嵌套 input、parameters",
+      "response": "results[].{index, relevance_score}，return_documents=true 时含 document.text",
+      "workspaceId": "业务空间 ID，可在创建 API Key 后的弹窗复制 API Host，或业务空间管理页 API Host 列获取（形如 llm-xxxxxx），作为专属域名的一级子域",
+      "regionMapping": [
+        {
+          "region": "华北2（北京）",
+          "regionId": "cn-beijing",
+          "dedicatedDomain": "{WorkspaceId}.cn-beijing.maas.aliyuncs.com",
+          "dashScopeDomain": "dashscope.aliyuncs.com"
+        },
+        {
+          "region": "新加坡",
+          "regionId": "ap-southeast-1",
+          "dedicatedDomain": "{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com",
+          "dashScopeDomain": "dashscope-intl.aliyuncs.com"
+        },
+        {
+          "region": "中国香港",
+          "regionId": "cn-hongkong",
+          "dedicatedDomain": "{WorkspaceId}.cn-hongkong.maas.aliyuncs.com",
+          "dashScopeDomain": "cn-hongkong.dashscope.aliyuncs.com"
+        },
+        {
+          "region": "美国（弗吉尼亚）",
+          "regionId": "us-east-1",
+          "dedicatedDomain": "{WorkspaceId}.us-east-1.maas.aliyuncs.com",
+          "dashScopeDomain": "dashscope-us.aliyuncs.com"
+        }
+      ],
+      "keyRegionBinding": "每个地域有独立 API Key，不能跨地域混用；业务空间专属域名仅访问当前业务空间，DashScope 旧域名可访问所有业务空间但自 2026-09-30 起不再支持新特性",
+      "quotaNote": "RPM/TPM 按模型区分，在主账号维度合并计算；免费额度与按量付费为账号级设置"
+    },
+    "localConfig": {
+      "oldEndpointExample": "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+      "correctedEndpointExample": "https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks",
+      "apiKeySource": "process.env.RERANKER_API_KEY → DASHSCOPE_API_KEY → EMBEDDING_API_KEY → AI_API_KEY",
+      "keyMaterialInReport": false,
+      "filesCorrected": [
+        "server/src/rag/reranker.js",
+        "server/.env.example",
+        "docs/DEPLOY.md",
+        "server/AI_API.md"
+      ]
+    },
+    "minimalProbes": [
+      {
+        "label": "旧兼容端点 + qwen3.7-text-rerank",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+        "httpStatus": 403,
+        "errorCode": "AllocationQuota.FreeTierOnly",
+        "message": "Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console."
+      },
+      {
+        "label": "DashScope 原生端点 + qwen3-rerank",
+        "endpoint": "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank",
+        "httpStatus": 403,
+        "errorCode": "AllocationQuota.FreeTierOnly",
+        "message": "Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console."
+      },
+      {
+        "label": "官方试用域名 + qwen3.7-text-rerank",
+        "endpoint": "https://trial.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks",
+        "httpStatus": 403,
+        "errorCode": "insufficient_quota",
+        "message": "Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console."
+      }
+    ],
+    "probeDefaults": {
+      "documents": 2,
+      "topN": 2,
+      "purpose": "仅验证服务可用性与错误归因，不参与任何评测指标；API Key 仅从环境变量读取。"
+    },
+    "verdict": {
+      "rootCause": "百炼账号 rerank 模型免费额度耗尽（账号级），与 WorkspaceId 缺失或 URL 格式无关",
+      "previousAttribution": "V3 报告原将 403 归因于『未带 WorkspaceId』，经最小请求验证为错误归因，已修正",
+      "dScheme": "not_run —— 真实 Reranker 不可用，禁止用本地关键词重排冒充在线结果",
+      "remediation": "在百炼控制台为对应地域业务空间充值或关闭『仅使用免费额度』模式，并将 RERANKER_API_URL 配置为业务空间专属域名后，使用 docs 中的补跑命令补齐 D 方案",
+      "rerunCommand": "cd server && AI_EVAL_ONLINE=1 node ai-eval/tools/run-online-v3.js --mode=online --preset=v3-online --max-requests=80 --max-cost=2 --out=ai-eval/reports/v3-online-dev.json && node ai-eval/tools/finalize-v3.js"
+    }
+  },
   "limitations": [
     "在线样本量很小（dev 20 条，heldout 5 条），只做配置层对照，不足以证明全量质量提升。",
     "Recall@5 / MRR@5 使用标注来源与逐字证据片段；事实要点覆盖与引用支持是启发式指标。",
@@ -555,7 +645,7 @@
   "conclusion": {
     "verdict": "partial_d_not_run",
     "embedding": "真实 Embedding 相对 BM25：chunk Recall@5 100.0% vs 100.0%（+0.0000），MRR@5 0.8750 vs 0.9375（-0.0625），平均耗时 +163.71 ms。未观察到足以抵消延迟的质量增益。",
-    "reranker": "D 方案 not_run：Reranker 接口返回 403（当前配置未带百炼兼容端点所需的 WorkspaceId），无法评价真实重排收益；修复端点前应继续禁用，禁止用本地关键词重排冒充。",
+    "reranker": "D 方案 not_run：真实 Reranker 最小请求返回 HTTP 403，响应码 AllocationQuota.FreeTierOnly / insufficient_quota（百炼账号免费额度耗尽，需充值或关闭「仅使用免费额度」模式）；旧兼容端点、DashScope 原生端点与试用域名均返回同一错误，与 WorkspaceId 或 URL 格式无关。额度恢复并使用业务空间专属域名后可直接补跑 D 方案；当前禁止用本地关键词重排冒充，真实重排收益暂不可评价。",
     "text": "当前样本下不建议默认启用真实 Embedding；Reranker 需在接口修复后重测 D 方案再决定。 heldout 独立复核已完成，结论仍受小样本限制。"
   }
 }

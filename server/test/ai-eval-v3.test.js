@@ -104,3 +104,38 @@ test('配置摘要不泄漏 API Key', (t) => {
   assert.ok(!text.includes('SENTINEL_EMBEDDING_KEY'));
   assert.ok(!text.includes('SENTINEL_RERANK_KEY'));
 });
+
+test('Reranker 配置示例指向百炼业务空间专属域名且不泄漏 Key', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.resolve(__dirname, '..');
+  const envExample = fs.readFileSync(path.join(root, '.env.example'), 'utf8');
+  const aiApi = fs.readFileSync(path.join(root, 'AI_API.md'), 'utf8');
+  const deploy = fs.readFileSync(path.resolve(root, '../docs/DEPLOY.md'), 'utf8');
+  for (const text of [envExample, aiApi, deploy]) {
+    assert.match(text, /\{WorkspaceId\}\.\{region\}\.maas\.aliyuncs\.com\/compatible-api\/v1\/reranks/);
+    assert.match(text, /llm-xxxxxx\.cn-beijing\.maas\.aliyuncs\.com/);
+    // 旧域名仅作为「兼容/迁移说明」出现，不再作为推荐的主配置值
+    const activeUrls = text.split(/\r?\n/).filter((line) => /^RERANKER_API_URL\s*=/.test(line));
+    assert.ok(activeUrls.every((line) => line.includes('maas.aliyuncs.com')),
+      '活跃配置行必须使用业务空间专属域名');
+  }
+});
+
+test('Reranker 配置核对记录完整且不含 API Key', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const audit = JSON.parse(fs.readFileSync(
+    path.join(__dirname, '../ai-eval/reports/rerank-config-audit.json'), 'utf8'
+  ));
+  assert.equal(audit.officialFindings.compatibleEndpoint,
+    'POST https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks');
+  assert.ok(audit.officialFindings.regionMapping.some((r) => r.regionId === 'cn-beijing'));
+  assert.ok(audit.officialFindings.regionMapping.some((r) => r.regionId === 'ap-southeast-1'));
+  assert.equal(audit.localConfig.keyMaterialInReport, false);
+  assert.ok(audit.minimalProbes.length >= 2);
+  assert.ok(audit.minimalProbes.every((p) => p.httpStatus === 403));
+  assert.match(audit.verdict.dScheme, /not_run/);
+  assert.match(audit.verdict.remediation, /专属域名/);
+  assert.ok(!JSON.stringify(audit).includes('sk-'));
+});

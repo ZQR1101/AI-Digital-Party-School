@@ -53,9 +53,12 @@ EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIM=1024
 EMBEDDING_BATCH=10
 
-# Reranker：DashScope 兼容 rerank 端点（与 SiliconFlow /v1/rerank 同构，
+# Reranker：百炼业务空间专属域名 + OpenAI 兼容 rerank 端点（与 SiliconFlow /v1/rerank 同构，
 # 响应解析 results[].index / relevance_score；见 server/.env.example 与 src/rag/reranker.js）
-RERANKER_API_URL=https://dashscope.aliyuncs.com/compatible-api/v1/reranks
+# 端点格式：https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
+#   WorkspaceId 来自百炼「业务空间管理」页/创建 Key 弹窗的 API Host；region 为地域 ID
+#   API Key 必须与 URL 中地域一致（各地域 Key 不能跨地域混用）
+RERANKER_API_URL=https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
 RERANKER_API_KEY=sk-xxxxxxxxxxxxxxxx
 RERANKER_MODEL=qwen3-rerank
 

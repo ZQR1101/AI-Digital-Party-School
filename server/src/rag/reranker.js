@@ -8,14 +8,28 @@ const { tokenize } = require('./bm25');
  *
  * 配置：
  *   RERANKER_API_URL   rerank 端点；未配置则使用本地关键词重排。
- *                      百炼示例：https://dashscope.aliyuncs.com/compatible-api/v1/reranks
- *   RERANKER_API_KEY   该服务专用 Key；缺省依次回退 DASHSCOPE_API_KEY、EMBEDDING_API_KEY、AI_API_KEY。
- *   RERANKER_MODEL     模型名，默认 qwen3-rerank（百炼 Qwen3 重排系列）。
+ *                      百炼官方推荐（业务空间专属域名）：
+ *                        https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
+ *                      例（华北2-北京，WorkspaceId=llm-xxxxxx）：
+ *                        https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
+ *                      其中 WorkspaceId 为百炼「业务空间管理」页/创建 Key 弹窗中的业务空间 ID，
+ *                      region 为地域 ID（cn-beijing / ap-southeast-1 / cn-hongkong / us-east-1 等）。
+ *                      旧域名 https://dashscope.aliyuncs.com/compatible-api/v1/reranks 仍可达，
+ *                      但官方注明自 2026-09-30 起不再支持新特性，推荐迁移至专属域名。
+ *   RERANKER_API_KEY   该地域业务空间的百炼 API Key；缺省依次回退
+ *                      DASHSCOPE_API_KEY、EMBEDDING_API_KEY、AI_API_KEY。
+ *                      注意：百炼各地域 API Key 不同且不能跨地域混用；
+ *                      Key 必须与 URL 中 {region} 对应的地域一致。
+ *   RERANKER_MODEL     模型名，默认 qwen3-rerank；qwen3.7-text-rerank 同样支持兼容接口。
  *   RERANKER_TIMEOUT_MS 请求超时，默认 8000ms。
  *
- * 说明：百炼兼容端点为 /compatible-api/v1/reranks（复数），响应 results[].{index, relevance_score}，
+ * 说明：百炼兼容端点为 /compatible-api/v1/reranks（compatible-api，reranks 复数），
+ *       请求体为扁平结构 {model, query, documents, top_n}，响应 results[].{index, relevance_score}，
  *       与 SiliconFlow 的 /v1/rerank 结构一致，故解析逻辑通用。
  * 调用失败时降级为本地精准关键词重排，并通过 lastBackend 暴露实际后端。
+ *
+ * 参考：https://help.aliyun.com/zh/model-studio/text-rerank-api#openai-compatible-rerank
+ *       https://help.aliyun.com/zh/model-studio/regions （地域 / 专属域名 / Key 对应关系）
  */
 class Reranker {
   static isApiConfigured() {
