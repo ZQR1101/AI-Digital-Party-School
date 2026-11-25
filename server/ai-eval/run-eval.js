@@ -572,7 +572,7 @@ if (require.main === module) {
     .filter((a) => a.startsWith('--'))
     .map((a) => {
       const idx = a.indexOf('=');
-      return idx === -1 ? [a.slice(2), true] : [a.slice(2), a.slice(idx + 1)];
+      return idx === -1 ? [a.slice(2), true] : [a.slice(2, idx), a.slice(idx + 1)];
     }));
   const mode = args.mode === 'online' ? 'online' : 'offline';
   runEval({ mode, gate: Boolean(args.gate), outDir: args.out ? path.resolve(String(args.out)) : undefined })

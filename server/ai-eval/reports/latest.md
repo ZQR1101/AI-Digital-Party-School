@@ -1,7 +1,7 @@
 # AI 质量评测报告 V1（离线确定性）
 
 - 报告版本：2.0.0 ｜ 数据集版本：1.1.0 ｜ 状态：completed
-- 生成时间：2026-11-25T07:31:24.952Z ｜ Git Commit：`f39aabc4a926775f3bcf630d7631a3940ec930a8`
+- 生成时间：2026-11-25T07:35:10.746Z ｜ Git Commit：`336da63cb667f6bbc305e7a6434370177782594e`
 - 运行环境：Node v22.22.2 / win32 x64 ｜ CI：否
 - 知识库版本：10 个 Markdown ｜ SHA256 `bc881d8a19ec77fb55aa1911f74177edfb1a04f32cffd580ea54f0be850ddd68`
 - 固定时钟：2026-06-15T02:00:00.000Z ｜ 样本划分规则：sha1(id) % 10 < 3 → heldout；其余 dev
@@ -16,8 +16,8 @@
 
 ## 运行配置与后端
 
-- Embedding：{"configured":false,"model":"text-embedding-v4","dim":1024,"backend":"local-hash","semantic":false}
-- Reranker：{"configured":false,"model":"qwen3-rerank","backend":"local-keyword","semantic":false}
+- Embedding：{"configured":false,"model":"qwen3.7-text-embedding-flash","dim":1024,"backend":"local-hash","semantic":false}
+- Reranker：{"configured":false,"model":"qwen3.7-text-rerank","backend":"local-keyword","semantic":false}
 - 分块数：50 ｜ 向量维度：1024
 - LLM 生成：未配置（离线走确定性兜底）
 - 检索参数：topK=5 ｜ topN=20
@@ -26,14 +26,14 @@
 
 | 检索配置 | 粒度 | Hit@1 | Hit@3 | Hit@5 | Recall@3 | Recall@5 | MRR@5 | 平均耗时 | P95 |
 |---|---|---|---|---|---|---|---|---|---|
-| bm25 | document | 0.925 | 1 | 1 | 1 | 1 | 0.9625 | 0.142ms | 0.28ms |
-| bm25 | chunk | 0.8 | 1 | 1 | 0.9875 | 0.9875 | 0.8917 | 0.142ms | 0.28ms |
-| vector | document | 0.75 | 0.925 | 1 | 0.9125 | 0.9875 | 0.8383 | 0.1025ms | 0.11ms |
-| vector | chunk | 0.575 | 0.775 | 0.85 | 0.7625 | 0.85 | 0.68 | 0.1025ms | 0.11ms |
-| hybrid | document | 0.85 | 1 | 1 | 1 | 1 | 0.9167 | 0.2588ms | 0.38ms |
-| hybrid | chunk | 0.65 | 0.95 | 0.975 | 0.9375 | 0.975 | 0.7896 | 0.2588ms | 0.38ms |
-| hybrid_rerank | document | 0.875 | 0.975 | 0.975 | 0.975 | 0.975 | 0.9167 | 0.48ms | 0.6ms |
-| hybrid_rerank | chunk | 0.675 | 0.95 | 0.975 | 0.9375 | 0.9625 | 0.805 | 0.48ms | 0.6ms |
+| bm25 | document | 0.925 | 1 | 1 | 1 | 1 | 0.9625 | 0.1253ms | 0.2ms |
+| bm25 | chunk | 0.8 | 1 | 1 | 0.9875 | 0.9875 | 0.8917 | 0.1253ms | 0.2ms |
+| vector | document | 0.75 | 0.925 | 1 | 0.9125 | 0.9875 | 0.8383 | 0.1047ms | 0.11ms |
+| vector | chunk | 0.575 | 0.775 | 0.85 | 0.7625 | 0.85 | 0.68 | 0.1047ms | 0.11ms |
+| hybrid | document | 0.85 | 1 | 1 | 1 | 1 | 0.9167 | 0.246ms | 0.29ms |
+| hybrid | chunk | 0.65 | 0.95 | 0.975 | 0.9375 | 0.975 | 0.7896 | 0.246ms | 0.29ms |
+| hybrid_rerank | document | 0.875 | 0.975 | 0.975 | 0.975 | 0.975 | 0.9167 | 0.4575ms | 0.58ms |
+| hybrid_rerank | chunk | 0.675 | 0.95 | 0.975 | 0.9375 | 0.9625 | 0.805 | 0.4575ms | 0.58ms |
 
 > dev/heldout 分组指标见 JSON 报告 `suites.retrieval.summary.configurations.<方案>.<粒度>.bySplit`；不用保留集反复调参。
 
