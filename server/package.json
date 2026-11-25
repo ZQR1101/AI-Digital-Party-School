@@ -17,7 +17,12 @@
     "eval:compare": "node ai-eval/tools/compare-v1-v2.js",
     "eval:v3:offline": "node ai-eval/tools/run-online-v3.js --mode=offline --preset=v3-online",
     "eval:v3:online": "node ai-eval/tools/run-online-v3.js --mode=online --preset=v3-online",
-    "eval:v3:report": "node ai-eval/tools/finalize-v3.js"
+    "eval:v3:report": "node ai-eval/tools/finalize-v3.js",
+    "eval:v4:validate": "node ai-eval/tools/v4/validate-dataset.js",
+    "eval:v4:offline": "node ai-eval/tools/v4/run-v4.js --mode=offline --out=ai-eval/reports/v4/offline.json",
+    "eval:v4:online": "node ai-eval/tools/v4/run-v4.js --mode=online --sample=12 --max-requests=120 --max-cost=2 --out=ai-eval/reports/v4/online.json",
+    "eval:v4:review": "node ai-eval/tools/v4/run-v4.js --mode=review --max-requests=220 --max-cost=1.5",
+    "eval:v4:report": "node ai-eval/tools/v4/build-report.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

@@ -1,0 +1,1245 @@
+{
+  "version": "4.0.0",
+  "mode": "online",
+  "generatedAt": "2026-11-25T15:06:25.675Z",
+  "gitCommit": "8e6d3df6371e781f49c1814cba45c54f1834b66a",
+  "knowledgeBase": {
+    "dir": "C:\\Users\\Zqr\\Desktop\\大赛\\ai_party_school\\server\\knowledge-v4",
+    "files": 64,
+    "sha256": "8e41d94c4b7549a38e5a3d379b982c9dbb28d21cea8bedb02b4c754524ae4c22"
+  },
+  "datasetSha256": {
+    "retrieval": "6492a8942ce2028977ced1c0cfe4f03b341bfb1e1240eabc5aa8f430dcc661f9",
+    "qa": "1d669d41cf50daaf358d1396d36c893b7571b80b88c16709e5fcb2b9d7696367",
+    "refusal": "7db867a4af6890bc8d0ef08c92276ece5166ea7776913cfe3991c2580121882c",
+    "citation": "0f32ec83c7254c2e98e76771bbd92b4339b26463f633e1b93daaae83fed90710"
+  },
+  "selection": {
+    "note": "在线分层抽样（每类至少1条，总量上限20）",
+    "count": 12,
+    "ids": [
+      "v4-r-001",
+      "v4-q-001",
+      "v4-rf-001",
+      "v4-c-001",
+      "v4-q-002",
+      "v4-q-003",
+      "v4-rf-002",
+      "v4-rf-003",
+      "v4-r-002",
+      "v4-r-009",
+      "v4-r-015",
+      "v4-r-019"
+    ]
+  },
+  "backend": {
+    "rag": {
+      "embedding": {
+        "configured": true,
+        "model": "BAAI/bge-m3",
+        "dim": 1024,
+        "backend": "api",
+        "semantic": true
+      },
+      "reranker": {
+        "configured": true,
+        "model": "BAAI/bge-reranker-v2-m3"
+      },
+      "chunkCount": 349,
+      "vectorDim": 1024,
+      "initialized": true
+    },
+    "embedding": {
+      "configured": true,
+      "model": "BAAI/bge-m3",
+      "dim": 1024,
+      "backend": "api",
+      "semantic": true
+    },
+    "reranker": {
+      "configured": true,
+      "model": "BAAI/bge-reranker-v2-m3"
+    }
+  },
+  "suites": {
+    "retrieval": {
+      "title": "检索四方案对比（文档级 / 分块级）",
+      "mode": "online",
+      "topK": 5,
+      "topN": 20,
+      "enabledConfigs": [
+        "bm25",
+        "vector",
+        "hybrid",
+        "hybrid_rerank"
+      ],
+      "disabledConfigs": [],
+      "summary": {
+        "bm25": {
+          "document": {
+            "samples": 5,
+            "hitAt1": 0.4,
+            "hitAt3": 0.6,
+            "hitAt5": 0.6,
+            "recallAt3": 0.6,
+            "recallAt5": 0.6,
+            "mrrAt5": 0.5,
+            "avgMs": 3.236,
+            "p95Ms": 5.14,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.4,
+                "hitAt3": 0.6,
+                "hitAt5": 0.6,
+                "recallAt3": 0.6,
+                "recallAt5": 0.6,
+                "mrrAt5": 0.5,
+                "avgMs": 3.236,
+                "p95Ms": 5.14
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          },
+          "chunk": {
+            "samples": 5,
+            "hitAt1": 0.4,
+            "hitAt3": 0.4,
+            "hitAt5": 0.4,
+            "recallAt3": 0.4,
+            "recallAt5": 0.4,
+            "mrrAt5": 0.4,
+            "avgMs": 3.236,
+            "p95Ms": 5.14,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.4,
+                "hitAt3": 0.4,
+                "hitAt5": 0.4,
+                "recallAt3": 0.4,
+                "recallAt5": 0.4,
+                "mrrAt5": 0.4,
+                "avgMs": 3.236,
+                "p95Ms": 5.14
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          }
+        },
+        "vector": {
+          "document": {
+            "samples": 5,
+            "hitAt1": 0.2,
+            "hitAt3": 0.8,
+            "hitAt5": 0.8,
+            "recallAt3": 0.7,
+            "recallAt5": 0.8,
+            "mrrAt5": 0.5,
+            "avgMs": 214.844,
+            "p95Ms": 323.84,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.2,
+                "hitAt3": 0.8,
+                "hitAt5": 0.8,
+                "recallAt3": 0.7,
+                "recallAt5": 0.8,
+                "mrrAt5": 0.5,
+                "avgMs": 214.844,
+                "p95Ms": 323.84
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          },
+          "chunk": {
+            "samples": 5,
+            "hitAt1": 0.2,
+            "hitAt3": 0.6,
+            "hitAt5": 0.6,
+            "recallAt3": 0.6,
+            "recallAt5": 0.6,
+            "mrrAt5": 0.4,
+            "avgMs": 214.844,
+            "p95Ms": 323.84,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.2,
+                "hitAt3": 0.6,
+                "hitAt5": 0.6,
+                "recallAt3": 0.6,
+                "recallAt5": 0.6,
+                "mrrAt5": 0.4,
+                "avgMs": 214.844,
+                "p95Ms": 323.84
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          }
+        },
+        "hybrid": {
+          "document": {
+            "samples": 5,
+            "hitAt1": 0.4,
+            "hitAt3": 0.8,
+            "hitAt5": 0.8,
+            "recallAt3": 0.8,
+            "recallAt5": 0.8,
+            "mrrAt5": 0.6,
+            "avgMs": 218.152,
+            "p95Ms": 327.34,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.4,
+                "hitAt3": 0.8,
+                "hitAt5": 0.8,
+                "recallAt3": 0.8,
+                "recallAt5": 0.8,
+                "mrrAt5": 0.6,
+                "avgMs": 218.152,
+                "p95Ms": 327.34
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          },
+          "chunk": {
+            "samples": 5,
+            "hitAt1": 0.4,
+            "hitAt3": 0.6,
+            "hitAt5": 0.6,
+            "recallAt3": 0.6,
+            "recallAt5": 0.6,
+            "mrrAt5": 0.5,
+            "avgMs": 218.152,
+            "p95Ms": 327.34,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.4,
+                "hitAt3": 0.6,
+                "hitAt5": 0.6,
+                "recallAt3": 0.6,
+                "recallAt5": 0.6,
+                "mrrAt5": 0.5,
+                "avgMs": 218.152,
+                "p95Ms": 327.34
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          }
+        },
+        "hybrid_rerank": {
+          "document": {
+            "samples": 5,
+            "hitAt1": 0.6,
+            "hitAt3": 0.8,
+            "hitAt5": 0.8,
+            "recallAt3": 0.8,
+            "recallAt5": 0.8,
+            "mrrAt5": 0.7,
+            "avgMs": 531.636,
+            "p95Ms": 625.73,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.6,
+                "hitAt3": 0.8,
+                "hitAt5": 0.8,
+                "recallAt3": 0.8,
+                "recallAt5": 0.8,
+                "mrrAt5": 0.7,
+                "avgMs": 531.636,
+                "p95Ms": 625.73
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          },
+          "chunk": {
+            "samples": 5,
+            "hitAt1": 0.6,
+            "hitAt3": 0.6,
+            "hitAt5": 0.6,
+            "recallAt3": 0.6,
+            "recallAt5": 0.6,
+            "mrrAt5": 0.6,
+            "avgMs": 531.636,
+            "p95Ms": 625.73,
+            "bySplit": {
+              "dev": {
+                "samples": 5,
+                "hitAt1": 0.6,
+                "hitAt3": 0.6,
+                "hitAt5": 0.6,
+                "recallAt3": 0.6,
+                "recallAt5": 0.6,
+                "mrrAt5": 0.6,
+                "avgMs": 531.636,
+                "p95Ms": 625.73
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          }
+        }
+      },
+      "details": {
+        "bm25": {
+          "document": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 5.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 3.1,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 2.55,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 1.93,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 3.46,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ],
+          "chunk": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 5.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 3.1,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 2.55,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 1.93,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 3.46,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ]
+        },
+        "vector": {
+          "document": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 236.31,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 252.7,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 142.07,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 119.3,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 0.5,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 323.84,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ],
+          "chunk": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 236.31,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 252.7,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 142.07,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 119.3,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 323.84,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ]
+        },
+        "hybrid": {
+          "document": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 241.65,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 255.85,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 144.66,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 121.26,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 327.34,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ],
+          "chunk": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 241.65,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 255.85,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 144.66,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 121.26,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 327.34,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ]
+        },
+        "hybrid_rerank": {
+          "document": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 558.1,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 580.02,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 461.6,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 432.73,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 625.73,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ],
+          "chunk": [
+            {
+              "id": "v4-r-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 558.1,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-002",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 580.02,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-009",
+              "split": "dev",
+              "category": "相近概念",
+              "latencyMs": 461.6,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "v4-r-015",
+              "split": "dev",
+              "category": "跨文档检索",
+              "latencyMs": 432.73,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            },
+            {
+              "id": "v4-r-019",
+              "split": "dev",
+              "category": "版本辨析",
+              "latencyMs": 625.73,
+              "hitAt1": 0,
+              "hitAt3": 0,
+              "hitAt5": 0,
+              "recallAt3": 0,
+              "recallAt5": 0,
+              "mrrAt5": 0
+            }
+          ]
+        }
+      },
+      "evidenceCompleteness": {
+        "bm25": {
+          "status": "not_run_online",
+          "samples": 2,
+          "rate": "N/A"
+        },
+        "vector": {
+          "status": "not_run_online",
+          "samples": 2,
+          "rate": "N/A"
+        },
+        "hybrid": {
+          "status": "not_run_online",
+          "samples": 2,
+          "rate": "N/A"
+        },
+        "hybrid_rerank": {
+          "status": "not_run_online",
+          "samples": 2,
+          "rate": "N/A"
+        }
+      }
+    },
+    "qa": {
+      "samples": 3,
+      "executed": 2,
+      "deterministic": {
+        "factPointCoverageRate": 1,
+        "sourceMatchedRate": 1,
+        "overRefusalRate": 0,
+        "byMode": {
+          "llm": 0,
+          "fallback": 2
+        }
+      },
+      "rows": [
+        {
+          "id": "v4-q-001",
+          "split": "dev",
+          "grounded": true,
+          "sourceMatched": true,
+          "keywordCoverage": 1,
+          "mode": "deterministic"
+        },
+        {
+          "id": "v4-q-002",
+          "split": "dev",
+          "status": "not_run",
+          "error": "Embedding API 调用失败，实际后端=local-hash：timeout of 8000ms exceeded",
+          "mode": "error"
+        },
+        {
+          "id": "v4-q-003",
+          "split": "dev",
+          "grounded": true,
+          "sourceMatched": true,
+          "keywordCoverage": 1,
+          "mode": "deterministic"
+        }
+      ],
+      "llm": {
+        "status": "not_run",
+        "note": "在线模式由真实 LLM 生成；离线为确定性摘录。人工复核表另行记录。"
+      }
+    },
+    "refusal": {
+      "samples": 3,
+      "noAnswerCorrectRefusalRate": 0.6667,
+      "rows": [
+        {
+          "id": "v4-rf-001",
+          "split": "dev",
+          "answerable": false,
+          "refused": false
+        },
+        {
+          "id": "v4-rf-002",
+          "split": "dev",
+          "answerable": false,
+          "refused": true
+        },
+        {
+          "id": "v4-rf-003",
+          "split": "dev",
+          "answerable": false,
+          "refused": true
+        }
+      ]
+    },
+    "citation": {
+      "samples": 1,
+      "validRate": 1,
+      "rows": [
+        {
+          "id": "v4-c-001",
+          "split": "dev",
+          "valid": true,
+          "invalid": [],
+          "expectInvalid": []
+        }
+      ]
+    }
+  },
+  "failures": [
+    {
+      "dataset": "retrieval",
+      "id": "v4-r-015",
+      "category": "chunk_evidence_miss",
+      "input": "预备党员没有党龄，那么党龄怎么算、预备期又有多长？",
+      "expected": {
+        "document": [
+          "V4-01-中国共产党章程-党员.md",
+          "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md"
+        ],
+        "evidence": [
+          "第七条　预备党员的预备期为一年。党组织对预备党员应当认真教育和考察。\n预备党员的义务同正式党员一样。预备党员的权利，除了没有表决权、选举权和被选举权以外，也同正式党员一样。\n预备党员预备期满，党的支部应当及时讨论他能否转为正式党员。认真履行党员义务，具备党员条件的，应当按期转为正式党员；需要继续考察和教育的，可以延长预备期，但不能超过一年；不履行党员义务，不具备党员条件的，应当取消预备党员资格。预备党员转为正式党员，或延长预备期，或取消预备党员资格，都应当经支部大会讨论通过和上级党组织批准。\n预备党员的预备期，从支部大会通过他为预备党员之日算起。党员的党龄，从预备期满转为正式党员之日算起。",
+          "第三十一条 预备党员的预备期为一年。预备期从党支部党员大会通过其为预备党员之日算起。\n预备党员预备期满，党支部应当及时讨论其能否转为正式党员。认真履行党员义务、具备党员条件的，应当按期转为正式党员；需要继续考察和教育的，可以延长一次预备期，延长时间不能少于半年，最长不超过一年；不履行党员义务、不具备党员条件的，应当取消其预备党员资格。\n预备党员违犯党纪，情节较轻，可以保留预备党员资格的，应当对其进行批评教育或者延长预备期；情节较重的，应当取消其预备党员资格。\n预备党员转为正式党员、延长预备期或者取消预备党员资格，应当经党支部党员大会讨论通过和上级党组织批准。"
+        ]
+      },
+      "actual": {
+        "document": [
+          "V4-LEGACY-党员组织关系与党籍管理.md",
+          "V4-01-中国共产党章程-党员.md",
+          "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md"
+        ]
+      },
+      "detail": "文档级命中，但 Top-5 分块均未包含标注的答案证据片段（命中文档不等于命中证据）",
+      "sources": "1.V4-LEGACY-党员组织关系与党籍管理.md 2.V4-01-中国共产党章程-党员.md 3.V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md 4.V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md 5.V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md"
+    },
+    {
+      "dataset": "retrieval",
+      "id": "v4-r-019",
+      "category": "rerank_failure",
+      "input": "发展党员工作细则2014版与2026修订版，申请入党年龄条件是如何规定的？",
+      "expected": {
+        "document": [
+          "V4-41-中国共产党发展党员工作细则-总则.md",
+          "V4-43-中国共产党发展党员工作细则-发展对象的确定和考察.md"
+        ],
+        "evidence": [
+          "第一条 为了规范和加强发展党员工作，提高新发展的党员质量，保持党的先进性和纯洁性，根据《中国共产党章程》和有关党内法规，制定本细则。",
+          "第十三条 对经过一年以上培养教育和考察、基本具备党员条件的入党积极分子，在听取党小组、培养联系人、党员和群众等意见的基础上，党支部委员会会议研究讨论并报上级党委同意拟列为发展对象的，在工作、学习单位或者居住地进行公示，公示期不少于五个工作日。拟列为发展对象的流动人员，应当在流出地和流入地同时公示。公示结果不影响发展入党的，可以列为发展对象。"
+        ]
+      },
+      "actual": {
+        "document": [
+          "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "V4-48-中国共产党发展党员工作细则（2014年版·已废止）-总则.md",
+          "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md"
+        ],
+        "chunkMatched": 0
+      },
+      "detail": "相关来源已进入 RRF 融合候选（topN），但被重排挤出 Top-5",
+      "sources": "1.V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md 2.V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md 3.V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md 4.V4-48-中国共产党发展党员工作细则（2014年版·已废止）-总则.md 5.V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md"
+    },
+    {
+      "dataset": "qa",
+      "id": "v4-q-002",
+      "category": "online_api_error",
+      "detail": "真实模型失败，拒绝用本地降级冒充",
+      "actual": {
+        "error": "Embedding API 调用失败，实际后端=local-hash：timeout of 8000ms exceeded"
+      }
+    }
+  ],
+  "limitations": [
+    "V4 为独立知识库（knowledge-v4）与独立数据集 v4.0.0，不与 V1.1.0 基线混算。",
+    "事实要点覆盖、引用支持为启发式指标，人工复核另行记录，不等同人工事实准确率。",
+    "在线仅代表性小样本，成本为估算值；真实模型失败标 not_run，不用本地降级冒充。"
+  ],
+  "budget": {
+    "limits": {
+      "maxRequests": 120,
+      "maxCostCny": 2,
+      "pricePerMillionTokens": 2,
+      "timeoutMs": 8000,
+      "transportMaxAttempts": 2,
+      "embeddingCostPerRequest": 0,
+      "rerankCostPerRequest": 0
+    },
+    "usage": {
+      "requests": 61,
+      "byKind": {
+        "llm": 5,
+        "embedding": 46,
+        "rerank": 10
+      },
+      "promptTokens": 817,
+      "completionTokens": 869,
+      "totalTokens": 1686,
+      "durationMs": 20960,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "estimatedCostCny": 0.0034,
+      "stopped": false,
+      "stopReason": "N/A",
+      "unitPrice": {
+        "llmPerMillionTokens": 2,
+        "embeddingPerRequest": 0,
+        "rerankPerRequest": 0
+      }
+    }
+  },
+  "humanReviewSheet": {
+    "status": "pending_human_review",
+    "count": 9,
+    "note": "以下字段须由人工逐条填写；自动启发式评分与本表分开记录",
+    "cases": [
+      {
+        "id": "v4-q-001",
+        "category": "同义改写",
+        "split": "dev",
+        "question": "预备党员的预备期有多长，党龄从什么时候开始计算？",
+        "standardAnswer": "预备党员的预备期为一年，党员的党龄从预备期满转为正式党员之日算起。",
+        "requiredFacts": [
+          "预备期为一年",
+          "党龄从预备期满转为正式党员之日算起"
+        ],
+        "evidence": [
+          {
+            "source": "V4-01-中国共产党章程-党员.md",
+            "snippet": "第七条　预备党员的预备期为一年。党组织对预备党员应当认真教育和考察。\n预备党员的义务同正式党员一样。预备党员的权利，除了没有表决权、选举权和被选举权以外，也同正式党员一样。\n预备党员预备期满，党的支部应当及时讨论他能否转为正式党员。认真履行党员义务，具备党员条件的，应当按期转为正式党员；需要继续考察和教育的，可以延长预备期，但不能超过一年；不履行党员义务，不具备党员条件的，应当取消预备党员资格。预备党员转为正式党员，或延长预备期，或取消预备党员资格，都应当经支部大会讨论通过和上级党组织批准。\n预备党员的预备期，从支部大会通过他为预备党员之日算起。党员的党龄，从预备期满转为正式党员之日算起。",
+            "article": "七"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-q-002",
+        "category": "同义改写",
+        "split": "dev",
+        "question": "党员受到警告处分后，多长时间内不能在党内提拔职务？",
+        "standardAnswer": "党员受到警告处分一年内，不得在党内提拔职务或者进一步使用。",
+        "requiredFacts": [
+          "一年内",
+          "不得在党内提拔职务"
+        ],
+        "evidence": [
+          {
+            "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+            "snippet": "第十条　党员受到警告处分一年内、受到严重警告处分一年半内，不得在党内提拔职务或者进一步使用，也不得向党外组织推荐担任高于其原任职务的党外职务或者进一步使用。",
+            "article": "十"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-q-003",
+        "category": "相近概念",
+        "split": "dev",
+        "question": "开除党籍和留党察看在重新入党、恢复权利方面分别有什么规定？",
+        "standardAnswer": "留党察看分为一年、二年，最长不超过二年，确有悔改表现的期满后恢复党员权利；受到开除党籍处分的党员，五年内不得重新入党。",
+        "requiredFacts": [
+          "留党察看最长不得超过二年",
+          "期满后恢复其党员权利",
+          "五年内不得重新入党"
+        ],
+        "evidence": [
+          {
+            "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+            "snippet": "第十二条　留党察看处分，分为留党察看一年、留党察看二年。对于受到留党察看处分一年的党员，期满后仍不符合恢复党员权利条件的，应当延长一年留党察看期限。留党察看期限最长不得超过二年。\n党员受留党察看处分期间，没有表决权、选举权和被选举权。留党察看期间，确有悔改表现的，期满后恢复其党员权利；坚持不改或者又发现其他应当受到党纪处分的违纪行为的，应当开除党籍。\n党员受到留党察看处分，其党内职务自然撤销。对于担任党外职务的，应当建议党外组织撤销其党外职务。受到留党察看处分的党员，恢复党员权利后二年内，不得在党内担任和向党外组织推荐担任与其原任职务相当或者高于其原任职务的职务。",
+            "article": "十二"
+          },
+          {
+            "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+            "snippet": "第十三条　党员受到开除党籍处分，五年内不得重新入党，也不得推荐担任与其原任职务相当或者高于其原任职务的党外职务。另有规定不准重新入党的，依照规定。",
+            "article": "十三"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-r-015",
+        "category": "跨文档检索",
+        "split": "dev",
+        "question": "预备党员没有党龄，那么党龄怎么算、预备期又有多长？",
+        "standardAnswer": "N/A",
+        "requiredFacts": [],
+        "evidence": [
+          {
+            "source": "V4-01-中国共产党章程-党员.md",
+            "snippet": "第七条　预备党员的预备期为一年。党组织对预备党员应当认真教育和考察。\n预备党员的义务同正式党员一样。预备党员的权利，除了没有表决权、选举权和被选举权以外，也同正式党员一样。\n预备党员预备期满，党的支部应当及时讨论他能否转为正式党员。认真履行党员义务，具备党员条件的，应当按期转为正式党员；需要继续考察和教育的，可以延长预备期，但不能超过一年；不履行党员义务，不具备党员条件的，应当取消预备党员资格。预备党员转为正式党员，或延长预备期，或取消预备党员资格，都应当经支部大会讨论通过和上级党组织批准。\n预备党员的预备期，从支部大会通过他为预备党员之日算起。党员的党龄，从预备期满转为正式党员之日算起。",
+            "article": "七"
+          },
+          {
+            "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+            "snippet": "第三十一条 预备党员的预备期为一年。预备期从党支部党员大会通过其为预备党员之日算起。\n预备党员预备期满，党支部应当及时讨论其能否转为正式党员。认真履行党员义务、具备党员条件的，应当按期转为正式党员；需要继续考察和教育的，可以延长一次预备期，延长时间不能少于半年，最长不超过一年；不履行党员义务、不具备党员条件的，应当取消其预备党员资格。\n预备党员违犯党纪，情节较轻，可以保留预备党员资格的，应当对其进行批评教育或者延长预备期；情节较重的，应当取消其预备党员资格。\n预备党员转为正式党员、延长预备期或者取消预备党员资格，应当经党支部党员大会讨论通过和上级党组织批准。",
+            "article": "三十一"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-r-019",
+        "category": "版本辨析",
+        "split": "dev",
+        "question": "发展党员工作细则2014版与2026修订版，申请入党年龄条件是如何规定的？",
+        "standardAnswer": "N/A",
+        "requiredFacts": [],
+        "evidence": [
+          {
+            "source": "V4-41-中国共产党发展党员工作细则-总则.md",
+            "snippet": "第一条 为了规范和加强发展党员工作，提高新发展的党员质量，保持党的先进性和纯洁性，根据《中国共产党章程》和有关党内法规，制定本细则。",
+            "article": "一"
+          },
+          {
+            "source": "V4-43-中国共产党发展党员工作细则-发展对象的确定和考察.md",
+            "snippet": "第十三条 对经过一年以上培养教育和考察、基本具备党员条件的入党积极分子，在听取党小组、培养联系人、党员和群众等意见的基础上，党支部委员会会议研究讨论并报上级党委同意拟列为发展对象的，在工作、学习单位或者居住地进行公示，公示期不少于五个工作日。拟列为发展对象的流动人员，应当在流出地和流入地同时公示。公示结果不影响发展入党的，可以列为发展对象。",
+            "article": "十三"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-rf-001",
+        "category": "无答案",
+        "split": "dev",
+        "question": "党员每季度应当缴纳多少元党费的具体金额标准是多少？",
+        "standardAnswer": "N/A",
+        "requiredFacts": [],
+        "evidence": [],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-rf-002",
+        "category": "无答案",
+        "split": "dev",
+        "question": "2026年全国党员总数是多少万人？",
+        "standardAnswer": "N/A",
+        "requiredFacts": [],
+        "evidence": [],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-rf-003",
+        "category": "无答案",
+        "split": "dev",
+        "question": "量子纠缠在党内法规中如何规定？",
+        "standardAnswer": "N/A",
+        "requiredFacts": [],
+        "evidence": [],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      },
+      {
+        "id": "v4-c-001",
+        "category": "引用真实性",
+        "split": "dev",
+        "question": "双条引用均合法",
+        "standardAnswer": "预备党员预备期为一年[1]，党龄从预备期满转为正式党员之日算起[2]。",
+        "requiredFacts": [
+          "预备期为一年",
+          "党龄从预备期满转为正式党员之日算起"
+        ],
+        "evidence": [
+          {
+            "source": "V4-01-中国共产党章程-党员.md",
+            "snippet": "预备党员的预备期为一年。"
+          },
+          {
+            "source": "V4-01-中国共产党章程-党员.md",
+            "snippet": "党员的党龄，从预备期满转为正式党员之日算起。"
+          }
+        ],
+        "humanFields": {
+          "factCorrect": "",
+          "complete": "",
+          "citationSupported": "",
+          "errorType": "",
+          "reviewer": "",
+          "reviewedAt": ""
+        }
+      }
+    ]
+  },
+  "status": "completed"
+}

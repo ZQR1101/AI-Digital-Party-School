@@ -8,7 +8,11 @@ const { AIClient } = require('./aiClient');
 const { hasTopicEvidence } = require('../rag/evidenceGate');
 const LearningProfileService = require('./learningProfileService');
 
-const KNOWLEDGE_DIR = path.resolve(__dirname, '../../knowledge');
+// 知识库目录可通过 KNOWLEDGE_DIR 覆盖（如 V4 扩展库），默认仍为生产 knowledge，
+// 评测用独立目录避免扩展语料污染 V1.1.0 历史基线与生产行为。
+const KNOWLEDGE_DIR = process.env.KNOWLEDGE_DIR
+  ? path.resolve(process.env.KNOWLEDGE_DIR)
+  : path.resolve(__dirname, '../../knowledge');
 const RELEVANCE_THRESHOLD = 0.28;
 // 本地回退向量是哈希非语义，分数整体偏低（实测有效问题 0.26~0.28、无关问题 ≤0.20），
 // 若沿用语义阈值会把正常个性化问题全部拒答；回退模式下调阈值仅影响本地降级环境，

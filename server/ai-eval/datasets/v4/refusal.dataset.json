@@ -1,0 +1,224 @@
+{
+  "version": "4.0.0",
+  "group": "refusal",
+  "description": "V4 拒答集：无答案与部分可回答",
+  "count": 12,
+  "cases": [
+    {
+      "id": "v4-rf-001",
+      "split": "dev",
+      "category": "无答案",
+      "query": "党员每季度应当缴纳多少元党费的具体金额标准是多少？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库未收录按工资基数计算党费的具体金额表，不得编造",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "拒答-党费金额"
+      }
+    },
+    {
+      "id": "v4-rf-002",
+      "split": "dev",
+      "category": "无答案",
+      "query": "2026年全国党员总数是多少万人？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库无党内统计公报数据",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "拒答-党员总数"
+      }
+    },
+    {
+      "id": "v4-rf-003",
+      "split": "dev",
+      "category": "无答案",
+      "query": "量子纠缠在党内法规中如何规定？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "与党务无关的自然科学概念",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "拒答-无关领域"
+      }
+    },
+    {
+      "id": "v4-rf-004",
+      "split": "heldout",
+      "category": "部分可回答",
+      "query": "预备党员转正后党龄怎么算，以及转正需要支部大会多少票通过？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "党龄起算有证据，但支部大会表决通过比例在V4知识库该条文中未收录，需拒答或说明部分可答",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "拒答-部分可回答"
+      }
+    },
+    {
+      "id": "v4-rf-005",
+      "split": "heldout",
+      "category": "无答案",
+      "query": "党支部书记每月应当领取多少职务津贴？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库无津贴标准",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "拒答-津贴标准"
+      }
+    },
+    {
+      "id": "v4-rf-006",
+      "split": "dev",
+      "category": "无答案",
+      "query": "党员违纪后罚款的具体金额标准是多少？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库为党纪处分规定，不含罚款金额标准",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库为党纪处分规定，不含罚款金额标准"
+      }
+    },
+    {
+      "id": "v4-rf-007",
+      "split": "dev",
+      "category": "无答案",
+      "query": "党支部开展活动的年度经费预算是多少万元？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库无具体经费数额",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库无具体经费数额"
+      }
+    },
+    {
+      "id": "v4-rf-008",
+      "split": "dev",
+      "category": "无答案",
+      "query": "某省2025年发展党员的计划指标是多少人？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库无年度发展计划数据",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库无年度发展计划数据"
+      }
+    },
+    {
+      "id": "v4-rf-009",
+      "split": "heldout",
+      "category": "无答案",
+      "query": "预备党员在预备期间有没有表决权？如果没有，那正式党员每年要交多少元党费？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "前半部分有证据（预备党员无表决权），后半部分党费具体金额无证据——部分可回答，整体应拒答或明确说明局限",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "前半部分有证据（预备党员无表决权），后半部分党费具体金额无证据——部分可回答，整体应拒答或明确说明局限"
+      }
+    },
+    {
+      "id": "v4-rf-010",
+      "split": "heldout",
+      "category": "无答案",
+      "query": "党的全国代表大会代表的平均年龄是多少岁？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库无代表年龄统计",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库无代表年龄统计"
+      }
+    },
+    {
+      "id": "v4-rf-011",
+      "split": "heldout",
+      "category": "无答案",
+      "query": "党支部组织生活会必须在12月31日前召开吗？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库规定“一般安排在第四季度”，无“必须12月31日前”的硬性日期，不得强行补全",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库规定“一般安排在第四季度”，无“必须12月31日前”的硬性日期，不得强行补全"
+      }
+    },
+    {
+      "id": "v4-rf-012",
+      "split": "dev",
+      "category": "无答案",
+      "query": "党员受到留党察看处分期间能不能参加党课学习？",
+      "relevant": [],
+      "evidence": [],
+      "requiredFacts": [],
+      "answer": "",
+      "answerable": false,
+      "note": "知识库规定了留党察看期间无表决权、选举权、被选举权，但未明确规定能否参加党课，不得推断",
+      "verification": {
+        "label": "人工设计（证据锚定）",
+        "designer": "AI 质量评测 V4",
+        "method": "按条号从权威原文抽取证据，人工设计问题与标准答案，脚本严格校验逐字匹配",
+        "name": "知识库规定了留党察看期间无表决权、选举权、被选举权，但未明确规定能否参加党课，不得推断"
+      }
+    }
+  ]
+}

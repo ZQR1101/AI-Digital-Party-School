@@ -1,0 +1,1971 @@
+{
+  "version": "4.0.0",
+  "phase": "llm_human_review_batch",
+  "generatedAt": "2026-11-25T15:06:17.267Z",
+  "gitCommit": "8e6d3df6371e781f49c1814cba45c54f1834b66a",
+  "knowledgeBase": {
+    "dir": "C:\\Users\\Zqr\\Desktop\\大赛\\ai_party_school\\server\\knowledge-v4",
+    "files": 64,
+    "sha256": "8e41d94c4b7549a38e5a3d379b982c9dbb28d21cea8bedb02b4c754524ae4c22"
+  },
+  "datasetSha256": {
+    "retrieval": "6492a8942ce2028977ced1c0cfe4f03b341bfb1e1240eabc5aa8f430dcc661f9",
+    "qa": "1d669d41cf50daaf358d1396d36c893b7571b80b88c16709e5fcb2b9d7696367",
+    "refusal": "7db867a4af6890bc8d0ef08c92276ece5166ea7776913cfe3991c2580121882c",
+    "citation": "0f32ec83c7254c2e98e76771bbd92b4339b26463f633e1b93daaae83fed90710"
+  },
+  "backend": {
+    "rag": {
+      "embedding": {
+        "configured": true,
+        "model": "BAAI/bge-m3",
+        "dim": 1024,
+        "backend": "api",
+        "semantic": true
+      },
+      "reranker": {
+        "configured": true,
+        "model": "BAAI/bge-reranker-v2-m3"
+      },
+      "chunkCount": 349,
+      "vectorDim": 1024,
+      "initialized": true
+    },
+    "embedding": {
+      "configured": true,
+      "model": "BAAI/bge-m3",
+      "dim": 1024,
+      "backend": "api",
+      "semantic": true
+    },
+    "reranker": {
+      "configured": true,
+      "model": "BAAI/bge-reranker-v2-m3"
+    }
+  },
+  "budget": {
+    "limits": {
+      "maxRequests": 240,
+      "maxCostCny": 1.5,
+      "pricePerMillionTokens": 2,
+      "timeoutMs": 8000,
+      "transportMaxAttempts": 2,
+      "embeddingCostPerRequest": 0,
+      "rerankCostPerRequest": 0
+    },
+    "usage": {
+      "requests": 148,
+      "byKind": {
+        "llm": 41,
+        "embedding": 71,
+        "rerank": 36
+      },
+      "promptTokens": 34807,
+      "completionTokens": 9898,
+      "totalTokens": 44705,
+      "durationMs": 110109,
+      "models": [
+        "deepseek-v4-flash"
+      ],
+      "estimatedCostCny": 0.0894,
+      "stopped": false,
+      "stopReason": "N/A",
+      "unitPrice": {
+        "llmPerMillionTokens": 2,
+        "embeddingPerRequest": 0,
+        "rerankPerRequest": 0
+      }
+    }
+  },
+  "summary": {
+    "requested": 36,
+    "completed": 36,
+    "failed": 0,
+    "llmGenerated": 31,
+    "deterministicFallback": 5,
+    "deterministicFallbackIds": [
+      "v4-q-001",
+      "v4-q-003",
+      "v4-q-004",
+      "v4-q-022",
+      "v4-q-036"
+    ],
+    "autoMeanFactCoverage": 0.9861,
+    "llmOnlyMeanFactCoverage": 1,
+    "autoSourceMatchedRate": 0.9722,
+    "extractiveDumpCount": 5,
+    "meanAnswerChars": 290
+  },
+  "status": "completed",
+  "stopReason": null,
+  "note": "human 字段全部为 null，必须由人工逐条填写；auto 为启发式分数，二者分开统计。",
+  "cases": [
+    {
+      "id": "v4-q-001",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "预备党员的预备期有多长，党龄从什么时候开始计算？",
+      "goldAnswer": "预备党员的预备期为一年，党员的党龄从预备期满转为正式党员之日算起。",
+      "requiredFacts": [
+        "预备期为一年",
+        "党龄从预备期满转为正式党员之日算起"
+      ],
+      "modelAnswer": "根据党校知识库资料《V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md》（条文原文）[1]：\n\n当按期转为正式党员；需要继续考察和教育的，可以延长一次预备期，延长时间不能少于半年，最长不超过一年；不履行党员义务、不具备党员条件的，应当取消其预备党员资格。\n预备党员违犯党纪，情节较轻，可以保留预备党员资格的，应当对其进行批评教育或者延长预备期；情节较重的，应当取消其预备党员资格。\n预备党员转为正式党员、延长预备期或者取消预备党员资格，应当经党支部党员大会讨论通过和上级党组织批准。\n第三十二条 预备党员转正的手续是：本人向党支部提出书面转正申请；党支部征求党小组、党员和群众的意见；党支部委员会审查；党支部党员大会讨论、表决通过；报上级党委审批。\n讨论预备党员转正的党支部党员大会，对到会人数、赞成人数等要求与讨论接收预备党员的党支部党员大会相同。\n第三十三条 党委对党支部上报的预备党员转正的决议，应当在三个月内审批。审批结果应当及时通知党支部。党支部书记应当同本人谈话，并将审批结果在党员大会上宣布。\n党员的党龄，从预备期满转为正式党员之日算起。\n\n补充参考《V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md》（条文原文）[2]：\n的决议，应当在三个月内审批。审批结果应当及时通知党支部。党支部书记应当同本人谈话，并将审批结果在党员大会上宣布。\n党员的党龄，从预备期满转为正式党员之日算起。\n第三十四条 预备期未满的预备党员工作、学习所在单位或者居住地发生变动，应当及时报告原所在党组织。原所在党组织应当及时将对其培养教育和考察的情况，认真负责地介绍给接收预备党员的党组织。\n党组织应当对转入的预备党员的入党材料进行严格审查，对无法...",
+      "mode": "unknown",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-01-中国共产党章程-党员.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-52-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 745,
+        "extractiveDump": true
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-002",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党员受到警告处分后，多长时间内不能在党内提拔职务？",
+      "goldAnswer": "党员受到警告处分一年内，不得在党内提拔职务或者进一步使用。",
+      "requiredFacts": [
+        "一年内",
+        "不得在党内提拔职务"
+      ],
+      "modelAnswer": "根据《中国共产党纪律处分条例》第十条规定，党员受到**警告处分一年内**，不得在党内提拔职务或者进一步使用，也不得向党外组织推荐担任高于其原任职务的党外职务或者进一步使用[1][4]。\n\n因此，党员受到警告处分后，**一年内不能在党内提拔职务**[1][4]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党规党纪与纪律处分要点.md",
+          "title": "党员纪律处分种类与适用",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 130,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-003",
+      "split": "dev",
+      "category": "相近概念",
+      "question": "开除党籍和留党察看在重新入党、恢复权利方面分别有什么规定？",
+      "goldAnswer": "留党察看分为一年、二年，最长不超过二年，确有悔改表现的期满后恢复党员权利；受到开除党籍处分的党员，五年内不得重新入党。",
+      "requiredFacts": [
+        "留党察看最长不得超过二年",
+        "期满后恢复其党员权利",
+        "五年内不得重新入党"
+      ],
+      "modelAnswer": "根据党校知识库资料《V4-13-中国共产党纪律处分条例-违纪与纪律处分.md》（条文原文）[1]：\n\n的，应当建议党外组织撤销其党外职务。受到留党察看处分的党员，恢复党员权利后二年内，不得在党内担任和向党外组织推荐担任与其原任职务相当或者高于其原任职务的职务。\n第十三条　党员受到开除党籍处分，五年内不得重新入党，也不得推荐担任与其原任职务相当或者高于其原任职务的党外职务。另有规定不准重新入党的，依照规定。\n第十四条　党员干部受到党纪处分，需要同时进行组织处理的，党组织应当按照规定给予组织处理。\n党的各级代表大会的代表受到留党察看以上处分的，党组织应当终止其代表资格。\n第十五条　对于受到改组处理的党组织领导机构成员，除应当受到撤销党内职务以上处分的外，均自然免职。\n第十六条　对于受到解散处理的党组织中的党员，应当逐个审查。其中，符合党员条件的，应当重新登记，并参加新的组织过党的生活；不符合党员条件的，应当对其进行教育、限期改正，经教育仍无转变的，予以劝退或者除名；有违纪行为的，依照规定予以追究。\n\n补充参考《V4-07-中国共产党章程-党的纪律.md》（条文原文）[2]：\n第四十一条　对党员的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。\n留党察看最长不超过两年。党员在留党察看期间没有表决权、选举权和被选举权。党员经过留党察看，确已改正错误的，应当恢复其党员的权利；坚持错误不改的，应当开除党籍。\n开除党籍是党内的最高处分。各级党组织在决定或批准开除党员党籍的时候，应当全面研究有关的材料和意见，采取十分慎重的态度。\n第四十二条　对党员的纪律处分，必...",
+      "mode": "unknown",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-17-中国共产党纪律处分条例-对违反政治纪律行为的处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 696,
+        "extractiveDump": true
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-004",
+      "split": "dev",
+      "category": "跨文档检索",
+      "question": "成立党支部对正式党员人数有什么要求？成立支委会又有什么要求？",
+      "goldAnswer": "凡有正式党员3人以上的，都应当成立党支部；有正式党员7人以上的党支部，应当设立党支部委员会，支委会由3至5人组成，一般不超过7人。",
+      "requiredFacts": [
+        "正式党员3人以上应当成立党支部",
+        "正式党员7人以上应设党支部委员会",
+        "支委会由3至5人组成"
+      ],
+      "modelAnswer": "根据党校知识库资料《V4-24-中国共产党支部工作条例（试行）-组织设置.md》（条文原文）[1]：\n\n## 条文原文\n\n第四条　党支部设置一般以单位、区域为主，以单独组建为主要方式。企业、农村、机关、学校、科研院所、社区、社会组织、人民解放军和武警部队连（中）队以及其他基层单位，凡是有正式党员3人以上的，都应当成立党支部。\n党支部党员人数一般不超过50人。\n第五条　结合实际创新党支部设置形式，使党的组织和党的工作全覆盖。\n规模较大、跨区域的农民专业合作组织，专业市场、商业街区、商务楼宇等，符合条件的，应当成立党支部。\n正式党员不足3人的单位，应当按照地域相邻、行业相近、规模适当、便于管理的原则，成立联合党支部。联合党支部覆盖单位一般不超过5个。\n为期6个月以上的工程、工作项目等，符合条件的，应当成立党支部。\n流动党员较多，工作地或者居住地相对固定集中，应当由流出地党组织商流入地党组织，依托园区、商会、行业协会、驻外地办事机构等成立流动党员党支部。\n第六条　党支部的成立，一般由基层单位提出申请，所在乡镇（街道）或者单位基层党委召开会议研究决定并批复，批复时间一般不超过1个月。\n\n补充参考《V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md》（条文原文）[2]：\n## 条文原文\n\n第二十条　有正式党员7人以上的党支部，应当设立党支部委员会。党支部委员会由3至5人组成，一般不超过7人。\n党支部委员会设书记和组织委员、宣传委员、纪检委员等，必要时可以设1名副书记。\n正式党员不足7人的党支部，设1名书记，必要时可以设1名副书记。\n第二十一条　村、社区党支部委员会每届任期5年，其他基层单位党支部委员会一般每届任期3年。\n党支部委员会由党支部党员大会选举产生，党支部...",
+      "mode": "unknown",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-24-中国共产党支部工作条例（试行）-组织设置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-05-中国共产党章程-党的基层组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党的基层组织建设与换届选举.md",
+          "title": "党的基层组织设置",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 750,
+        "extractiveDump": true
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-005",
+      "split": "dev",
+      "category": "多条件",
+      "question": "村、社区党支部委员会与其他基层单位党支部委员会的任期分别是多少？",
+      "goldAnswer": "村、社区党支部委员会每届任期5年，其他基层单位党支部委员会一般每届任期3年。",
+      "requiredFacts": [
+        "村社区党支部委员会每届任期5年",
+        "其他基层单位一般每届任期3年"
+      ],
+      "modelAnswer": "根据《中国共产党支部工作条例（试行）》第二十一条规定：\n\n- **村、社区党支部委员会**：每届任期 **5年**。\n- **其他基层单位党支部委员会**：一般每届任期 **3年**。\n\n上述任期规定见参考资料[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-05-中国共产党章程-党的基层组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党的基层组织建设与换届选举.md",
+          "title": "党的基层组织设置",
+          "snippet": ""
+        },
+        {
+          "source": "V4-30-中国共产党支部工作条例（试行）-附则.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 109,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-006",
+      "split": "heldout",
+      "category": "同义改写",
+      "question": "党员每年集中学习培训时间一般不少于多少学时？",
+      "goldAnswer": "党员每年集中学习培训时间一般不少于32学时。",
+      "requiredFacts": [
+        "一般不少于32学时"
+      ],
+      "modelAnswer": "根据参考资料，党员每年集中学习培训时间一般不少于 **32学时** [1][2]。\n\n同时，基层党组织书记和班子成员的集中培训和集体学习时间要求更高，一般不少于 **56学时** [2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员教育管理与发展工作细则.md",
+          "title": "党员日常教育与学时学分管理",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员教育管理与发展工作细则.md",
+          "title": "发展党员工作流程与关键环节",
+          "snippet": ""
+        },
+        {
+          "source": "V4-43-中国共产党发展党员工作细则-发展对象的确定和考察.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 94,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-007",
+      "split": "heldout",
+      "category": "跨文档检索",
+      "question": "党支部每年至少召开几次组织生活会，这个规定在哪些法规中有体现？",
+      "goldAnswer": "党支部每年至少召开1次组织生活会，一般安排在第四季度；党员教育管理工作条例也有每年至少召开1次组织生活会的规定。",
+      "requiredFacts": [
+        "每年至少召开1次组织生活会",
+        "一般安排在第四季度"
+      ],
+      "modelAnswer": "党支部组织生活会每年至少召开 **1次**。\n\n这一规定主要体现在以下法规和资料中：\n\n1. **《中国共产党支部工作条例（试行）》第十七条**明确规定：党支部每年至少召开1次组织生活会，一般安排在第四季度，也可以根据工作需要随时召开；一般以党支部党员大会、党支部委员会会议或者党小组会形式召开[1]。\n\n2. **《中国共产党党员教育管理工作条例》第十七条**也明确规定：党支部每年至少召开1次组织生活会，也可以根据工作需要随时召开，一般以党员大会、党支部委员会会议或者党小组会形式进行[2]。\n\n3. 参考学习资料中关于组织生活会与民主生活会区别的归纳也指出：**党支部每年至少召开一次组织生活会**，通常结合年底民主评议党员开展，也可根据实际需要随时召开[3]。\n\n此外，[3]还从制度依据角度提到，《中国共产党章程》第八条明确党员必须参加党的组织生活，《关于新形势下党内政治生活的若干准则》对坚持民主生活会和组织生活会制度作出系统规定，并提到《中国共产党支部工作条例（试行）》对党支部组织生活会的形式和程序作出具体规定[3]。\n\n因此，就“每年至少召开几次组织生活会”这一具体频次规定而言，直接依据是 **《中国共产党支部工作条例（试行）》第十七条**和 **《中国共产党党员教育管理工作条例》第十七条**，即**每年至少1次**[1][2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党组织生活制度规范.md",
+          "title": "组织生活会与民主生活会的区别",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 576,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-008",
+      "split": "heldout",
+      "category": "多条件",
+      "question": "发展对象中，公示期不少于几个工作日？入党介绍人需要几名正式党员？",
+      "goldAnswer": "拟列为发展对象的，公示期不少于五个工作日；发展对象应当有两名正式党员作入党介绍人。",
+      "requiredFacts": [
+        "公示期不少于五个工作日",
+        "两名正式党员作入党介绍人"
+      ],
+      "modelAnswer": "根据现行《中国共产党发展党员工作细则》的有关规定，现就您提出的两个问题答复如下：\n\n**一、关于发展对象的公示期**\n\n对经过一年以上培养教育和考察、基本具备党员条件的入党积极分子，在听取党小组、培养联系人、党员和群众等意见的基础上，党支部委员会会议研究讨论并报上级党委同意拟列为发展对象的，应当在工作、学习单位或者居住地进行公示，**公示期不少于五个工作日**。拟列为发展对象的流动人员，应当在流出地和流入地同时公示；公示结果不影响发展入党的，方可列为发展对象[1]。\n\n**二、关于入党介绍人的人数**\n\n发展对象应当有**两名正式党员**作入党介绍人。入党介绍人一般由培养联系人担任，也可以由党组织指定[1]。这一要求与党章关于申请入党的人“要有两名正式党员作介绍人”的规定相一致[3]。\n\n同时需要说明：受警告、严重警告、撤销党内职务处分在影响期内的党员，不宜作入党介绍人；受留党察看处分、尚未恢复党员权利的党员，不能作入党介绍人[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-43-中国共产党发展党员工作细则-发展对象的确定和考察.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-50-中国共产党发展党员工作细则（2014年版·已废止）-发展对象的确定和考察.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-01-中国共产党章程-党员.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 423,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-009",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党的全国代表大会多长时间举行一次？",
+      "goldAnswer": "党的全国代表大会每五年举行一次，由中央委员会召集。",
+      "requiredFacts": [
+        "每五年举行一次"
+      ],
+      "modelAnswer": "根据《中国共产党章程》第十九条，党的全国代表大会**每五年举行一次**，由中央委员会召集[1]。\n\n同时，中央委员会认为有必要，或者有三分之一以上的省一级组织提出要求，全国代表大会可以提前举行；如无非常情况，不得延期举行[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-03-中国共产党章程-党的中央组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-04-中国共产党章程-党的地方组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-03-中国共产党章程-党的中央组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-04-中国共产党章程-党的地方组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 114,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-010",
+      "split": "dev",
+      "category": "相近概念",
+      "question": "从轻处分和减轻处分在处分幅度上有什么区别？",
+      "goldAnswer": "从轻处分是在处分幅度以内给予较轻处分；减轻处分是在处分幅度以外减轻一档给予处分。",
+      "requiredFacts": [
+        "从轻处分是在幅度以内",
+        "减轻处分是在幅度以外减轻一档"
+      ],
+      "modelAnswer": "从轻处分与减轻处分在“处分幅度”上的核心区别是：\n\n1. **从轻处分：在处分幅度以内，给予较轻的处分。**  \n   也就是说，违纪行为依《条例》规定应受的处分有一个幅度，从轻处分仍在该幅度内选择较轻的一档或较轻的处理，不突破规定幅度。[1]\n\n2. **减轻处分：在处分幅度以外，减轻一档给予处分。**  \n   也就是说，减轻处分要突破该违纪行为原本应当受到的处分幅度，往下减轻一档。[1]\n\n可概括为：\n\n| 类型 | 处分幅度上的位置 | 处理方式 |\n|---|---|---|\n| 从轻处分 | 幅度以内 | 给予较轻的处分[1] |\n| 减轻处分 | 幅度以外 | 减轻一档给予处分[1] |\n\n此外，需要特别注意：**《条例》规定的只有开除党籍处分一个档次的违纪行为，不适用减轻处分的规定。**[1]",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-14-中国共产党纪律处分条例-纪律处分运用规则.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-14-中国共产党纪律处分条例-纪律处分运用规则.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-14-中国共产党纪律处分条例-纪律处分运用规则.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-12-中国共产党纪律处分条例-总体要求和适用范围.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 359,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-011",
+      "split": "dev",
+      "category": "多跳推理",
+      "question": "党员在处分影响期内又受党纪处分，影响期如何计算？",
+      "goldAnswer": "其影响期为原处分尚未执行的影响期与新处分影响期之和。",
+      "requiredFacts": [
+        "影响期之和"
+      ],
+      "modelAnswer": "根据参考资料，党员在党纪处分影响期内又受到党纪处分的，其影响期按照“原处分尚未执行的影响期”与“新处分影响期”合并计算。\n\n具体为：\n\n1. **适用情形**：党员已经受到党纪处分，且仍处于该处分影响期内，又因违纪受到新的党纪处分。[1][2]\n2. **计算方法**：其影响期为**原处分尚未执行的影响期与新处分影响期之和**。[1][2]\n3. **计算要点**：合并计算的是原处分**尚未执行**的影响期，而非原处分影响期的全部；在此基础上再加上新处分的影响期。[1][2]\n\n因此，处分影响期内再次受到党纪处分的，影响期应累计计算。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-14-中国共产党纪律处分条例-纪律处分运用规则.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-14-中国共产党纪律处分条例-纪律处分运用规则.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-16-中国共产党纪律处分条例-其他规定.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-16-中国共产党纪律处分条例-其他规定.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 270,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-012",
+      "split": "dev",
+      "category": "跨文档检索",
+      "question": "申请入党的年龄条件是什么，收到申请书后多久内要谈话？",
+      "goldAnswer": "年满十八岁的中国工人、农民、军人、知识分子和其他社会阶层的先进分子可以申请入党；党组织收到入党申请书后，应当在一个月内派人同入党申请人谈话。",
+      "requiredFacts": [
+        "年满十八岁",
+        "一个月内派人谈话"
+      ],
+      "modelAnswer": "申请入党的年龄条件是：**年满十八岁**。同时，申请人应当是**中国工人、农民、军人、知识分子和其他社会阶层的先进分子**，承认党的纲领和章程，愿意参加党的一个组织并在其中积极工作、执行党的决议和按期交纳党费[1][4]。\n\n党组织收到入党申请书后，应当**在一个月内派人同入党申请人谈话**，了解其学习工作经历、对党的认识、入党动机、遵纪守法以及家庭情况等基本情况，并向其介绍党的基本知识、党员的标准和条件[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党章核心要义与党员权利义务.md",
+          "title": "党员的基本条件",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 208,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-013",
+      "split": "dev",
+      "category": "多条件",
+      "question": "党支部多久对入党积极分子考察一次，县级党委组织部门多久分析一次队伍状况？",
+      "goldAnswer": "党支部每半年对入党积极分子进行一次考察；县级党委组织部门和基层党委每年对入党积极分子队伍状况作一次分析。",
+      "requiredFacts": [
+        "每半年考察一次",
+        "每年分析一次"
+      ],
+      "modelAnswer": "依据现行《中国共产党发展党员工作细则》：\n\n- **党支部对入党积极分子的考察频次**：党支部**每半年**对入党积极分子进行一次考察。[1]\n- **县级党委组织部门对入党积极分子队伍状况的分析频次**：县级党委组织部门**每年**对入党积极分子队伍状况作一次分析；同时，**基层党委每年**也作一次分析，并针对存在的问题采取改进措施。[1]\n\n需要说明的是，已废止的2014年版细则中，第十一条仅规定“基层党委每年”作一次分析；现行细则明确为“县级党委组织部门和基层党委每年”作一次分析。[1][2]",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-49-中国共产党发展党员工作细则（2014年版·已废止）-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 252,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-014",
+      "split": "heldout",
+      "category": "同义改写",
+      "question": "党员外出学习工作生活多久且地点相对固定应当转移组织关系？",
+      "goldAnswer": "党员外出学习、工作、生活6个月以上并且地点相对固定的，应当转移组织关系。",
+      "requiredFacts": [
+        "6个月以上",
+        "应当转移组织关系"
+      ],
+      "modelAnswer": "党员外出学习、工作、生活**6个月以上并且地点相对固定**的，应当转移组织关系[1][2]。\n\n此外，党员工作单位、经常居住地发生变动的，也应当转移组织关系[1][2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-35-中国共产党党员教育管理工作条例-党籍和党员组织关系管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员组织关系与党籍管理.md",
+          "title": "组织关系转接",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员组织关系与党籍管理.md",
+          "title": "党籍管理",
+          "snippet": ""
+        },
+        {
+          "source": "V4-37-中国共产党党员教育管理工作条例-流动党员管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 0.5,
+        "sourceMatched": true,
+        "answerChars": 85,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-015",
+      "split": "heldout",
+      "category": "相近概念",
+      "question": "与党组织失去联系多久予以停止党籍，停止多久后按自行脱党除名？",
+      "goldAnswer": "与党组织失去联系6个月以上、查找无果的予以停止党籍；停止党籍2年后确实无法取得联系的，按照自行脱党予以除名。",
+      "requiredFacts": [
+        "6个月以上予以停止党籍",
+        "2年后按自行脱党除名"
+      ],
+      "modelAnswer": "根据《中国共产党党员教育管理工作条例》第二十四条规定：\n\n1. **停止党籍的时限**：对与党组织失去联系**6个月以上**、通过各种方式查找仍然没有取得联系的党员，予以停止党籍。停止党籍的决定由所在党支部或者上级党组织按照有关规定作出。[1]\n\n2. **停止党籍后按自行脱党除名的时限**：停止党籍**2年后**确实无法取得联系的，按照自行脱党予以除名。[1]\n\n因此，简要表述为：**失联6个月以上仍未取得联系的，予以停止党籍；停止党籍2年后确实无法取得联系的，按照自行脱党予以除名。**",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-35-中国共产党党员教育管理工作条例-党籍和党员组织关系管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员组织关系与党籍管理.md",
+          "title": "党籍管理",
+          "snippet": ""
+        },
+        {
+          "source": "V4-36-中国共产党党员教育管理工作条例-党员监督和组织处置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-18-中国共产党纪律处分条例-对违反组织纪律行为的处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 0,
+        "sourceMatched": true,
+        "answerChars": 247,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-016",
+      "split": "heldout",
+      "category": "多跳推理",
+      "question": "留党察看期间党员有没有表决权，恢复权利后多久内不得担任相当职务？",
+      "goldAnswer": "党员受留党察看处分期间没有表决权、选举权和被选举权；恢复党员权利后二年内，不得在党内担任和向党外组织推荐担任与其原任职务相当或者更高的职务。",
+      "requiredFacts": [
+        "没有表决权、选举权和被选举权",
+        "恢复党员权利后二年内"
+      ],
+      "modelAnswer": "根据参考资料，回答如下：\n\n1. **留党察看期间的党员没有表决权。**  \n   党员在留党察看期间，没有表决权、选举权和被选举权[1][2][3]。其中，留党察看最长不超过两年[2][3]。\n\n2. **恢复党员权利后二年内，不得担任相当或者高于原任职务的职务。**  \n   受到留党察看处分的党员，恢复党员权利后**二年内**，不得在党内担任和向党外组织推荐担任与其原任职务相当或者高于其原任职务的职务[1][4]。\n\n需要说明的是，留党察看期间确有悔改表现的，期满后恢复其党员权利；坚持不改或者又发现其他应当受到党纪处分的违纪行为的，应当开除党籍[1][2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 285,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-017",
+      "split": "heldout",
+      "category": "跨文档检索",
+      "question": "党支部书记一般应有多少年党龄，每年至少参加几次集中轮训？",
+      "goldAnswer": "党支部书记一般应当具有1年以上党龄，每年应当至少参加1次县级以上党组织举办的集中轮训。",
+      "requiredFacts": [
+        "1年以上党龄",
+        "每年至少参加1次集中轮训"
+      ],
+      "modelAnswer": "根据《中国共产党支部工作条例（试行）》有关规定：\n\n1. **党龄要求**：党支部书记应当具备良好政治素质，热爱党的工作，具有一定的政策理论水平、组织协调能力和群众工作本领，敢于担当、乐于奉献，带头发挥先锋模范作用，在党员、群众中有较高威信，**一般应当具有1年以上党龄**[2]。\n\n2. **集中轮训要求**：党支部书记培训纳入党员、干部教育培训规划，对新任党支部书记应当进行任职培训；**党支部书记每年应当至少参加1次县级以上党组织举办的集中轮训**[3]。同时，应注意统筹安排，防止频繁参训，确保党支部书记做好日常工作[3]。\n\n**结论**：党支部书记一般应当具有**1年以上党龄**；每年应当至少参加**1次**县级以上党组织举办的集中轮训。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 327,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-018",
+      "split": "heldout",
+      "category": "多条件",
+      "question": "高校毕业生流动党员组织关系保留一般不超过多久，出国境学习党员多久联系一次？",
+      "goldAnswer": "高校毕业生流动党员组织关系保留时间一般不超过2年；出国（境）学习研究党员每半年至少联系1次。",
+      "requiredFacts": [
+        "一般不超过2年",
+        "每半年至少联系1次"
+      ],
+      "modelAnswer": "根据《中国共产党党员教育管理工作条例》第三十四条规定：\n\n1. **高校毕业生流动党员组织关系保留时间**：高校党组织对组织关系保留在学校的高校毕业生流动党员，应当继续履行管理职责，党员组织关系保留时间**一般不超过2年**，对符合转出组织关系条件的及时转出。[1]\n\n2. **出国（境）学习研究党员联系频次**：对出国（境）学习研究党员，由原就读高校或者工作单位党组织保留其组织关系，**每半年至少与其联系1次**；返回后按照规定恢复组织生活。[1]",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-37-中国共产党党员教育管理工作条例-流动党员管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-35-中国共产党党员教育管理工作条例-党籍和党员组织关系管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-37-中国共产党党员教育管理工作条例-流动党员管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-24-中国共产党支部工作条例（试行）-组织设置.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 227,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-019",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "基层单位有正式党员几人以上就应当成立党的基层组织？",
+      "goldAnswer": "企业、农村、机关、学校、医院、科研院所、街道社区、社会组织、人民解放军连队和其他基层单位，凡是有正式党员三人以上的，都应当成立党的基层组织。",
+      "requiredFacts": [
+        "有正式党员三人以上的，都应当成立党的基层组织"
+      ],
+      "modelAnswer": "根据参考资料，基层单位**有正式党员三人以上的，都应当成立党的基层组织**[1][2]。其中，党支部的设置同样明确：凡是有正式党员3人以上的基层单位，都应当成立党支部[3]。\n\n需要说明的是，党的基层组织根据工作需要和党员人数，经上级党组织批准，分别设立党的基层委员会、总支部委员会、支部委员会[1][2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-05-中国共产党章程-党的基层组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党的基层组织建设与换届选举.md",
+          "title": "党的基层组织设置",
+          "snippet": ""
+        },
+        {
+          "source": "V4-24-中国共产党支部工作条例（试行）-组织设置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 154,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-020",
+      "split": "dev",
+      "category": "跨文档检索",
+      "question": "党章对党的基层委员会、总支部委员会、支部委员会的任期如何规定？村、社区党支部委员会与其他基层单位党支部委员会的任期又分别是多少？",
+      "goldAnswer": "党章规定党的基层委员会、总支部委员会、支部委员会每届任期三年至五年；村、社区党支部委员会每届任期5年，其他基层单位党支部委员会一般每届任期3年。",
+      "requiredFacts": [
+        "每届任期三年至五年",
+        "村、社区党支部委员会每届任期5年",
+        "其他基层单位党支部委员会一般每届任期3年"
+      ],
+      "modelAnswer": "根据党章规定，党的基层委员会、总支部委员会、支部委员会每届任期均为**三年至五年**[1][3]。同时，基层委员会、总支部委员会、支部委员会的书记、副书记选举产生后，应报上级党组织批准[1]。\n\n关于党支部委员会任期，《中国共产党支部工作条例（试行）》进一步明确：\n\n- **村、社区党支部委员会**：每届任期**5年**[2]；\n- **其他基层单位党支部委员会**：一般每届任期**3年**[2]。\n\n因此，党章对基层委员会、总支部委员会、支部委员会任期作统一规定，即每届任期三年至五年[1]；村、社区党支部委员会与其他基层单位党支部委员会的具体任期，则按分别为5年和一般3年执行[2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-05-中国共产党章程-党的基层组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-28-中国共产党支部工作条例（试行）-党支部委员会建设.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党的基层组织建设与换届选举.md",
+          "title": "党的基层组织设置",
+          "snippet": ""
+        },
+        {
+          "source": "V4-04-中国共产党章程-党的地方组织.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 296,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-021",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "对党员的纪律处分一共有哪几种？",
+      "goldAnswer": "对党员的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。",
+      "requiredFacts": [
+        "警告、严重警告、撤销党内职务、留党察看、开除党籍"
+      ],
+      "modelAnswer": "对党员的纪律处分共有五种，依据《中国共产党章程》第四十一条和《中国共产党纪律处分条例》第八条，分别为：\n\n1. **警告**；\n2. **严重警告**；\n3. **撤销党内职务**；\n4. **留党察看**；\n5. **开除党籍**。\n\n其中，**开除党籍是党内的最高处分**[1][2]。上述五种处分种类在党章和纪律处分条例中规定一致[1][3][4]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党规党纪与纪律处分要点.md",
+          "title": "党员纪律处分种类与适用",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-13-中国共产党纪律处分条例-违纪与纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 178,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-022",
+      "split": "dev",
+      "category": "多条件",
+      "question": "对党员的纪律处分必须经过什么程序决定和批准？涉及开除党籍时如何报批？",
+      "goldAnswer": "对党员的纪律处分，必须经过支部大会讨论决定，报党的基层委员会批准；如果涉及的问题比较重要或复杂，或给党员以开除党籍的处分，应分别不同情况，报县级或县级以上党的纪律检查委员会审查批准。",
+      "requiredFacts": [
+        "必须经过支部大会讨论决定",
+        "报党的基层委员会批准",
+        "开除党籍应报县级或县级以上党的纪律检查委员会审查批准"
+      ],
+      "modelAnswer": "根据党校知识库资料《V4-07-中国共产党章程-党的纪律.md》（条文原文）[1]：\n\n第四十一条　对党员的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。\n留党察看最长不超过两年。党员在留党察看期间没有表决权、选举权和被选举权。党员经过留党察看，确已改正错误的，应当恢复其党员的权利；坚持错误不改的，应当开除党籍。\n开除党籍是党内的最高处分。各级党组织在决定或批准开除党员党籍的时候，应当全面研究有关的材料和意见，采取十分慎重的态度。\n第四十二条　对党员的纪律处分，必须经过支部大会讨论决定，报党的基层委员会批准；如果涉及的问题比较重要或复杂，或给党员以开除党籍的处分，应分别不同情况，报县级或县级以上党的纪律检查委员会审查批准。在特殊情况下，县级和县级以上各级党的委员会和纪律检查委员会有权直接决定给党员以纪律处分。\n对党的中央委员会委员、候补委员，给以警告、严重警告处分，由中央纪律检查委员会常务委员会审议后，报党中央批准。对地方各级党的委员会委员、候补委员，给以警告、严重警告处分，应由上一级纪律检查委员会批准，并报它的同级党的委员会备案。\n\n补充参考《V4-07-中国共产党章程-党的纪律.md》（条文原文）[2]：\n查委员会常务委员会审议后，报党中央批准。对地方各级党的委员会委员、候补委员，给以警告、严重警告处分，应由上一级纪律检查委员会批准，并报它的同级党的委员会备案。\n对党的中央委员会和地方各级委员会的委员、候补委员，给以撤销党内职务、留党察看或开除党籍的处分，必须由本人所在的委员会全体会议三分之二以上的多数决定。在全体会议闭会期间，可以先由中央政治局和地方各级委员会常务委员会作出处理决定，待召开委员会全...",
+      "mode": "unknown",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-15-中国共产党纪律处分条例-对违法犯罪党员的纪律处分.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 726,
+        "extractiveDump": true
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-023",
+      "split": "heldout",
+      "category": "同义改写",
+      "question": "党委（党组）书记每年至少要讲几次党课？",
+      "goldAnswer": "党员领导干部应当定期为基层党员讲党课，党委（党组）书记每年至少讲1次党课。",
+      "requiredFacts": [
+        "党委（党组）书记每年至少讲1次党课"
+      ],
+      "modelAnswer": "根据《中国共产党支部工作条例（试行）》第十六条规定，党员领导干部应当定期为基层党员讲党课，**党委（党组）书记每年至少讲1次党课**[1]。\n\n因此，党委（党组）书记每年讲党课的最低次数要求是**至少1次**。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-29-中国共产党支部工作条例（试行）-领导和保障.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党组织生活制度规范.md",
+          "title": "“三会一课”制度规范",
+          "snippet": ""
+        },
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 105,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-024",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党支部主题党日多久开展一次？",
+      "goldAnswer": "党支部每月相对固定1天开展主题党日，组织党员集中学习、过组织生活、进行民主议事和志愿服务等。",
+      "requiredFacts": [
+        "党支部每月相对固定1天开展主题党日"
+      ],
+      "modelAnswer": "根据参考学习资料，党支部主题党日应当**每月开展1次**。\n\n具体而言：\n- 《中国共产党党员教育管理工作条例》第十六条规定，党支部应当**每月开展1次主题党日**，贴近党员思想和工作实际，组织党员集中学习、过组织生活、进行民主议事和开展志愿服务等[1]。\n- 《中国共产党支部工作条例（试行）》第十六条进一步明确，党支部**每月相对固定1天**开展主题党日，组织党员集中学习、过组织生活、进行民主议事和志愿服务等[2]。\n\n因此，党支部主题党日的开展频次为**每月1次**，并应相对固定时间开展[1][2]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 255,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-025",
+      "split": "heldout",
+      "category": "多条件",
+      "question": "党支部民主评议党员一般多久开展一次？按照什么程序进行？",
+      "goldAnswer": "党支部一般每年开展1次民主评议党员，按照个人自评、党员互评、民主测评的程序，组织党员进行评议。",
+      "requiredFacts": [
+        "一般每年开展1次",
+        "按照个人自评、党员互评、民主测评的程序"
+      ],
+      "modelAnswer": "党支部民主评议党员**一般每年开展1次**，并**可以结合组织生活会一并进行**[1][2]。\n\n其程序主要包括：\n\n1. **开展党性分析**：组织党员对照合格党员标准、对照入党誓词，联系个人实际进行党性分析[2]。\n2. **召开党员大会组织评议**：按照**个人自评、党员互评、民主测评**的程序组织党员进行评议[1][2]。党员人数较多的党支部，个人自评和党员互评可以在党小组范围内进行[2]。\n3. **提出评定意见**：由党支部委员会会议或者党员大会根据评议情况和党员日常表现情况，提出评定意见[1][2]。\n4. **组织评定**：相关制度规范明确，民主评议按照个人自评、党员互评、民主测评、组织评定的程序进行，评定结果分为优秀、合格、基本合格、不合格四个等次[4]。\n\n因此，可概括为：**一般每年1次，按照个人自评、党员互评、民主测评并由党支部提出评定意见的程序进行，且可与组织生活会合并开展**[1][2][4]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党组织生活制度规范.md",
+          "title": "谈心谈话与民主评议党员制度",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 417,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-026",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党支部委员之间、党支部委员和党员之间、党员和党员之间每年谈心谈话一般不少于几次？",
+      "goldAnswer": "党支部委员之间、党支部委员和党员之间、党员和党员之间，每年谈心谈话一般不少于1次。",
+      "requiredFacts": [
+        "每年谈心谈话一般不少于1次"
+      ],
+      "modelAnswer": "根据参考资料，党支部委员之间、党支部委员和党员之间、党员和党员之间，**每年谈心谈话一般不少于1次**[1][2]。\n\n即：上述范围内的谈心谈话，每年至少开展一次，并应坚持坦诚相见、交流思想、交换意见、帮助提高[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党组织生活制度规范.md",
+          "title": "谈心谈话与民主评议党员制度",
+          "snippet": ""
+        },
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 109,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-027",
+      "split": "heldout",
+      "category": "同义改写",
+      "question": "对党员作出限期改正处置的，限期改正时间最长不超过多久？",
+      "goldAnswer": "对给予限期改正处置的党员，限期改正时间不超过1年。",
+      "requiredFacts": [
+        "限期改正时间不超过1年"
+      ],
+      "modelAnswer": "对党员作出限期改正处置的，限期改正时间**最长不超过1年**。依据《中国共产党党员教育管理工作条例》第三十条规定，党组织对符合条件党员作出限期改正处置时，“限期改正时间不超过1年”，并应当采取帮助教育措施[2]（另见[1]）。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-36-中国共产党党员教育管理工作条例-党员监督和组织处置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-36-中国共产党党员教育管理工作条例-党员监督和组织处置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-07-中国共产党章程-党的纪律.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-16-中国共产党纪律处分条例-其他规定.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 113,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-028",
+      "split": "heldout",
+      "category": "多条件",
+      "question": "党员没有正当理由，连续多长时间不参加党的组织生活、不交纳党费或者不做党所分配的工作，按照自行脱党予以除名？",
+      "goldAnswer": "没有正当理由，连续6个月不参加党的组织生活，或者不交纳党费，或者不做党所分配的工作，按照自行脱党予以除名。",
+      "requiredFacts": [
+        "连续6个月不参加党的组织生活",
+        "按照自行脱党予以除名"
+      ],
+      "modelAnswer": "根据参考资料，党员**没有正当理由，连续6个月**不参加党的组织生活，或者不交纳党费，或者不做党所分配的工作，就按照自行脱党予以除名[1][2][3]。\n\n具体而言：\n- 三种情形为“或者”关系，即存在其中任一情形且无正当理由、连续达到6个月，即按自行脱党处理[1][3]；\n- 支部大会应当决定把这样的党员除名，并报上级党组织批准[2][3]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-36-中国共产党党员教育管理工作条例-党员监督和组织处置.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党员组织关系与党籍管理.md",
+          "title": "党籍管理",
+          "snippet": ""
+        },
+        {
+          "source": "V4-01-中国共产党章程-党员.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-35-中国共产党党员教育管理工作条例-党籍和党员组织关系管理.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 173,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-029",
+      "split": "dev",
+      "category": "多条件",
+      "question": "发展对象未来多长时间内将离开工作、学习单位的，一般不办理接收预备党员的手续？经基层党委预审合格后多久内要提交党支部党员大会讨论？",
+      "goldAnswer": "发展对象未来三个月内将离开工作、学习单位的，一般不办理接收预备党员的手续；经基层党委预审合格的发展对象，应当在一个月内提交党支部党员大会讨论。",
+      "requiredFacts": [
+        "未来三个月内将离开工作、学习单位的，一般不办理接收预备党员的手续",
+        "应当在一个月内提交党支部党员大会讨论"
+      ],
+      "modelAnswer": "根据现行《中国共产党发展党员工作细则》：\n\n1. **发展对象未来三个月内将离开工作、学习单位的**，一般不办理接收预备党员的手续[1]。\n2. **经基层党委预审合格的发展对象**，应当**在一个月内**提交党支部党员大会讨论[1]。\n\n以上两个时限均见参考资料[1]第十八条、第十九条。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-44-中国共产党发展党员工作细则-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-44-中国共产党发展党员工作细则-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 145,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-030",
+      "split": "heldout",
+      "category": "多条件",
+      "question": "预备党员的预备期多长？需要继续考察和教育的可以延长几次，延长时间是多久？",
+      "goldAnswer": "预备党员的预备期为一年；需要继续考察和教育的，可以延长一次预备期，延长时间不能少于半年，最长不超过一年。",
+      "requiredFacts": [
+        "预备期为一年",
+        "可以延长一次预备期",
+        "延长时间不能少于半年，最长不超过一年"
+      ],
+      "modelAnswer": "根据参考资料，预备党员的预备期为**一年**，从**党支部党员大会通过其为预备党员之日**算起[1]。\n\n预备党员预备期满后，对**需要继续考察和教育**的，可以**延长一次预备期**；延长时间**不能少于半年，最长不超过一年**[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-52-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-01-中国共产党章程-党员.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 119,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-031",
+      "split": "heldout",
+      "category": "同义改写",
+      "question": "入党宣誓仪式一般应当在什么时候组织举行？",
+      "goldAnswer": "预备党员必须面向党旗进行入党宣誓。入党宣誓仪式，一般在批复同意接收预备党员后的一个月内，由基层党委或者党支部（党总支）组织进行。",
+      "requiredFacts": [
+        "一般在批复同意接收预备党员后的一个月内"
+      ],
+      "modelAnswer": "入党宣誓仪式一般应当在**批复同意接收预备党员后的一个月内**组织举行，由**基层党委或者党支部（党总支）**组织进行。[1]\n\n同时，县级以上党委可以在“七一”、国庆等重大纪念日组织集中宣誓。[1] 预备党员必须面向党旗进行入党宣誓，这是党章明确规定的。[3]",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-52-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-01-中国共产党章程-党员.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-42-中国共产党发展党员工作细则-入党积极分子的确定和培养教育.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 131,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-032",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党委对党支部上报的预备党员转正决议，应当在多长时间内审批？",
+      "goldAnswer": "党委对党支部上报的预备党员转正的决议，应当在三个月内审批。",
+      "requiredFacts": [
+        "应当在三个月内审批"
+      ],
+      "modelAnswer": "根据《中国共产党发展党员工作细则》有关规定，党委对党支部上报的预备党员转正的决议，**应当在三个月内审批**[1]。\n\n审批结果应当及时通知党支部；党支部书记应当同本人谈话，并将审批结果在党员大会上宣布[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-52-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-44-中国共产党发展党员工作细则-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 105,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-033",
+      "split": "dev",
+      "category": "同义改写",
+      "question": "党支部党员大会一般多久召开一次？",
+      "goldAnswer": "党支部党员大会是党支部的议事决策机构，由全体党员参加，一般每季度召开1次。",
+      "requiredFacts": [
+        "一般每季度召开1次"
+      ],
+      "modelAnswer": "根据《中国共产党支部工作条例（试行）》第十一条规定，党支部党员大会是党支部的议事决策机构，由全体党员参加，**一般每季度召开1次**[1]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-34-中国共产党党员教育管理工作条例-党员日常教育管理主要方式.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 70,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-034",
+      "split": "heldout",
+      "category": "相近概念",
+      "question": "党支部委员会会议和党小组会一般分别多久召开一次？",
+      "goldAnswer": "党支部委员会会议一般每月召开1次；党小组会一般每月召开1次。",
+      "requiredFacts": [
+        "党支部委员会会议一般每月召开1次",
+        "党小组会一般每月召开1次"
+      ],
+      "modelAnswer": "根据参考资料，党支部委员会会议和党小组会的召开频次分别为：\n\n1. **党支部委员会会议**：一般**每月召开1次**，根据需要可以随时召开；相关制度规范也明确为**每月至少召开一次**。[2][3]\n\n2. **党小组会**：一般**每月召开1次**；相关制度规范同样明确为**每月至少召开一次**。[1][3]\n\n因此，二者通常均为**每月召开1次（每月至少一次）**。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-LEGACY-党组织生活制度规范.md",
+          "title": "“三会一课”制度规范",
+          "snippet": ""
+        },
+        {
+          "source": "V4-27-中国共产党支部工作条例（试行）-组织生活.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 187,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-035",
+      "split": "dev",
+      "category": "多条件",
+      "question": "党支部党员大会表决时，对到会人数和赞成人数分别有什么要求？",
+      "goldAnswer": "党支部党员大会议题提交表决前，应当经过充分讨论。表决必须有半数以上有表决权的党员到会方可进行，赞成人数超过应到会有表决权的党员的半数为通过。",
+      "requiredFacts": [
+        "必须有半数以上有表决权的党员到会",
+        "赞成人数超过应到会有表决权的党员的半数为通过"
+      ],
+      "modelAnswer": "党支部党员大会表决时，人数要求应区分一般表决与接收预备党员、预备党员转正等具体事项：\n\n1. **到会人数要求**：党支部党员大会进行表决，必须有**半数以上有表决权的党员到会**方可进行[3]。\n\n2. **赞成人数要求**：赞成人数必须**超过应到会有表决权的党员的半数**，方为通过[3]。这里掌握的关键是“应到会”有表决权党员人数的一半以上，而不是仅以实际到会人数为基数。\n\n3. **接收预备党员的表决**：党支部党员大会采取**无记名投票方式**表决，赞成人数**超过应到会有表决权的党员人数的半数**，才能通过接收预备党员的决议；因故不能到会的有表决权的党员，在党支部党员大会召开前正式向党支部提出书面意见的，应当统计在票数内[1]。\n\n4. **预备党员转正的表决**：讨论预备党员转正的党支部党员大会，对**到会人数、赞成人数等要求与讨论接收预备党员的党支部党员大会相同**[4]。\n\n因此，概括起来：**到会须有半数以上有表决权的党员；赞成须超过应到会有表决权党员的半数。**接收预备党员和预备党员转正还应同时执行无记名投票、书面意见统计等具体规定[1][4]。",
+      "mode": "model",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-44-中国共产党发展党员工作细则-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-26-中国共产党支部工作条例（试行）-工作机制.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-45-中国共产党发展党员工作细则-预备党员的教育、考察和转正.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 1,
+        "keywordCoverage": 1,
+        "sourceMatched": true,
+        "answerChars": 491,
+        "extractiveDump": false
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    },
+    {
+      "id": "v4-q-036",
+      "split": "heldout",
+      "category": "版本辨析",
+      "question": "与2014年版相比，2026年修订的《发展党员工作细则》在“列为发展对象”和“预审合格后提交支部大会”两个环节各有什么变化？",
+      "goldAnswer": "2014年版规定，入党积极分子经支部委员会讨论同意并报上级党委备案后，可列为发展对象；2026年修订版增加了公示程序，要求公示期不少于五个工作日。2014年版规定，预审合格的发展对象由支部委员会提交支部大会讨论；2026年修订版明确应当在一个月内提交党支部党员大会讨论。",
+      "requiredFacts": [
+        "2014年版经支部委员会讨论同意并报上级党委备案后可列为发展对象",
+        "公示期不少于五个工作日",
+        "2014年版由支部委员会提交支部大会讨论",
+        "2026年修订版应当在一个月内提交党支部党员大会讨论"
+      ],
+      "modelAnswer": "根据党校知识库资料《V4-44-中国共产党发展党员工作细则-预备党员的接收.md》（条文原文）[1]：\n\n## 条文原文\n\n第十八条 党支部委员会应当对发展对象进行严格审查，经集体讨论认为合格后，报具有审批权限的基层党委预审。\n基层党委对发展对象的条件、培养教育情况等进行审查。审查结果以书面形式通知党支部，并向审查合格的发展对象发放《中国共产党入党志愿书》。\n发展对象未来三个月内将离开工作、学习单位的，一般不办理接收预备党员的手续。\n第十九条 经基层党委预审合格的发展对象，应当在一个月内提交党支部党员大会讨论。\n召开讨论接收预备党员的党支部党员大会，实际到会有表决权的党员人数必须超过应到会有表决权的党员人数的半数。\n第二十条 党支部党员大会讨论接收预备党员的主要程序是：\n（一）发展对象汇报对党的认识、入党动机、本人履历、家庭主要成员和重要社会关系情况，以及需向党组织说明的问题。\n（二）入党介绍人介绍发展对象有关情况，并对其能否入党表明意见。\n（三）党支部委员会报告对发展对象的审查情况。\n（四）与会党员对发展对象能否入党进行充分讨论，并采取无记名投票方式进行表决。\n\n补充参考《V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md》（条文原文）[2]：\n## 条文原文\n\n第十八条　接收预备党员应当严格按照党章规定的程序办理。\n第十九条　支部委员会应当对发展对象进行严格审查，经集体讨论认为合格后，报具有审批权限的基层党委预审。\n基层党委对发展对象的条件、培养教育情况等进行审查，根据需要听取执纪执法等相关部门的意见。审查结果以书面形式通知党支部，并向审查合格的发展对象发放《中国共产党入党志愿书》。\n发展对象未来三个月内将离开工作、学习单位的，一般不办...",
+      "mode": "unknown",
+      "grounded": true,
+      "sources": [
+        {
+          "source": "V4-44-中国共产党发展党员工作细则-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        },
+        {
+          "source": "V4-50-中国共产党发展党员工作细则（2014年版·已废止）-发展对象的确定和考察.md",
+          "title": "元数据",
+          "snippet": ""
+        },
+        {
+          "source": "V4-51-中国共产党发展党员工作细则（2014年版·已废止）-预备党员的接收.md",
+          "title": "条文原文",
+          "snippet": ""
+        }
+      ],
+      "auto": {
+        "factCoverage": 0.5,
+        "keywordCoverage": 0.5,
+        "sourceMatched": false,
+        "answerChars": 752,
+        "extractiveDump": true
+      },
+      "human": {
+        "factCorrect": null,
+        "complete": null,
+        "citationSupported": null,
+        "errorType": null,
+        "reviewer": null,
+        "reviewedAt": null,
+        "note": null
+      }
+    }
+  ]
+}
