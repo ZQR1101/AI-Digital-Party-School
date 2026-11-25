@@ -112,16 +112,18 @@ function buildConclusion(onlineDev, onlineHeldout) {
     ? 'heldout 独立复核已完成，结论仍受小样本限制。'
     : 'heldout 未完成，本结论仅为 dev 小样本观察。';
   const rerankerText = rerankNotRun
-    ? 'D 方案 not_run：真实 Reranker 最小请求返回 HTTP 403，响应码 AllocationQuota.FreeTierOnly / insufficient_quota（百炼账号免费额度耗尽，需充值或关闭「仅使用免费额度」模式）；旧兼容端点、DashScope 原生端点与试用域名均返回同一错误，与 WorkspaceId 或 URL 格式无关。额度恢复并使用业务空间专属域名后可直接补跑 D 方案；当前禁止用本地关键词重排冒充，真实重排收益暂不可评价。'
-    : `真实 Reranker 在融合后相对 C 的 chunk Recall@5 变化 ${delta(d.recallAt5, c.recallAt5)}，平均额外耗时 ${num(Math.max(0, (d.avgMs ?? 0) - (c.avgMs ?? 0)))} ms。`;
+    ? 'D 方案 not_run：真实 Reranker 最小请求返回 HTTP 403，响应码 AllocationQuota.FreeTierOnly / insufficient_quota（百炼账号免费额度耗尽，需充值或关闭「仅使用免费额度」模式）；旧兼容端点、DashScope 原生端点与试用域名均返回同一错误，与 WorkspaceId 或 URL 格式无关。已改用硅基流动真实重排服务补齐；历史探测均不参与指标，禁止用本地关键词重排冒充。'
+    : `硅基流动真实 Reranker（BAAI/bge-reranker-v2-m3）相对 C：chunk Recall@5 ${pct(d.recallAt5)} vs ${pct(c.recallAt5)}（${delta(d.recallAt5, c.recallAt5)}），MRR@5 ${num(d.mrrAt5, 4)} vs ${num(c.mrrAt5, 4)}（${delta(d.mrrAt5, c.mrrAt5)}），平均耗时 +${num(Math.max(0, (d.avgMs ?? 0) - (c.avgMs ?? 0)))} ms，P95 ${num(d.p95Ms)} ms vs ${num(c.p95Ms)} ms。 Recall@5 持平但排序质量（MRR）下降、延迟显著上升，本批样本未观察到真实重排的收益。`;
+  const rerankWorth = !rerankNotRun && (d.recallAt5 ?? 0) >= (c.recallAt5 ?? 0)
+    && (d.mrrAt5 ?? 0) >= (c.mrrAt5 ?? 0);
   const verdict = rerankNotRun
     ? 'partial_d_not_run'
-    : (embeddingWorth && (d.recallAt5 ?? 0) >= (c.recallAt5 ?? 0) ? 'candidate_for_canary' : 'not_default_yet');
+    : (embeddingWorth && rerankWorth ? 'candidate_for_canary' : 'not_default_yet');
   return {
     verdict,
     embedding: `真实 Embedding 相对 BM25：chunk Recall@5 ${pct(b.recallAt5)} vs ${pct(a.recallAt5)}（${delta(recallGain, 0)}），MRR@5 ${num(b.mrrAt5, 4)} vs ${num(a.mrrAt5, 4)}（${delta(mrrGain, 0)}），平均耗时 +${num(embeddingLatency)} ms。${embeddingWorth ? '有小范围灰度价值。' : '未观察到足以抵消延迟的质量增益。'}`,
     reranker: rerankerText,
-    text: `${verdict === 'candidate_for_canary' ? '可考虑小范围灰度，但样本仅 20 条，不足以直接全量默认启用。' : '当前样本下不建议默认启用真实 Embedding；Reranker 需在接口修复后重测 D 方案再决定。'} ${heldoutNote}`
+    text: `${verdict === 'candidate_for_canary' ? '可考虑小范围灰度，但样本仅 20 条，不足以直接全量默认启用。' : '当前样本下不建议默认启用真实 Embedding 或真实 Reranker；优先保持确定性链路，并在扩大困难样本后再评估。'} ${heldoutNote}`
   };
 }
 
@@ -165,8 +167,16 @@ function markdown(json) {
     for (const p of audit.minimalProbes) {
       lines.push(`  - ${p.label}：\`${p.endpoint}\` → HTTP ${p.httpStatus} \`${p.errorCode}\`。`);
     }
-    lines.push(`- 验证结论：${audit.verdict.rootCause}。${audit.verdict.previousAttribution}。${audit.verdict.dScheme}。`);
-    lines.push(`- 额度恢复后补跑命令：\`${audit.verdict.rerunCommand}\`（复用原 dev 样本 ID，不扩样、不改标准答案）。`);
+    lines.push(`- 验证结论：${audit.verdict.rootCause}。${audit.verdict.previousAttribution}。`);
+    if (audit.resolution) {
+      const res = audit.resolution;
+      lines.push(`- 改用服务：${res.provider}，端点 \`${res.endpoint}\`，模型 \`${res.model}\`；Key 仅从 \`${res.keySource}\`。`);
+      lines.push(`- 最小请求验证：\`${res.minimalProbe.method}\` → 实际后端 \`${res.minimalProbe.backend}\`、semantic=${res.minimalProbe.scored ? res.minimalProbe.semantic : NA}，${res.minimalProbe.meaning}。`);
+      lines.push(`- D 方案已补齐：${res.dScheme.status}，dev 检索 ${res.dScheme.samples} 条（\`${res.dScheme.sampleIds.join(', ')}\`，未扩样、未改标准答案），实际后端 \`${res.dScheme.actualBackend}\`；${res.dScheme.note}`);
+    } else {
+      lines.push(`- 验证结论（历史）：${audit.verdict.dScheme}。`);
+      lines.push(`- 额度恢复后补跑命令：\`${audit.verdict.rerunCommand}\`（复用原 dev 样本 ID，不扩样、不改标准答案）。`);
+    }
     lines.push('');
   }
 
@@ -193,8 +203,16 @@ function markdown(json) {
   lines.push('');
   const rerankRequests = json.budget?.dev?.byKind?.rerank ?? NA;
   const rerankBackend = cfg.reranker?.actualBackend?.backend || NA;
-  lines.push(`- D 方案样本：dev 检索 8 条（\`${(json.selection?.dev?.idsByDataset?.retrieval || []).join(', ')}\`）保持原 V3 预设不变；D 方案状态 **not_run**。Recall@5 / MRR@5 / P95 均不填充估算值。`);
-  lines.push(`- D 方案真实重排请求次数：0；__探测请求 ${rerankRequests} 次（仅用于可用性验证，不属于 D 方案）__；Reranker 实际后端：\`${rerankBackend}\`（降级，未用于在线结果）。`);
+  const dRow = (dev.onlineRetrieval || []).find((r) => /D ·/.test(r.name)) || {};
+  const dCompleted = dRow.chunkRecallAt5 !== NA && !json.runs?.onlineDev?.degraded && rerankBackend === 'api';
+  lines.push(`- D 方案样本：dev 检索 8 条（\`${(json.selection?.dev?.idsByDataset?.retrieval || []).join(', ')}\`）保持原 V3 预设不变，未扩样、未改标准答案。`);
+  if (dCompleted) {
+    lines.push(`- D 方案状态 **completed**：Recall@5 ${pct(dRow.chunkRecallAt5)}、MRR@5 ${num(dRow.chunkMrRAt5, 4)}、平均耗时 ${num(dRow.avgMs)} ms、P95 ${num(dRow.p95Ms)} ms（见上表）。相对 C 方案 MRR@5 由 ${num((dev.onlineRetrieval || []).find((r) => /C ·/.test(r.name))?.chunkMrRAt5, 4)} 降至 ${num(dRow.chunkMrRAt5, 4)}，为真实观测，未调整样本。`);
+    lines.push(`- 本轮 Rerank 真实请求 ${int(rerankRequests)} 次（可用性探测 1 次 + D 方案 8 条各 1 次 + 问答/拒答复用 D 上下文等，均由预算器计量）；Reranker 实际后端：\`api\`（模型 \`${cfg.reranker?.model || NA}\`，非本地降级）。`);
+  } else {
+    lines.push(`- D 方案状态 **not_run**：Recall@5 / MRR@5 / P95 均不填充估算值。`);
+    lines.push(`- 本轮 Rerank 请求 ${int(rerankRequests)} 次（仅可用性探测，不属于 D 方案）；Reranker 实际后端：\`${rerankBackend}\`（降级，未用于在线结果）。`);
+  }
   lines.push('');
   lines.push('离线同 ID 基线：');
   lines.push('');
@@ -205,7 +223,7 @@ function markdown(json) {
   }
   if (heldout.onlineRetrieval?.length) {
     lines.push('');
-    lines.push('heldout 独立复核：');
+    lines.push('heldout 独立复核（上次百炼配置下冻结复核的历史记录；本次仅在 dev 补齐 D，未重跑 heldout）：');
     lines.push('');
     lines.push('| 方案 | 样本 | Recall@5 | MRR@5 | 平均耗时(ms) |');
     lines.push('| --- | ---: | ---: | ---: | ---: |');

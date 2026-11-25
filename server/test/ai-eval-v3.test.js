@@ -105,7 +105,7 @@ test('配置摘要不泄漏 API Key', (t) => {
   assert.ok(!text.includes('SENTINEL_RERANK_KEY'));
 });
 
-test('Reranker 配置示例指向百炼业务空间专属域名且不泄漏 Key', () => {
+test('Reranker 配置示例含硅基流动主方案与百炼备选且不泄漏 Key', () => {
   const fs = require('fs');
   const path = require('path');
   const root = path.resolve(__dirname, '..');
@@ -113,12 +113,16 @@ test('Reranker 配置示例指向百炼业务空间专属域名且不泄漏 Key'
   const aiApi = fs.readFileSync(path.join(root, 'AI_API.md'), 'utf8');
   const deploy = fs.readFileSync(path.resolve(root, '../docs/DEPLOY.md'), 'utf8');
   for (const text of [envExample, aiApi, deploy]) {
+    // 主方案（硅基流动）与备选方案（百炼专属域名）都应作为可选配置出现
+    assert.match(text, /api\.siliconflow\.cn\/v1\/rerank/);
+    assert.match(text, /BAAI\/bge-reranker-v2-m3/);
     assert.match(text, /\{WorkspaceId\}\.\{region\}\.maas\.aliyuncs\.com\/compatible-api\/v1\/reranks/);
-    assert.match(text, /llm-xxxxxx\.cn-beijing\.maas\.aliyuncs\.com/);
-    // 旧域名仅作为「兼容/迁移说明」出现，不再作为推荐的主配置值
+    // 旧百炼兼容域名仅作为「迁移说明」出现，不再作为推荐的主配置值
     const activeUrls = text.split(/\r?\n/).filter((line) => /^RERANKER_API_URL\s*=/.test(line));
-    assert.ok(activeUrls.every((line) => line.includes('maas.aliyuncs.com')),
-      '活跃配置行必须使用业务空间专属域名');
+    assert.ok(activeUrls.every((line) => line.includes('siliconflow.cn') || line.includes('maas.aliyuncs.com')),
+      '活跃配置行必须是硅基流动或百炼业务空间专属域名');
+    assert.ok(activeUrls.every((line) => !line.includes('dashscope.aliyuncs.com/compatible-api')),
+      '旧百炼兼容端点不得作为活跃配置');
   }
 });
 
@@ -138,4 +142,24 @@ test('Reranker 配置核对记录完整且不含 API Key', () => {
   assert.match(audit.verdict.dScheme, /not_run/);
   assert.match(audit.verdict.remediation, /专属域名/);
   assert.ok(!JSON.stringify(audit).includes('sk-'));
+});
+
+test('Rerank 补齐记录反映硅基流动真实后端且不含 API Key', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const audit = JSON.parse(fs.readFileSync(
+    path.join(__dirname, '../ai-eval/reports/rerank-config-audit.json'), 'utf8'
+  ));
+  const res = audit.resolution;
+  assert.ok(res, '应包含硅基流动补齐记录');
+  assert.match(res.endpoint, /api\.siliconflow\.cn\/v1\/rerank/);
+  assert.equal(res.model, 'BAAI/bge-reranker-v2-m3');
+  assert.equal(res.minimalProbe.backend, 'api');
+  assert.equal(res.dScheme.status, 'completed');
+  assert.equal(res.dScheme.actualBackend, 'api');
+  assert.equal(res.dScheme.samples, 8);
+  assert.equal(res.dScheme.sampleIds.length, 8);
+  assert.equal(res.dScheme.metrics.chunkRecallAt5, 1);
+  assert.ok(res.dScheme.metrics.chunkMrrAt5 > 0 && res.dScheme.metrics.chunkMrrAt5 <= 1);
+  assert.ok(!JSON.stringify(res).includes('sk-'));
 });

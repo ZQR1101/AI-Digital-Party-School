@@ -63,8 +63,35 @@
   "verdict": {
     "rootCause": "百炼账号 rerank 模型免费额度耗尽（账号级），与 WorkspaceId 缺失或 URL 格式无关",
     "previousAttribution": "V3 报告原将 403 归因于『未带 WorkspaceId』，经最小请求验证为错误归因，已修正",
-    "dScheme": "not_run —— 真实 Reranker 不可用，禁止用本地关键词重排冒充在线结果",
-    "remediation": "在百炼控制台为对应地域业务空间充值或关闭『仅使用免费额度』模式，并将 RERANKER_API_URL 配置为业务空间专属域名后，使用 docs 中的补跑命令补齐 D 方案",
+    "dScheme": "最初 not_run（真实 Reranker 不可用，禁止用本地关键词重排冒充）；后切换到硅基流动并验证真实 API 可用，已在原 dev 样本上补齐 D 方案，详见 resolution",
+    "remediation": "百炼侧需为对应地域业务空间充值或关闭『仅使用免费额度』模式，并配置业务空间专属域名；本次实际改用硅基流动真实重排服务补齐 D 方案",
     "rerunCommand": "cd server && AI_EVAL_ONLINE=1 node ai-eval/tools/run-online-v3.js --mode=online --preset=v3-online --max-requests=80 --max-cost=2 --out=ai-eval/reports/v3-online-dev.json && node ai-eval/tools/finalize-v3.js"
+  },
+  "resolution": {
+    "provider": "硅基流动 SiliconFlow",
+    "endpoint": "https://api.siliconflow.cn/v1/rerank",
+    "model": "BAAI/bge-reranker-v2-m3",
+    "keySource": "process.env.RERANKER_API_KEY（仅环境变量，未写入仓库或报告）",
+    "minimalProbe": {
+      "method": "通过 src/rag/reranker.js 真实客户端发起，读取 getBackendInfo() 判定后端",
+      "backend": "api",
+      "semantic": true,
+      "scored": 2,
+      "meaning": "backend=api 且 semantic=true，确认走真实重排服务，非本地关键词降级"
+    },
+    "dScheme": {
+      "status": "completed",
+      "samples": 8,
+      "sampleIds": ["ret-001", "ret-006", "ret-018", "ret-023", "ret-030", "ret-034", "ret-036", "ret-039"],
+      "sampleNote": "复用原 V3 dev 检索 8 条样本 ID，未扩样、未改标准答案",
+      "metrics": {
+        "chunkRecallAt5": 1,
+        "chunkMrrAt5": 0.75,
+        "p95Ms": 548.3,
+        "avgMs": 496.9938
+      },
+      "actualBackend": "api",
+      "note": "以上指标取自 v3-online-dev.json 的 D_bm25_embedding_rrf_reranker；MRR@5 低于 C 方案，为真实观测结果，未调整样本追求满分"
+    }
   }
 }

@@ -8,19 +8,19 @@ const { tokenize } = require('./bm25');
  *
  * 配置：
  *   RERANKER_API_URL   rerank 端点；未配置则使用本地关键词重排。
- *                      百炼官方推荐（业务空间专属域名）：
+ *                      方案一（推荐·性价比）硅基流动 SiliconFlow：
+ *                        https://api.siliconflow.cn/v1/rerank
+ *                      方案二（备选）百炼业务空间专属域名：
  *                        https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
- *                      例（华北2-北京，WorkspaceId=llm-xxxxxx）：
- *                        https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
  *                      其中 WorkspaceId 为百炼「业务空间管理」页/创建 Key 弹窗中的业务空间 ID，
  *                      region 为地域 ID（cn-beijing / ap-southeast-1 / cn-hongkong / us-east-1 等）。
  *                      旧域名 https://dashscope.aliyuncs.com/compatible-api/v1/reranks 仍可达，
  *                      但官方注明自 2026-09-30 起不再支持新特性，推荐迁移至专属域名。
- *   RERANKER_API_KEY   该地域业务空间的百炼 API Key；缺省依次回退
+ *   RERANKER_API_KEY   该服务的 API Key（硅基流动或对应地域的百炼 Key）；缺省依次回退
  *                      DASHSCOPE_API_KEY、EMBEDDING_API_KEY、AI_API_KEY。
- *                      注意：百炼各地域 API Key 不同且不能跨地域混用；
- *                      Key 必须与 URL 中 {region} 对应的地域一致。
- *   RERANKER_MODEL     模型名，默认 qwen3-rerank；qwen3.7-text-rerank 同样支持兼容接口。
+ *                      注意：百炼各地域 API Key 不同且不能跨地域混用。
+ *   RERANKER_MODEL     模型名，默认 qwen3-rerank； siliconflow 推荐 BAAI/bge-reranker-v2-m3，
+ *                      百炼可用 qwen3.7-text-rerank。
  *   RERANKER_TIMEOUT_MS 请求超时，默认 8000ms。
  *
  * 说明：百炼兼容端点为 /compatible-api/v1/reranks（compatible-api，reranks 复数），

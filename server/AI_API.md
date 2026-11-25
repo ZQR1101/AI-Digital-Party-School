@@ -92,9 +92,9 @@
 - Word 依赖 `mammoth`，仅支持 `.docx`（OOXML），旧版 `.doc` 不支持。
 - 解析失败的文件会记录告警并跳过，不影响其余知识文档加载。
 
-### 真实语义检索配置（阿里云百炼 DashScope / 通义千问，OpenAI 兼容）
+### 真实语义检索配置（OpenAI 兼容）
 
-在 `server/.env` 配置（详见 `.env.example`）：
+Reranker 与 Embedding 可来自不同服务商，两者独立配置。在 `server/.env` 配置（详见 `.env.example`）：
 
 ```ini
 EMBEDDING_API_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings
@@ -103,19 +103,18 @@ EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIM=1024
 EMBEDDING_BATCH=10
 
-# Reranker 端点格式（百炼官方推荐业务空间专属域名）：
-#   https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
-#   WorkspaceId：百炼「业务空间管理」页/创建 Key 弹窗中的 API Host / 业务空间 ID（如 llm-xxxxxx）
-#   region：地域 ID，如 cn-beijing / ap-southeast-1 / cn-hongkong / us-east-1
-#   注意是 compatible-api 且 reranks 为复数；API Key 必须与 URL 中地域一致
-RERANKER_API_URL=https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
-RERANKER_API_KEY=你的百炼Key
-RERANKER_MODEL=qwen3-rerank
+# Reranker 方案一（推荐·性价比）：硅基流动 SiliconFlow（OpenAI 兼容 /v1/rerank）
+RERANKER_API_URL=https://api.siliconflow.cn/v1/rerank
+RERANKER_API_KEY=你的硅基流动Key
+RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 ```
 
-- Key 申请：https://bailian.console.aliyun.com/ → 对应地域 → API-KEY 管理（Key 形如 `sk-xxx`）。也可用标准变量 `DASHSCOPE_API_KEY`，代码会自动读取。
-- **WorkspaceId / 地域 / API Key 对应关系**：WorkspaceId 在业务空间专属域名中作为一级子域（`{WorkspaceId}.{region}.maas.aliyuncs.com`），可在创建 Key 后的弹窗复制 **API Host**，或在「业务空间管理」页复制 API Host 列获得；地域决定接入域名与数据存储位置，**每个地域有独立的 API Key，不能跨地域混用**（如北京 Key 不可用于新加坡域名）。DashScope 旧域名 `dashscope.aliyuncs.com` 可访问所有业务空间，但官方注明自 2026-09-30 起不再支持新特性，推荐迁移至专属域名。文档：`https://help.aliyun.com/zh/model-studio/regions`、`https://help.aliyun.com/zh/model-studio/text-rerank-api#openai-compatible-rerank`。
-- 可用模型：Embedding 推荐 `text-embedding-v4`（或 `text-embedding-v3`）；Reranker 推荐 `qwen3-rerank`（`gte-rerank` 系列已下线，勿用）。
+- **硅基流动 Reranker**：端点固定 `https://api.siliconflow.cn/v1/rerank`，Key 在 https://cloud.siliconflow.cn/account/ak 申请（形如 `sk-xxx`）；请求体 `{model, query, documents, top_n}`、响应 `results[].{index, relevance_score}`，与本地 `reranker.js` 解析逻辑直接兼容。高性价比模型 `BAAI/bge-reranker-v2-m3`（中英双语）；质量更高可选 `Qwen/Qwen3-Reranker-8B`。文档：`https://docs.siliconflow.cn/docs/api/rerank-post`。
+- **Reranker 方案二（备选·阿里云百炼）**：把上面三个 `RERANKER_*` 改为业务空间专属域名 `https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks`（注意 `compatible-api` 且 `reranks` 复数），模型 `qwen3.7-text-rerank` 或 `qwen3-rerank`。
+  - Key 申请：https://bailian.console.aliyun.com/ → 对应地域 → API-KEY 管理（Key 形如 `sk-xxx`）。也可用标准变量 `DASHSCOPE_API_KEY`，代码会自动读取。
+  - **WorkspaceId / 地域 / API Key 对应关系**：WorkspaceId 在专属域名中作为一级子域（`{WorkspaceId}.{region}.maas.aliyuncs.com`），可在创建 Key 后的弹窗复制 **API Host**，或在「业务空间管理」页复制 API Host 列获得；地域决定接入域名与数据存储位置，**每个地域有独立的 API Key，不能跨地域混用**（如北京 Key 不可用于新加坡域名）。DashScope 旧域名 `dashscope.aliyuncs.com` 可访问所有业务空间，但官方注明自 2026-09-30 起不再支持新特性。文档：`https://help.aliyun.com/zh/model-studio/regions`、`https://help.aliyun.com/zh/model-studio/text-rerank-api#openai-compatible-rerank`。
+  - 注意：百炼 rerank 模型免费额度耗尽时接口返回 HTTP 403 `AllocationQuota.FreeTierOnly`（账号级，需充值或关闭「仅使用免费额度」），此时可切换到硅基流动方案。
+- 可用模型（百炼）：Embedding 推荐 `text-embedding-v4`（或 `text-embedding-v3`）；Reranker 推荐 `qwen3.7-text-rerank` / `qwen3-rerank`（`gte-rerank` 系列已下线，勿用）。
 - 百炼 Embedding 单批上限 10 行，故 `EMBEDDING_BATCH` 默认 10，勿调大以免 400 报错。
 - 配置检测同时校验 URL 与可用 Key；只填 URL 未填 Key 时直接走本地降级，不再发起必然失败的请求。
 - 未配置时自动降级为本地哈希向量 + 关键词重排（**非语义**），通过 `node rag-diagnose.js` 可查看实际后端；加 `--live` 做真实调用验证。

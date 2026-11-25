@@ -53,14 +53,14 @@ EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIM=1024
 EMBEDDING_BATCH=10
 
-# Reranker：百炼业务空间专属域名 + OpenAI 兼容 rerank 端点（与 SiliconFlow /v1/rerank 同构，
-# 响应解析 results[].index / relevance_score；见 server/.env.example 与 src/rag/reranker.js）
-# 端点格式：https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
-#   WorkspaceId 来自百炼「业务空间管理」页/创建 Key 弹窗的 API Host；region 为地域 ID
-#   API Key 必须与 URL 中地域一致（各地域 Key 不能跨地域混用）
-RERANKER_API_URL=https://llm-xxxxxx.cn-beijing.maas.aliyuncs.com/compatible-api/v1/reranks
+# Reranker 方案一（推荐·性价比）：硅基流动 SiliconFlow（OpenAI 兼容 /v1/rerank，
+# 响应解析 results[].index / relevance_score；与 src/rag/reranker.js 解析逻辑兼容）
+RERANKER_API_URL=https://api.siliconflow.cn/v1/rerank
 RERANKER_API_KEY=sk-xxxxxxxxxxxxxxxx
-RERANKER_MODEL=qwen3-rerank
+RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+
+# Reranker 方案二（备选·百炼）：业务空间专属域名 https://{WorkspaceId}.{region}.maas.aliyuncs.com/compatible-api/v1/reranks
+#   WorkspaceId 来自百炼业务空间管理页/创建 Key 弹窗的 API Host；region 为地域 ID，各地域 Key 不能混用
 
 # 向量数据库（可选）
 QDRANT_URL=

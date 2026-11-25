@@ -3,8 +3,9 @@
   "datasetVersion": "1.1.0",
   "mode": "online",
   "status": "completed",
+  "degraded": false,
   "stopReason": null,
-  "generatedAt": "2026-11-25T09:29:38.067Z",
+  "generatedAt": "2026-11-25T11:27:35.371Z",
   "selection": {
     "preset": "v3-online",
     "requestedIds": [],
@@ -63,20 +64,20 @@
     "status": "completed",
     "reason": null,
     "usage": {
-      "requests": 31,
+      "requests": 48,
       "byKind": {
         "llm": 8,
         "embedding": 22,
-        "rerank": 1
+        "rerank": 18
       },
-      "promptTokens": 6403,
-      "completionTokens": 2313,
-      "totalTokens": 8716,
-      "durationMs": 17128,
+      "promptTokens": 6717,
+      "completionTokens": 2627,
+      "totalTokens": 9344,
+      "durationMs": 20336,
       "models": [
         "deepseek-v4-flash"
       ],
-      "estimatedCostCny": 0.2997,
+      "estimatedCostCny": 0.4748,
       "stopped": false,
       "stopReason": "N/A",
       "unitPrice": {
@@ -85,14 +86,13 @@
         "rerankPerRequest": 0.01
       }
     },
-    "note": "成本为估算值，实际账单以服务商为准。",
-    "degraded": true
+    "note": "成本为估算值，实际账单以服务商为准。"
   },
   "environment": {
     "node": "v22.22.2",
     "platform": "win32 x64",
     "ci": false,
-    "gitCommit": "de5d1b7d60499628792ece5fb0408146ea4a0024",
+    "gitCommit": "85c59d63772071234ebeb4f69e148e50b1da7b39",
     "knowledgeBase": {
       "files": 10,
       "sha256": "bc881d8a19ec77fb55aa1911f74177edfb1a04f32cffd580ea54f0be850ddd68"
@@ -122,14 +122,14 @@
       },
       "reranker": {
         "configured": true,
-        "model": "qwen3.7-text-rerank",
-        "endpoint": "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+        "model": "BAAI/bge-reranker-v2-m3",
+        "endpoint": "https://api.siliconflow.cn/v1/rerank",
         "actualBackend": {
           "configured": true,
-          "model": "qwen3.7-text-rerank",
-          "backend": "local-keyword",
-          "semantic": false,
-          "error": "Request failed with status code 403"
+          "model": "BAAI/bge-reranker-v2-m3",
+          "backend": "api",
+          "semantic": true,
+          "scored": 4
         }
       },
       "limits": {
@@ -157,8 +157,7 @@
     "Recall@5 / MRR@5 使用标注来源与逐字证据片段；事实要点覆盖与引用支持是启发式指标。",
     "拒答判定依赖检索门禁；LLM 只在门禁通过时生成，拒答本身不消耗 LLM token。",
     "成本按保守单价估算，Token 事后计费与服务商账单可能存在差异。",
-    "组织统计仅做工具选择与参数解析，未执行 SQL，也未访问生产或隔离业务库。",
-    "Reranker 接口异常（Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403）：D 方案为 not_run；问答/拒答使用 C 方案上下文，并仅保留主题证据门禁，不代表线上 D 链路。"
+    "组织统计仅做工具选择与参数解析，未执行 SQL，也未访问生产或隔离业务库。"
   ],
   "suites": {
     "retrieval": {
@@ -169,11 +168,10 @@
       "enabledConfigs": [
         "bm25",
         "vector",
-        "hybrid"
-      ],
-      "disabledConfigs": [
+        "hybrid",
         "hybrid_rerank"
       ],
+      "disabledConfigs": [],
       "summary": {
         "A_bm25": {
           "document": {
@@ -184,8 +182,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 1,
-            "avgMs": 0.4313,
-            "p95Ms": 0.75,
+            "avgMs": 0.4488,
+            "p95Ms": 0.74,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -195,8 +193,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 1,
-                "avgMs": 0.4313,
-                "p95Ms": 0.75
+                "avgMs": 0.4488,
+                "p95Ms": 0.74
               },
               "heldout": {
                 "samples": 0
@@ -211,8 +209,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 0.9375,
-            "avgMs": 0.4313,
-            "p95Ms": 0.75,
+            "avgMs": 0.4488,
+            "p95Ms": 0.74,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -222,8 +220,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 0.9375,
-                "avgMs": 0.4313,
-                "p95Ms": 0.75
+                "avgMs": 0.4488,
+                "p95Ms": 0.74
               },
               "heldout": {
                 "samples": 0
@@ -240,8 +238,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 1,
-            "avgMs": 164.1388,
-            "p95Ms": 221.18,
+            "avgMs": 160.7,
+            "p95Ms": 175.68,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -251,8 +249,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 1,
-                "avgMs": 164.1388,
-                "p95Ms": 221.18
+                "avgMs": 160.7,
+                "p95Ms": 175.68
               },
               "heldout": {
                 "samples": 0
@@ -267,8 +265,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 0.875,
-            "avgMs": 164.1388,
-            "p95Ms": 221.18,
+            "avgMs": 160.7,
+            "p95Ms": 175.68,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -278,8 +276,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 0.875,
-                "avgMs": 164.1388,
-                "p95Ms": 221.18
+                "avgMs": 160.7,
+                "p95Ms": 175.68
               },
               "heldout": {
                 "samples": 0
@@ -296,8 +294,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 1,
-            "avgMs": 164.6113,
-            "p95Ms": 221.57,
+            "avgMs": 161.1888,
+            "p95Ms": 176.1,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -307,8 +305,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 1,
-                "avgMs": 164.6113,
-                "p95Ms": 221.57
+                "avgMs": 161.1888,
+                "p95Ms": 176.1
               },
               "heldout": {
                 "samples": 0
@@ -323,8 +321,8 @@
             "recallAt3": 1,
             "recallAt5": 1,
             "mrrAt5": 0.9375,
-            "avgMs": 164.6113,
-            "p95Ms": 221.57,
+            "avgMs": 161.1888,
+            "p95Ms": 176.1,
             "bySplit": {
               "dev": {
                 "samples": 8,
@@ -334,8 +332,8 @@
                 "recallAt3": 1,
                 "recallAt5": 1,
                 "mrrAt5": 0.9375,
-                "avgMs": 164.6113,
-                "p95Ms": 221.57
+                "avgMs": 161.1888,
+                "p95Ms": 176.1
               },
               "heldout": {
                 "samples": 0
@@ -344,9 +342,60 @@
           }
         },
         "D_bm25_embedding_rrf_reranker": {
-          "status": "not_run",
-          "reason": "Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403",
-          "samples": "N/A"
+          "document": {
+            "samples": 8,
+            "hitAt1": 1,
+            "hitAt3": 1,
+            "hitAt5": 1,
+            "recallAt3": 1,
+            "recallAt5": 1,
+            "mrrAt5": 1,
+            "avgMs": 496.9938,
+            "p95Ms": 548.3,
+            "bySplit": {
+              "dev": {
+                "samples": 8,
+                "hitAt1": 1,
+                "hitAt3": 1,
+                "hitAt5": 1,
+                "recallAt3": 1,
+                "recallAt5": 1,
+                "mrrAt5": 1,
+                "avgMs": 496.9938,
+                "p95Ms": 548.3
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          },
+          "chunk": {
+            "samples": 8,
+            "hitAt1": 0.5,
+            "hitAt3": 1,
+            "hitAt5": 1,
+            "recallAt3": 1,
+            "recallAt5": 1,
+            "mrrAt5": 0.75,
+            "avgMs": 496.9938,
+            "p95Ms": 548.3,
+            "bySplit": {
+              "dev": {
+                "samples": 8,
+                "hitAt1": 0.5,
+                "hitAt3": 1,
+                "hitAt5": 1,
+                "recallAt3": 1,
+                "recallAt5": 1,
+                "mrrAt5": 0.75,
+                "avgMs": 496.9938,
+                "p95Ms": 548.3
+              },
+              "heldout": {
+                "samples": 0
+              }
+            }
+          }
         },
         "topK": 5,
         "topN": 20,
@@ -360,18 +409,16 @@
           },
           "reranker": {
             "configured": true,
-            "model": "qwen3.7-text-rerank",
-            "backend": "local-keyword",
-            "semantic": false,
-            "error": "Request failed with status code 403"
+            "model": "BAAI/bge-reranker-v2-m3",
+            "backend": "api",
+            "semantic": true,
+            "scored": 5
           },
           "chunkCount": 50,
           "vectorDim": 1024,
           "initialized": true
         },
-        "disabledConfigs": [
-          "hybrid_rerank"
-        ]
+        "disabledConfigs": []
       },
       "details": {
         "bm25": {
@@ -380,7 +427,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.75,
+              "latencyMs": 0.74,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -392,7 +439,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.3,
+              "latencyMs": 0.33,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -404,7 +451,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.36,
+              "latencyMs": 0.33,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -416,7 +463,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.32,
+              "latencyMs": 0.41,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -428,7 +475,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 0.4,
+              "latencyMs": 0.35,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -440,7 +487,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 0.37,
+              "latencyMs": 0.5,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -452,7 +499,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 0.44,
+              "latencyMs": 0.5,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -464,7 +511,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 0.51,
+              "latencyMs": 0.43,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -478,7 +525,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.75,
+              "latencyMs": 0.74,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -490,7 +537,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.3,
+              "latencyMs": 0.33,
               "hitAt1": 0,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -502,7 +549,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.36,
+              "latencyMs": 0.33,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -514,7 +561,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 0.32,
+              "latencyMs": 0.41,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -526,7 +573,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 0.4,
+              "latencyMs": 0.35,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -538,7 +585,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 0.37,
+              "latencyMs": 0.5,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -550,7 +597,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 0.44,
+              "latencyMs": 0.5,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -562,7 +609,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 0.51,
+              "latencyMs": 0.43,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -578,7 +625,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 153.97,
+              "latencyMs": 148.87,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -590,7 +637,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 136.64,
+              "latencyMs": 170.1,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -602,7 +649,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154,
+              "latencyMs": 160.3,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -614,7 +661,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.82,
+              "latencyMs": 175.68,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -626,7 +673,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 160.05,
+              "latencyMs": 139.35,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -638,7 +685,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 221.18,
+              "latencyMs": 174.33,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -650,7 +697,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 160.75,
+              "latencyMs": 155.56,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -662,7 +709,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 171.7,
+              "latencyMs": 161.41,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -676,7 +723,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 153.97,
+              "latencyMs": 148.87,
               "hitAt1": 0,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -688,7 +735,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 136.64,
+              "latencyMs": 170.1,
               "hitAt1": 0,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -700,7 +747,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154,
+              "latencyMs": 160.3,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -712,7 +759,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.82,
+              "latencyMs": 175.68,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -724,7 +771,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 160.05,
+              "latencyMs": 139.35,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -736,7 +783,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 221.18,
+              "latencyMs": 174.33,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -748,7 +795,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 160.75,
+              "latencyMs": 155.56,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -760,7 +807,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 171.7,
+              "latencyMs": 161.41,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -776,7 +823,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.89,
+              "latencyMs": 149.81,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -788,7 +835,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 136.98,
+              "latencyMs": 170.45,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -800,7 +847,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.38,
+              "latencyMs": 160.65,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -812,7 +859,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 155.16,
+              "latencyMs": 176.1,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -824,7 +871,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 160.47,
+              "latencyMs": 139.72,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -836,7 +883,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 221.57,
+              "latencyMs": 174.85,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -848,7 +895,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 161.2,
+              "latencyMs": 156.07,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -860,7 +907,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 172.24,
+              "latencyMs": 161.86,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -874,7 +921,7 @@
               "id": "ret-001",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.89,
+              "latencyMs": 149.81,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -886,7 +933,7 @@
               "id": "ret-006",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 136.98,
+              "latencyMs": 170.45,
               "hitAt1": 0,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -898,7 +945,7 @@
               "id": "ret-018",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 154.38,
+              "latencyMs": 160.65,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -910,7 +957,7 @@
               "id": "ret-023",
               "split": "dev",
               "category": "同义改写",
-              "latencyMs": 155.16,
+              "latencyMs": 176.1,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -922,7 +969,7 @@
               "id": "ret-030",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 160.47,
+              "latencyMs": 139.72,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -934,7 +981,7 @@
               "id": "ret-034",
               "split": "dev",
               "category": "多文档",
-              "latencyMs": 221.57,
+              "latencyMs": 174.85,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -946,7 +993,7 @@
               "id": "ret-036",
               "split": "dev",
               "category": "跨段落",
-              "latencyMs": 161.2,
+              "latencyMs": 156.07,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -958,7 +1005,7 @@
               "id": "ret-039",
               "split": "dev",
               "category": "相似概念",
-              "latencyMs": 172.24,
+              "latencyMs": 161.86,
               "hitAt1": 1,
               "hitAt3": 1,
               "hitAt5": 1,
@@ -967,12 +1014,210 @@
               "mrrAt5": 1
             }
           ]
+        },
+        "hybrid_rerank": {
+          "document": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 493,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 475.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 519.43,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 490.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 481.74,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 548.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 443.14,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 524.74,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            }
+          ],
+          "chunk": [
+            {
+              "id": "ret-001",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 493,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-006",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 475.3,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-018",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 519.43,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-023",
+              "split": "dev",
+              "category": "同义改写",
+              "latencyMs": 490.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-030",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 481.74,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-034",
+              "split": "dev",
+              "category": "多文档",
+              "latencyMs": 548.3,
+              "hitAt1": 1,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 1
+            },
+            {
+              "id": "ret-036",
+              "split": "dev",
+              "category": "跨段落",
+              "latencyMs": 443.14,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            },
+            {
+              "id": "ret-039",
+              "split": "dev",
+              "category": "相似概念",
+              "latencyMs": 524.74,
+              "hitAt1": 0,
+              "hitAt3": 1,
+              "hitAt5": 1,
+              "recallAt3": 1,
+              "recallAt5": 1,
+              "mrrAt5": 0.5
+            }
+          ]
         }
       }
     },
     "qa": {
       "title": "LLM 问答与确定性兜底对照（同一检索上下文）",
-      "contextScheme": "C：BM25 + 真实 Embedding + RRF（Reranker 不可用，显式标注）",
+      "contextScheme": "D：BM25 + 真实 Embedding + RRF + 真实 Reranker",
       "summary": {
         "llm": {
           "samples": 5,
@@ -981,18 +1226,18 @@
           "citationNumberValidRate": 1,
           "citationSupportRate": 1,
           "overRefusalRate": 0,
-          "avgGenerationMs": 2629.806,
-          "avgEndToEndMs": 2810.522
+          "avgGenerationMs": 3333.248,
+          "avgEndToEndMs": 4100.22
         },
         "deterministicFallback": {
           "samples": 5,
-          "keywordCoverageRate": 0.9333,
+          "keywordCoverageRate": 1,
           "factPointCoverageRate": 1,
           "citationNumberValidRate": 1,
           "citationSupportRate": 1,
           "overRefusalRate": 0,
-          "avgGenerationMs": 0.036,
-          "avgEndToEndMs": 2810.564
+          "avgGenerationMs": 0.026,
+          "avgEndToEndMs": 4100.25
         },
         "humanVerifiedFactAccuracy": "N/A",
         "llmJudgeScore": "N/A"
@@ -1005,8 +1250,8 @@
           "question": "预备党员有没有党龄？党员的党龄从哪一天开始算？",
           "canAnswer": true,
           "topSource": "党员组织关系与党籍管理.md",
-          "topScore": 0.6478017967283466,
-          "retrievalMs": 161.93,
+          "topScore": 0.9936438798904419,
+          "retrievalMs": 508.23,
           "llm": {
             "status": "completed",
             "metrics": {
@@ -1021,8 +1266,8 @@
               "fallback": false,
               "hasAnswer": true
             },
-            "generationMs": 1935.89,
-            "endToEndMs": 2098.68,
+            "generationMs": 2657.51,
+            "endToEndMs": 3166.78,
             "model": "deepseek-v4-flash",
             "invalidCitations": []
           },
@@ -1040,8 +1285,8 @@
               "fallback": true,
               "hasAnswer": true
             },
-            "generationMs": 0.06,
-            "endToEndMs": 2098.75
+            "generationMs": 0.05,
+            "endToEndMs": 3166.84
           }
         },
         {
@@ -1050,8 +1295,8 @@
           "question": "我的月工资是四千五百元，每个月应该按什么比例交党费？",
           "canAnswer": true,
           "topSource": "党费收缴使用与管理规定.md",
-          "topScore": 0.8069380404134829,
-          "retrievalMs": 170.71,
+          "topScore": 0.950765073299408,
+          "retrievalMs": 647.57,
           "llm": {
             "status": "completed",
             "metrics": {
@@ -1066,8 +1311,8 @@
               "fallback": false,
               "hasAnswer": true
             },
-            "generationMs": 2282.93,
-            "endToEndMs": 2453.93,
+            "generationMs": 2272.53,
+            "endToEndMs": 2920.53,
             "model": "deepseek-v4-flash",
             "invalidCitations": []
           },
@@ -1086,7 +1331,7 @@
               "hasAnswer": true
             },
             "generationMs": 0.02,
-            "endToEndMs": 2453.96
+            "endToEndMs": 2920.56
           }
         },
         {
@@ -1095,8 +1340,8 @@
           "question": "组织生活会和民主生活会有什么区别？",
           "canAnswer": true,
           "topSource": "党组织生活制度规范.md",
-          "topScore": 0.7445240883558853,
-          "retrievalMs": 205.65,
+          "topScore": 0.9998722076416016,
+          "retrievalMs": 689.95,
           "llm": {
             "status": "completed",
             "metrics": {
@@ -1111,8 +1356,8 @@
               "fallback": false,
               "hasAnswer": true
             },
-            "generationMs": 4612.51,
-            "endToEndMs": 4818.42,
+            "generationMs": 5862.21,
+            "endToEndMs": 6552.44,
             "model": "deepseek-v4-flash",
             "invalidCitations": []
           },
@@ -1123,15 +1368,15 @@
               "split": "dev",
               "sourceMatched": true,
               "factPointCovered": true,
-              "keywordCoverageRate": 0.6666666666666666,
+              "keywordCoverageRate": 1,
               "citationValid": true,
               "citationSupport": true,
               "grounded": true,
               "fallback": true,
               "hasAnswer": true
             },
-            "generationMs": 0.04,
-            "endToEndMs": 4818.46
+            "generationMs": 0.02,
+            "endToEndMs": 6552.46
           }
         },
         {
@@ -1140,8 +1385,8 @@
           "question": "党的历史上生死攸关的转折点是哪次会议？",
           "canAnswer": true,
           "topSource": "党史学习教育要点.md",
-          "topScore": 0.60241229831509,
-          "retrievalMs": 205.87,
+          "topScore": 0.9876589179039001,
+          "retrievalMs": 1266.36,
           "llm": {
             "status": "completed",
             "metrics": {
@@ -1156,8 +1401,8 @@
               "fallback": false,
               "hasAnswer": true
             },
-            "generationMs": 1394.29,
-            "endToEndMs": 1600.28,
+            "generationMs": 2396.07,
+            "endToEndMs": 3662.58,
             "model": "deepseek-v4-flash",
             "invalidCitations": []
           },
@@ -1175,8 +1420,8 @@
               "fallback": true,
               "hasAnswer": true
             },
-            "generationMs": 0.03,
-            "endToEndMs": 1600.31
+            "generationMs": 0.02,
+            "endToEndMs": 3662.6
           }
         },
         {
@@ -1185,8 +1430,8 @@
           "question": "看板里的学习完成率指标是怎么统计出来的？",
           "canAnswer": true,
           "topSource": "指标统计口径.md",
-          "topScore": 0.7050782155458627,
-          "retrievalMs": 157.56,
+          "topScore": 0.8074132800102234,
+          "retrievalMs": 720.54,
           "llm": {
             "status": "completed",
             "metrics": {
@@ -1201,8 +1446,8 @@
               "fallback": false,
               "hasAnswer": true
             },
-            "generationMs": 2923.41,
-            "endToEndMs": 3081.3,
+            "generationMs": 3477.92,
+            "endToEndMs": 4198.77,
             "model": "deepseek-v4-flash",
             "invalidCitations": []
           },
@@ -1220,29 +1465,29 @@
               "fallback": true,
               "hasAnswer": true
             },
-            "generationMs": 0.03,
-            "endToEndMs": 3081.34
+            "generationMs": 0.02,
+            "endToEndMs": 4198.79
           }
         }
       ]
     },
     "refusal": {
       "title": "无依据拒答",
-      "contextScheme": "C 方案上下文（Reranker 不可用）",
+      "contextScheme": "D 方案上下文",
       "summary": {
         "samples": 4,
         "refusalRate": 1,
         "unwarrantedAnswerRate": 0,
-        "avgTopScore": 0.4016,
-        "avgScoreGap": 0.04
+        "avgTopScore": 0.1803,
+        "avgScoreGap": 0.125
       },
       "bySplit": {
         "dev": {
           "samples": 4,
           "refusalRate": 1,
           "unwarrantedAnswerRate": 0,
-          "avgTopScore": 0.4016,
-          "avgScoreGap": 0.04
+          "avgTopScore": 0.1803,
+          "avgScoreGap": 0.125
         },
         "heldout": {
           "samples": 0,
@@ -1258,11 +1503,9 @@
           "split": "dev",
           "domain": "无关-自然科学",
           "refused": true,
-          "topScore": 0.24476092874534117,
-          "scoreGap": -0.03,
-          "gate": {
-            "topicEvidenceOnly": true
-          },
+          "topScore": 0.00014876213390380144,
+          "scoreGap": 0,
+          "gate": null,
           "sources": []
         },
         {
@@ -1270,11 +1513,9 @@
           "split": "dev",
           "domain": "党务-知识库未收录",
           "refused": true,
-          "topScore": 0.5652109037322954,
-          "scoreGap": 0.13,
-          "gate": {
-            "topicEvidenceOnly": true
-          },
+          "topScore": 0.45674121379852295,
+          "scoreGap": 0.38,
+          "gate": null,
           "sources": []
         },
         {
@@ -1282,11 +1523,9 @@
           "split": "dev",
           "domain": "党务-知识库未收录",
           "refused": true,
-          "topScore": 0.5312816173323932,
-          "scoreGap": 0.08,
-          "gate": {
-            "topicEvidenceOnly": true
-          },
+          "topScore": 0.2641437351703644,
+          "scoreGap": 0.12,
+          "gate": null,
           "sources": []
         },
         {
@@ -1294,11 +1533,9 @@
           "split": "dev",
           "domain": "校园事务",
           "refused": true,
-          "topScore": 0.26519717276008387,
-          "scoreGap": -0.02,
-          "gate": {
-            "topicEvidenceOnly": true
-          },
+          "topScore": 0.00031990124261938035,
+          "scoreGap": 0,
+          "gate": null,
           "sources": []
         }
       ]
@@ -1340,34 +1577,22 @@
       "executionScope": "仅解析工具选择与参数，不执行任何组织统计查询，不访问业务数据库"
     }
   },
-  "failures": [
-    {
-      "dataset": "runtime",
-      "id": "N/A",
-      "category": "rerank_api_error",
-      "input": "Reranker availability probe",
-      "expected": "真实 Reranker 可用",
-      "actual": {
-        "error": "Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403"
-      },
-      "detail": "Reranker 接口异常；D 方案标记 not_run，后续问答/拒答使用 C 方案上下文，不使用本地重排冒充真实模型"
-    }
-  ],
+  "failures": [],
   "usage": {
-    "requests": 31,
+    "requests": 48,
     "byKind": {
       "llm": 8,
       "embedding": 22,
-      "rerank": 1
+      "rerank": 18
     },
-    "promptTokens": 6403,
-    "completionTokens": 2313,
-    "totalTokens": 8716,
-    "durationMs": 17128,
+    "promptTokens": 6717,
+    "completionTokens": 2627,
+    "totalTokens": 9344,
+    "durationMs": 20336,
     "models": [
       "deepseek-v4-flash"
     ],
-    "estimatedCostCny": 0.2997,
+    "estimatedCostCny": 0.4748,
     "stopped": false,
     "stopReason": "N/A",
     "unitPrice": {
@@ -1375,6 +1600,5 @@
       "embeddingPerRequest": 0.01,
       "rerankPerRequest": 0.01
     }
-  },
-  "degraded": true
+  }
 }

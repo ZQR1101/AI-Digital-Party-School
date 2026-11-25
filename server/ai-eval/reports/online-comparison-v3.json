@@ -1,7 +1,7 @@
 {
   "reportVersion": "3.0.0",
   "title": "AI 在线质量评测 V3 对照实验",
-  "generatedAt": "2026-11-25T09:51:50.623Z",
+  "generatedAt": "2026-11-25T11:31:17.833Z",
   "datasetVersion": "1.1.0",
   "status": "completed",
   "stopReason": null,
@@ -30,14 +30,14 @@
     },
     "reranker": {
       "configured": true,
-      "model": "qwen3.7-text-rerank",
-      "endpoint": "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "endpoint": "https://api.siliconflow.cn/v1/rerank",
       "actualBackend": {
         "configured": true,
-        "model": "qwen3.7-text-rerank",
-        "backend": "local-keyword",
-        "semantic": false,
-        "error": "Request failed with status code 403"
+        "model": "BAAI/bge-reranker-v2-m3",
+        "backend": "api",
+        "semantic": true,
+        "scored": 4
       }
     },
     "limits": {
@@ -155,7 +155,7 @@
     },
     "onlineDev": {
       "status": "completed",
-      "degraded": true,
+      "degraded": false,
       "stopReason": null
     },
     "offlineHeldout": {
@@ -212,8 +212,8 @@
           "chunkRecallAt5": 1,
           "chunkMrRAt5": 0.9375,
           "documentRecallAt5": 1,
-          "avgMs": 0.4313,
-          "p95Ms": 0.75,
+          "avgMs": 0.4488,
+          "p95Ms": 0.74,
           "samples": 8
         },
         {
@@ -221,8 +221,8 @@
           "chunkRecallAt5": 1,
           "chunkMrRAt5": 0.875,
           "documentRecallAt5": 1,
-          "avgMs": 164.1388,
-          "p95Ms": 221.18,
+          "avgMs": 160.7,
+          "p95Ms": 175.68,
           "samples": 8
         },
         {
@@ -230,18 +230,18 @@
           "chunkRecallAt5": 1,
           "chunkMrRAt5": 0.9375,
           "documentRecallAt5": 1,
-          "avgMs": 164.6113,
-          "p95Ms": 221.57,
+          "avgMs": 161.1888,
+          "p95Ms": 176.1,
           "samples": 8
         },
         {
           "name": "D · C + 真实 Reranker",
-          "chunkRecallAt5": "N/A",
-          "chunkMrRAt5": "N/A",
-          "documentRecallAt5": "N/A",
-          "avgMs": "N/A",
-          "p95Ms": "N/A",
-          "samples": "N/A"
+          "chunkRecallAt5": 1,
+          "chunkMrRAt5": 0.75,
+          "documentRecallAt5": 1,
+          "avgMs": 496.9938,
+          "p95Ms": 548.3,
+          "samples": 8
         }
       ],
       "offlineQa": {
@@ -259,7 +259,7 @@
         "citationNumberValidRate": 1,
         "citationSupportRate": 1,
         "overRefusalRate": 0,
-        "avgGenerationMs": 2629.806,
+        "avgGenerationMs": 3333.248,
         "status": "completed"
       },
       "onlineDeterministicQa": {
@@ -268,7 +268,7 @@
         "citationNumberValidRate": 1,
         "citationSupportRate": 1,
         "overRefusalRate": 0,
-        "avgGenerationMs": 0.036,
+        "avgGenerationMs": 0.026,
         "status": "completed"
       },
       "offlineRefusal": {
@@ -282,8 +282,8 @@
         "samples": 4,
         "refusalRate": 1,
         "unwarrantedAnswerRate": 0,
-        "avgTopScore": 0.4016,
-        "avgScoreGap": 0.04
+        "avgTopScore": 0.1803,
+        "avgScoreGap": 0.125
       },
       "offlineNlq": {
         "samples": 3,
@@ -456,20 +456,20 @@
   },
   "budget": {
     "dev": {
-      "requests": 31,
+      "requests": 48,
       "byKind": {
         "llm": 8,
         "embedding": 22,
-        "rerank": 1
+        "rerank": 18
       },
-      "promptTokens": 6403,
-      "completionTokens": 2313,
-      "totalTokens": 8716,
-      "durationMs": 17128,
+      "promptTokens": 6717,
+      "completionTokens": 2627,
+      "totalTokens": 9344,
+      "durationMs": 20336,
       "models": [
         "deepseek-v4-flash"
       ],
-      "estimatedCostCny": 0.2997,
+      "estimatedCostCny": 0.4748,
       "stopped": false,
       "stopReason": "N/A",
       "unitPrice": {
@@ -502,35 +502,23 @@
       }
     },
     "total": {
-      "requests": 43,
+      "requests": 60,
       "byKind": {
         "llm": 10,
         "embedding": 31,
-        "rerank": 2
+        "rerank": 19
       },
-      "promptTokens": 8280,
-      "completionTokens": 2929,
-      "totalTokens": 11209,
-      "durationMs": 21684,
-      "estimatedCostCny": 0.4196,
+      "promptTokens": 8594,
+      "completionTokens": 3243,
+      "totalTokens": 11837,
+      "durationMs": 24892,
+      "estimatedCostCny": 0.5947,
       "models": [
         "deepseek-v4-flash"
       ]
     }
   },
   "failures": [
-    {
-      "batch": "dev",
-      "dataset": "runtime",
-      "id": "N/A",
-      "category": "rerank_api_error",
-      "input": "Reranker availability probe",
-      "expected": "真实 Reranker 可用",
-      "actual": {
-        "error": "Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403"
-      },
-      "detail": "Reranker 接口异常；D 方案标记 not_run，后续问答/拒答使用 C 方案上下文，不使用本地重排冒充真实模型"
-    },
     {
       "batch": "heldout",
       "dataset": "runtime",
@@ -629,9 +617,45 @@
     "verdict": {
       "rootCause": "百炼账号 rerank 模型免费额度耗尽（账号级），与 WorkspaceId 缺失或 URL 格式无关",
       "previousAttribution": "V3 报告原将 403 归因于『未带 WorkspaceId』，经最小请求验证为错误归因，已修正",
-      "dScheme": "not_run —— 真实 Reranker 不可用，禁止用本地关键词重排冒充在线结果",
-      "remediation": "在百炼控制台为对应地域业务空间充值或关闭『仅使用免费额度』模式，并将 RERANKER_API_URL 配置为业务空间专属域名后，使用 docs 中的补跑命令补齐 D 方案",
+      "dScheme": "最初 not_run（真实 Reranker 不可用，禁止用本地关键词重排冒充）；后切换到硅基流动并验证真实 API 可用，已在原 dev 样本上补齐 D 方案，详见 resolution",
+      "remediation": "百炼侧需为对应地域业务空间充值或关闭『仅使用免费额度』模式，并配置业务空间专属域名；本次实际改用硅基流动真实重排服务补齐 D 方案",
       "rerunCommand": "cd server && AI_EVAL_ONLINE=1 node ai-eval/tools/run-online-v3.js --mode=online --preset=v3-online --max-requests=80 --max-cost=2 --out=ai-eval/reports/v3-online-dev.json && node ai-eval/tools/finalize-v3.js"
+    },
+    "resolution": {
+      "provider": "硅基流动 SiliconFlow",
+      "endpoint": "https://api.siliconflow.cn/v1/rerank",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "keySource": "process.env.RERANKER_API_KEY（仅环境变量，未写入仓库或报告）",
+      "minimalProbe": {
+        "method": "通过 src/rag/reranker.js 真实客户端发起，读取 getBackendInfo() 判定后端",
+        "backend": "api",
+        "semantic": true,
+        "scored": 2,
+        "meaning": "backend=api 且 semantic=true，确认走真实重排服务，非本地关键词降级"
+      },
+      "dScheme": {
+        "status": "completed",
+        "samples": 8,
+        "sampleIds": [
+          "ret-001",
+          "ret-006",
+          "ret-018",
+          "ret-023",
+          "ret-030",
+          "ret-034",
+          "ret-036",
+          "ret-039"
+        ],
+        "sampleNote": "复用原 V3 dev 检索 8 条样本 ID，未扩样、未改标准答案",
+        "metrics": {
+          "chunkRecallAt5": 1,
+          "chunkMrrAt5": 0.75,
+          "p95Ms": 548.3,
+          "avgMs": 496.9938
+        },
+        "actualBackend": "api",
+        "note": "以上指标取自 v3-online-dev.json 的 D_bm25_embedding_rrf_reranker；MRR@5 低于 C 方案，为真实观测结果，未调整样本追求满分"
+      }
     }
   },
   "limitations": [
@@ -639,13 +663,12 @@
     "Recall@5 / MRR@5 使用标注来源与逐字证据片段；事实要点覆盖与引用支持是启发式指标。",
     "拒答判定依赖检索门禁；LLM 只在门禁通过时生成，拒答本身不消耗 LLM token。",
     "成本按保守单价估算，Token 事后计费与服务商账单可能存在差异。",
-    "组织统计仅做工具选择与参数解析，未执行 SQL，也未访问生产或隔离业务库。",
-    "Reranker 接口异常（Reranker API 调用失败，实际后端=local-keyword：Request failed with status code 403）：D 方案为 not_run；问答/拒答使用 C 方案上下文，并仅保留主题证据门禁，不代表线上 D 链路。"
+    "组织统计仅做工具选择与参数解析，未执行 SQL，也未访问生产或隔离业务库。"
   ],
   "conclusion": {
-    "verdict": "partial_d_not_run",
-    "embedding": "真实 Embedding 相对 BM25：chunk Recall@5 100.0% vs 100.0%（+0.0000），MRR@5 0.8750 vs 0.9375（-0.0625），平均耗时 +163.71 ms。未观察到足以抵消延迟的质量增益。",
-    "reranker": "D 方案 not_run：真实 Reranker 最小请求返回 HTTP 403，响应码 AllocationQuota.FreeTierOnly / insufficient_quota（百炼账号免费额度耗尽，需充值或关闭「仅使用免费额度」模式）；旧兼容端点、DashScope 原生端点与试用域名均返回同一错误，与 WorkspaceId 或 URL 格式无关。额度恢复并使用业务空间专属域名后可直接补跑 D 方案；当前禁止用本地关键词重排冒充，真实重排收益暂不可评价。",
-    "text": "当前样本下不建议默认启用真实 Embedding；Reranker 需在接口修复后重测 D 方案再决定。 heldout 独立复核已完成，结论仍受小样本限制。"
+    "verdict": "not_default_yet",
+    "embedding": "真实 Embedding 相对 BM25：chunk Recall@5 100.0% vs 100.0%（+0.0000），MRR@5 0.8750 vs 0.9375（-0.0625），平均耗时 +160.25 ms。未观察到足以抵消延迟的质量增益。",
+    "reranker": "硅基流动真实 Reranker（BAAI/bge-reranker-v2-m3）相对 C：chunk Recall@5 100.0% vs 100.0%（+0.0000），MRR@5 0.7500 vs 0.9375（-0.1875），平均耗时 +335.81 ms，P95 548.30 ms vs 176.10 ms。 Recall@5 持平但排序质量（MRR）下降、延迟显著上升，本批样本未观察到真实重排的收益。",
+    "text": "当前样本下不建议默认启用真实 Embedding 或真实 Reranker；优先保持确定性链路，并在扩大困难样本后再评估。 heldout 独立复核已完成，结论仍受小样本限制。"
   }
 }
